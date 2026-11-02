@@ -1,0 +1,522 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>日本地図タップクイズ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<style>
+/* 白地図（受験用の白い地図）を机に広げたイメージ：海の青＋白い陸＋黒い県境。上に問題、下に答えのシート */
+:root{
+  --bg:#dcedf5; --sea:#bcdcec; --land:#fdfcf7; --land-dim:#e4ebee; --line:#2c3d4a;
+  --ink:#1d2b35; --muted:#5a6d7a; --sheet:#ffffff; --sheet-line:#c9dbe4;
+  --accent:#f2a516; --accent-ink:#4a3000; --ok:#2e9a58; --ok-soft:#bfe6cc; --ng:#d9472f; --ng-soft:#f7c9bd;
+  --r1:#cfe3f7; --r2:#f6d7d9; --r3:#d9efcf; --r4:#f7e6bf; --r5:#e3d9f3; --r6:#cdeee9; --r7:#f6dcc6;
+  --display:"Dela Gothic One","Hiragino Kaku Gothic StdN","Yu Gothic",sans-serif;
+  --body:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+  --shadow:0 -6px 24px rgba(30,60,80,.12);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b1d2a; --sea:#12304a; --land:#2b3c49; --land-dim:#1b2b37; --line:#a9c0cf;
+  --ink:#e9f1f6; --muted:#9bb0be; --sheet:#152836; --sheet-line:#2b4558;
+  --accent:#f5b53a; --accent-ink:#2a1a00; --ok:#4cc27b; --ok-soft:#24543a; --ng:#f06a52; --ng-soft:#5b2a22;
+  --r1:#2c4a66; --r2:#5a3540; --r3:#355239; --r4:#5a4a26; --r5:#433a5e; --r6:#265250; --r7:#5a3f2d;
+  --shadow:0 -6px 24px rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1d2a; --sea:#12304a; --land:#2b3c49; --land-dim:#1b2b37; --line:#a9c0cf;
+  --ink:#e9f1f6; --muted:#9bb0be; --sheet:#152836; --sheet-line:#2b4558;
+  --accent:#f5b53a; --accent-ink:#2a1a00; --ok:#4cc27b; --ok-soft:#24543a; --ng:#f06a52; --ng-soft:#5b2a22;
+  --r1:#2c4a66; --r2:#5a3540; --r3:#355239; --r4:#5a4a26; --r5:#433a5e; --r6:#265250; --r7:#5a3f2d;
+  --shadow:0 -6px 24px rgba(0,0,0,.4); color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:500;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto;max-width:900px;margin:0 auto}
+
+/* 上：問題バー */
+.top{padding-block:10px 8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:10px;min-height:56px}
+.brand{font-family:var(--display);font-size:1.15rem;letter-spacing:.02em;flex:1;min-width:0;line-height:1.2}
+.brand small{display:block;font-family:var(--body);font-weight:700;font-size:.72rem;color:var(--muted);letter-spacing:.08em}
+.ask{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ask .meta{font-size:.75rem;color:var(--muted);font-weight:700;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.ask .q{font-family:var(--display);font-size:clamp(1.3rem,5.4vw,1.9rem);line-height:1.15;text-wrap:balance}
+.ask .q em{font-style:normal;color:var(--ink);background:linear-gradient(transparent 62%,var(--accent) 62%);padding:0 .1em}
+.ask .kana{font-size:.8rem;color:var(--muted);font-weight:700}
+.iconbtn{flex:none;min-width:44px;height:44px;padding:0 10px;white-space:nowrap;border-radius:12px;border:2px solid var(--sheet-line);background:var(--sheet);color:var(--ink);font:700 .8rem var(--body);display:grid;place-items:center;cursor:pointer}
+.iconbtn:focus-visible,.btn:focus-visible,.chip:focus-visible,.eye:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* 中：地図 */
+.mapwrap{position:relative;min-height:0;background:var(--sea);border-block:2px solid var(--sheet-line)}
+svg#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block;cursor:grab}
+svg#map:active{cursor:grabbing}
+.pref{fill:var(--land);stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;transition:fill .25s}
+.explore .pref[data-r="1"]{fill:var(--r1)} .explore .pref[data-r="2"]{fill:var(--r2)} .explore .pref[data-r="3"]{fill:var(--r3)}
+.explore .pref[data-r="4"]{fill:var(--r4)} .explore .pref[data-r="5"]{fill:var(--r5)} .explore .pref[data-r="6"]{fill:var(--r6)} .explore .pref[data-r="7"]{fill:var(--r7)}
+.pref.off{fill:var(--land-dim);stroke-opacity:.35}
+.pref.sel{fill:var(--accent)!important}
+.pref.ok{fill:var(--ok-soft)!important}
+.pref.miss{fill:var(--ng-soft)!important}
+.pref.flash-ok{fill:var(--ok)!important}
+.pref.flash-ng{fill:var(--ng)!important}
+.pref.blink{animation:blink .5s ease-in-out 5}
+@keyframes blink{0%,100%{fill:var(--land)}50%{fill:var(--ok)}}
+.inset{fill:none;stroke:var(--line);stroke-width:1.4;stroke-dasharray:7 5;vector-effect:non-scaling-stroke;opacity:.8}
+.inset-cap{font-family:var(--body);font-weight:700;fill:var(--muted);font-size:9px}
+.zoom{cursor:pointer}
+.zoom circle{fill:var(--sheet);stroke:var(--line);stroke-width:2;vector-effect:non-scaling-stroke}
+.zoom path{fill:none;stroke:var(--line);stroke-width:2.4;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.zoom:hover circle{fill:var(--accent)}
+.zooms-off #zooms,.region-quiz #zooms{display:none}
+.labels{pointer-events:none;opacity:0;transition:opacity .12s}
+.show-labels .labels{opacity:1}
+.labels text{font-family:var(--body);font-weight:900;fill:var(--ink);stroke:var(--land);stroke-width:3px;paint-order:stroke;vector-effect:non-scaling-stroke;text-anchor:middle;dominant-baseline:central}
+.labels text.off{display:none}
+.tag{pointer-events:none}
+.tag text{font-family:var(--body);font-weight:900;fill:#fff;text-anchor:middle;dominant-baseline:central}
+.tag rect{fill:var(--ng)}
+
+.eye{position:absolute;right:calc(12px + env(safe-area-inset-right,0px));bottom:30px;width:64px;height:64px;border-radius:50%;border:3px solid var(--line);background:var(--sheet);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 0 var(--line);touch-action:none}
+.eye svg{width:34px;height:34px}
+.eye.on{background:var(--accent);color:var(--accent-ink);transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+.eye .cap{position:absolute;bottom:-22px;font-size:.68rem;font-weight:900;color:var(--ink);white-space:nowrap;background:var(--sheet);padding:1px 6px;border-radius:8px}
+.zoomreset{position:absolute;left:calc(10px + env(safe-area-inset-left,0px));top:10px;box-shadow:0 2px 0 var(--sheet-line);height:44px;padding:0 14px;border-radius:22px;border:2px solid var(--sheet-line);background:var(--sheet);color:var(--ink);font:700 .85rem var(--body);cursor:pointer}
+.combo{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-family:var(--display);font-size:1.4rem;color:var(--accent-ink);background:var(--accent);padding:4px 16px;border-radius:999px;box-shadow:0 3px 0 var(--line);pointer-events:none}
+.combo.pop{animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:translateX(-50%) scale(.4)}to{transform:translateX(-50%) scale(1)}}
+
+/* 下：シート */
+.sheet{background:var(--sheet);box-shadow:var(--shadow);padding-block:14px calc(14px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px;max-height:40vh;overflow-y:auto}
+.sheet.home{max-height:33vh;gap:6px}
+.home .chips{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.home .chip{min-height:40px;font-size:.8rem;letter-spacing:-.04em;padding:2px 3px;border-radius:11px;overflow:hidden}
+.home .chip small{font-size:.64rem}
+.home .chip.wide{grid-column:span 2}
+.sheet h2{margin:0;font-size:.82rem;letter-spacing:.1em;color:var(--muted);font-weight:900}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:7px}
+.chip{min-height:46px;border-radius:14px;border:2px solid var(--line);background:var(--land);color:var(--ink);font:900 .92rem var(--body);white-space:nowrap;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-shadow:0 3px 0 var(--line);padding:4px 6px}
+.chip:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
+.chip small{font-size:.7rem;color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+.chip.wide{grid-column:1/-1;background:var(--accent);color:var(--accent-ink)}
+.chip.wide small{color:var(--accent-ink);opacity:.8}
+.info{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-height:2.2em}
+.info .nm{font-family:var(--display);font-size:1.5rem}
+.info .sub{color:var(--muted);font-weight:700;font-size:.9rem}
+.hint{color:var(--muted);font-size:.85rem;font-weight:700;margin:0}
+.fb{display:flex;align-items:center;gap:12px;min-height:58px}
+.fb .mark{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:1.7rem;color:#fff}
+.fb.ok .mark{background:var(--ok)} .fb.ng .mark{background:var(--ng)}
+.fb .txt{flex:1;min-width:0;line-height:1.45}
+.fb .txt b{font-family:var(--display);font-weight:400;font-size:1.2rem}
+.fb .txt span{display:block;color:var(--muted);font-size:.86rem;font-weight:700}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.btn{flex:1 1 140px;min-height:50px;border-radius:14px;border:2px solid var(--line);background:var(--sheet);color:var(--ink);font:900 1rem var(--body);cursor:pointer;box-shadow:0 3px 0 var(--line)}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
+.progress{display:flex;gap:4px;flex-wrap:wrap}
+.progress i{width:14px;height:8px;border-radius:4px;background:var(--sheet-line)}
+.progress i.ok{background:var(--ok)} .progress i.ng{background:var(--ng)} .progress i.now{background:var(--accent)} .progress i.hintd{background:var(--ok);opacity:.45}
+.score{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.score .big{font-family:var(--display);font-size:2.6rem;line-height:1;font-variant-numeric:tabular-nums}
+.score .msg{font-weight:900;font-size:1.05rem}
+.misslist{display:flex;gap:6px;flex-wrap:wrap}
+.misslist span{background:var(--ng-soft);border-radius:8px;padding:3px 8px;font-weight:900;font-size:.9rem}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="app" id="app">
+  <header class="top" id="top"></header>
+  <div class="mapwrap" id="mapwrap">
+    <svg id="map" class="explore" viewBox="0 0 880 980" preserveAspectRatio="xMidYMid meet" aria-label="日本地図">
+      <g id="prefs"></g>
+      <g id="insetg"><polyline class="inset" points="-100000,712 -11,712 -11,800 52,884 52,100000"></polyline></g>
+      <g class="labels" id="labels"></g>
+      <g id="zooms"></g>
+      <g class="tag" id="tag"></g>
+    </svg>
+    <div class="combo" id="combo" hidden></div>
+    <button class="zoomreset" id="zoomreset" type="button">ぜんこく</button>
+    <button class="eye" id="eye" type="button" aria-label="押している間だけ県名を表示">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
+      <span class="cap">おしてる間だけ</span>
+    </button>
+  </div>
+  <section class="sheet" id="sheet" aria-live="polite"></section>
+</div>
+
+<script>
+/* 地図データ：Natural Earth (public domain) 1:10m admin-1 を簡略化して埋め込み。
+   小笠原・奄美・先島・大東の島は省略。沖縄県は左上の枠内に移動して表示。 */
+const PATHS = __PATHS__;
+
+/* ---------- 都道府県データ（項目は後から追加できる：facts に特産品など） ---------- */
+const REGION_NAMES = ["", "北海道地方","東北地方","関東地方","中部地方","近畿地方","中国地方","四国地方","九州地方"];
+const RAW = [
+ [1,"北海道","ほっかいどう","札幌市",1],[2,"青森県","あおもりけん","青森市",2],[3,"岩手県","いわてけん","盛岡市",2],
+ [4,"宮城県","みやぎけん","仙台市",2],[5,"秋田県","あきたけん","秋田市",2],[6,"山形県","やまがたけん","山形市",2],
+ [7,"福島県","ふくしまけん","福島市",2],[8,"茨城県","いばらきけん","水戸市",3],[9,"栃木県","とちぎけん","宇都宮市",3],
+ [10,"群馬県","ぐんまけん","前橋市",3],[11,"埼玉県","さいたまけん","さいたま市",3],[12,"千葉県","ちばけん","千葉市",3],
+ [13,"東京都","とうきょうと","東京（都庁は新宿区）",3],[14,"神奈川県","かながわけん","横浜市",3],[15,"新潟県","にいがたけん","新潟市",4],
+ [16,"富山県","とやまけん","富山市",4],[17,"石川県","いしかわけん","金沢市",4],[18,"福井県","ふくいけん","福井市",4],
+ [19,"山梨県","やまなしけん","甲府市",4],[20,"長野県","ながのけん","長野市",4],[21,"岐阜県","ぎふけん","岐阜市",4],
+ [22,"静岡県","しずおかけん","静岡市",4],[23,"愛知県","あいちけん","名古屋市",4],[24,"三重県","みえけん","津市",5],
+ [25,"滋賀県","しがけん","大津市",5],[26,"京都府","きょうとふ","京都市",5],[27,"大阪府","おおさかふ","大阪市",5],
+ [28,"兵庫県","ひょうごけん","神戸市",5],[29,"奈良県","ならけん","奈良市",5],[30,"和歌山県","わかやまけん","和歌山市",5],
+ [31,"鳥取県","とっとりけん","鳥取市",6],[32,"島根県","しまねけん","松江市",6],[33,"岡山県","おかやまけん","岡山市",6],
+ [34,"広島県","ひろしまけん","広島市",6],[35,"山口県","やまぐちけん","山口市",6],[36,"徳島県","とくしまけん","徳島市",7],
+ [37,"香川県","かがわけん","高松市",7],[38,"愛媛県","えひめけん","松山市",7],[39,"高知県","こうちけん","高知市",7],
+ [40,"福岡県","ふくおかけん","福岡市",8],[41,"佐賀県","さがけん","佐賀市",8],[42,"長崎県","ながさきけん","長崎市",8],
+ [43,"熊本県","くまもとけん","熊本市",8],[44,"大分県","おおいたけん","大分市",8],[45,"宮崎県","みやざきけん","宮崎市",8],
+ [46,"鹿児島県","かごしまけん","鹿児島市",8],[47,"沖縄県","おきなわけん","那覇市",8]
+];
+const PREFS = RAW.map(([code,name,kana,capital,r]) => ({
+  code, name, kana, capital, region: REGION_NAMES[r],
+  short: name === "北海道" ? "北海道" : name.replace(/[都府県]$/, ""),
+  facts: {}   // 例：facts.apple = 1（りんご生産1位）などを後で追加
+}));
+const byCode = c => PREFS[c - 1];
+const range = (a,b) => Array.from({length:b-a+1}, (_,i)=>a+i);
+
+/* クイズの出題範囲（地方） */
+const AREAS = [
+  {id:"tohoku", name:"北海道・東北", codes:range(1,7), tint:1},
+  {id:"kanto", name:"関東", codes:range(8,14), tint:2},
+  {id:"chubu", name:"中部", codes:range(15,23), tint:3},
+  {id:"kinki", name:"近畿", codes:range(24,30), tint:4},
+  {id:"chugoku", name:"中国", codes:range(31,35), tint:5},
+  {id:"shikoku", name:"四国", codes:range(36,39), tint:6},
+  {id:"kyushu", name:"九州・沖縄", codes:range(40,47), tint:7},
+  {id:"zenkoku", name:"全国（応用編）", codes:range(1,47), wide:true}
+];
+const tintOf = c => AREAS.find(a => !a.wide && a.codes.includes(c)).tint;
+
+/* ---------- 問題の種類（ここに追加していけば分野別に発展できる） ----------
+   make(codes) は {text, sub, answers:[正解の県コード…], explain} の配列を返す。
+   例：りんご生産なら {text:"りんごの生産量 1位は？", answers:[2], explain:"青森県が全国の約6割"} */
+const QUIZ_TYPES = {
+  prefName: {
+    title: "県名あて",
+    make: codes => codes.map(c => {
+      const p = byCode(c);
+      return { text: `<em>${p.name}</em>はどこ？`, sub: p.kana, answers: [c],
+               explain: `県庁所在地は ${p.capital}` };
+    })
+  }
+};
+
+/* ---------- 保存（この端末だけ。使えなくても動く） ---------- */
+const STORE_KEY = "jmq-v1";
+let store = { best:{}, miss:{} , mute:false };
+try { const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); if (s) store = Object.assign(store, s); } catch(e){}
+const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch(e){} };
+
+/* ---------- 効果音（タップ後に鳴る） ---------- */
+let ac = null;
+function tone(freqs, dur=0.09, type="triangle"){
+  if (store.mute) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    freqs.forEach((f,i) => {
+      const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + i*dur;
+      o.type = type; o.frequency.value = f; o.connect(g); g.connect(ac.destination);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t+0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+dur*1.6); o.start(t); o.stop(t+dur*1.7);
+    });
+  } catch(e){}
+}
+const sndOk = () => tone([784,1047,1319]);
+const sndNg = () => tone([330,247], 0.14, "square");
+
+/* ---------- 地図の描画 ---------- */
+const NS = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("map");
+const gPrefs = document.getElementById("prefs"), gLabels = document.getElementById("labels"), gTag = document.getElementById("tag");
+const pathEl = {}, labelEl = {}, boxOf = {};
+PATHS.forEach(o => {
+  const p = document.createElementNS(NS, "path");
+  p.setAttribute("d", o.d); p.setAttribute("class", "pref");
+  p.dataset.code = o.c; p.dataset.r = tintOf(o.c);
+  gPrefs.appendChild(p); pathEl[o.c] = p; boxOf[o.c] = o.b;
+  const t = document.createElementNS(NS, "text");
+  t.setAttribute("x", o.l[0]); t.setAttribute("y", o.l[1]); t.textContent = byCode(o.c).short;
+  gLabels.appendChild(t); labelEl[o.c] = t;
+});
+
+/* ---------- 沖縄：全国表示では左下の枠に、九州へ寄ると本当の位置に ---------- */
+const OKI = PATHS[46], insetG = document.getElementById("insetg");
+const okiCopy = document.createElementNS(NS, "path");
+okiCopy.setAttribute("d", OKI.di); okiCopy.setAttribute("class", "pref"); okiCopy.dataset.code = 47; okiCopy.dataset.r = tintOf(47);
+insetG.appendChild(okiCopy);
+const okiLabelCopy = document.createElementNS(NS, "text");
+okiLabelCopy.setAttribute("x", OKI.li[0]); okiLabelCopy.setAttribute("y", OKI.li[1]); okiLabelCopy.textContent = "沖縄";
+gLabels.appendChild(okiLabelCopy);
+// 本物の沖縄の色・状態を枠内のコピーにも反映
+new MutationObserver(() => { okiCopy.setAttribute("class", pathEl[47].getAttribute("class")); okiCopy.style.fill = pathEl[47].style.fill; okiLabelCopy.setAttribute("class", labelEl[47].getAttribute("class") || ""); })
+  .observe(pathEl[47], {attributes:true, attributeFilter:["class","style"]});
+new MutationObserver(() => okiLabelCopy.setAttribute("class", labelEl[47].getAttribute("class") || "")).observe(labelEl[47], {attributes:true, attributeFilter:["class"]});
+const OKI_TOP = OKI.b[1];
+let insetShown = true;
+
+/* 地方の虫眼鏡（緯度・経度で置く。タップでその地方へズーム） */
+const toXY = (lat, lon) => [(lon - 128) * Math.cos(36 * Math.PI / 180) * 60, (45.8 - lat) * 60];
+const ZOOM_SPOTS = { tohoku:[39.75,140.78], kanto:[36.15,139.75], chubu:[36.1,137.6], kinki:[34.85,135.75], chugoku:[34.95,132.55], shikoku:[33.8,133.55], kyushu:[32.75,131.15] };
+const gZooms = document.getElementById("zooms"), zoomEls = [];
+Object.entries(ZOOM_SPOTS).forEach(([id, ll]) => {
+  const [x, y] = toXY(...ll), g = document.createElementNS(NS, "g");
+  g.setAttribute("class", "zoom"); g.dataset.zoom = id; g.dataset.x = x; g.dataset.y = y;
+  g.innerHTML = `<title>${AREAS.find(a => a.id === id).name}にズーム</title><circle r="16"/><circle r="6" cx="-2" cy="-2" style="fill:none"/><path d="M2.5 2.5L7.5 7.5"/>`;
+  gZooms.appendChild(g); zoomEls.push(g);
+});
+
+/* ---------- 表示範囲（ズーム・移動） ---------- */
+const FULL = [-108, 12, 870, 1010];
+let view = {x:0, y:0, w:880, h:980};
+function box() { const r = svg.getBoundingClientRect(); return {w: Math.max(r.width,1), h: Math.max(r.height,1), l:r.left, t:r.top}; }
+function apply() {
+  svg.setAttribute("viewBox", `${view.x} ${view.y} ${view.w} ${view.h}`);
+  const fs = Math.max(6, Math.min(22, view.w / 26));
+  gLabels.setAttribute("font-size", fs.toFixed(1));
+  gTag.setAttribute("data-fs", fs);
+  // 本物の沖縄が見えていない間だけ、枠内の沖縄を出す
+  // 全国くらい引いている時、または本物の沖縄が画面外の時は枠内の沖縄を使う
+  insetShown = view.w > 700 || view.y + view.h < OKI_TOP - 4;
+  insetG.style.display = insetShown ? "" : "none";
+  okiLabelCopy.style.display = insetShown ? "" : "none";
+  pathEl[47].style.visibility = labelEl[47].style.visibility = insetShown ? "hidden" : "";
+  // 虫眼鏡は画面上で同じ大きさ。広く見ている時だけ出す
+  const s = view.w / box().w;
+  svg.classList.toggle("zooms-off", view.w < 330);
+  zoomEls.forEach(g => g.setAttribute("transform", `translate(${g.dataset.x} ${g.dataset.y}) scale(${s})`));
+}
+function setView(x, y, w) {
+  const b = box(); w = Math.max(70, Math.min(1400, w));
+  view = {x, y, w, h: w * b.h / b.w}; apply();
+}
+function fitBox(bb, animate=true) {
+  // 右下の目ボタンにかからないよう、下を少しあけて合わせる
+  const b = box(), R = Math.min(40, b.h * 0.1), ar = b.w / (b.h - R), pad = 0.06;
+  let w = bb[2]-bb[0], h = bb[3]-bb[1];
+  w *= 1+pad*2; h *= 1+pad*2;
+  if (w / h < ar) w = h * ar;
+  const cx = (bb[0]+bb[2])/2, cy = (bb[1]+bb[3])/2, Hfree = w / ar;
+  const target = {x: cx - w/2, y: cy - Hfree/2, w};
+  if (!animate || matchMedia("(prefers-reduced-motion: reduce)").matches) return setView(target.x, target.y, target.w);
+  const from = {...view}, t0 = performance.now(), D = 420;
+  (function step(now){
+    const k = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1-k, 3);
+    setView(from.x + (target.x-from.x)*e, from.y + (target.y-from.y)*e, from.w + (target.w-from.w)*e);
+    if (k < 1) requestAnimationFrame(step);
+  })(t0);
+}
+const unionBox = codes => codes.reduce((a,c) => { const b = boxOf[c]; return [Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[2],b[2]),Math.max(a[3],b[3])]; }, [1e9,1e9,-1e9,-1e9]);
+let homeBox = FULL;
+document.getElementById("zoomreset").onclick = () => fitBox(FULL);
+function zoomArea(id){ fitBox(unionBox(AREAS.find(a => a.id === id).codes)); }
+
+/* ---------- タップ・ドラッグ・ピンチ ---------- */
+const ptrs = new Map(); let gesture = null;
+function svgPt(px, py) { const b = box(); return {x: view.x + (px-b.l)/b.w*view.w, y: view.y + (py-b.t)/b.h*view.h}; }
+svg.addEventListener("pointerdown", e => {
+  svg.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if (ptrs.size === 1) {
+    const z = e.target.closest ? e.target.closest("[data-zoom]") : null;
+    const el = !z && e.target.closest ? e.target.closest("[data-code]") : null;
+    gesture = {type:"tap", sx:e.clientX, sy:e.clientY, v:{...view}, code: el ? +el.dataset.code : null, zoom: z ? z.dataset.zoom : null};
+  } else if (ptrs.size === 2) {
+    const [a, b] = [...ptrs.values()];
+    const mid = {x:(a.x+b.x)/2, y:(a.y+b.y)/2};
+    gesture = {type:"pinch", d0: Math.hypot(a.x-b.x, a.y-b.y), v:{...view}, m: svgPt(mid.x, mid.y)};
+  }
+});
+svg.addEventListener("pointermove", e => {
+  if (!ptrs.has(e.pointerId) || !gesture) return;
+  ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  const b = box();
+  if (gesture.type === "pinch" && ptrs.size >= 2) {
+    const [p, q] = [...ptrs.values()];
+    const d = Math.max(10, Math.hypot(p.x-q.x, p.y-q.y));
+    const w = Math.max(70, Math.min(1400, gesture.v.w * gesture.d0 / d));
+    const mx = ((p.x+q.x)/2 - b.l) / b.w, my = ((p.y+q.y)/2 - b.t) / b.h;
+    setView(gesture.m.x - mx*w, gesture.m.y - my*(w*b.h/b.w), w);
+  } else if (gesture.type !== "pinch") {
+    const dx = e.clientX - gesture.sx, dy = e.clientY - gesture.sy;
+    if (gesture.type === "tap" && Math.hypot(dx, dy) > 10) gesture.type = "pan";
+    if (gesture.type === "pan") setView(gesture.v.x - dx/b.w*gesture.v.w, gesture.v.y - dy/b.h*gesture.v.h, gesture.v.w);
+  }
+});
+function endPtr(e) {
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.delete(e.pointerId);
+  if (gesture && gesture.type === "tap" && e.type === "pointerup") {
+    if (gesture.zoom) zoomArea(gesture.zoom);
+    else if (gesture.code) handleTap(gesture.code);
+  }
+  if (ptrs.size === 0) gesture = null;
+  else if (gesture && gesture.type === "pinch") gesture = {type:"pan-locked"};
+}
+svg.addEventListener("pointerup", endPtr); svg.addEventListener("pointercancel", endPtr);
+svg.addEventListener("wheel", e => {
+  e.preventDefault();
+  const m = svgPt(e.clientX, e.clientY), k = Math.exp(e.deltaY * 0.0015), b = box();
+  const w = Math.max(70, Math.min(1400, view.w * k));
+  setView(m.x - (m.x - view.x) * w / view.w, m.y - (m.y - view.y) * w / view.w, w);
+}, {passive:false});
+// 地図の枠の大きさが変わったら（シートの高さが変わる等）、中心と縮尺を保って合わせる
+new ResizeObserver(() => { const cx = view.x + view.w/2, cy = view.y + view.h/2, b = box(); setView(cx - view.w/2, cy - (view.w*b.h/b.w)/2, view.w); }).observe(svg);
+// 画面を描き終えてから表示範囲を合わせる
+const fitLater = bb => requestAnimationFrame(() => requestAnimationFrame(() => fitBox(bb)));
+
+/* ---------- 目ボタン：押している間だけ県名 ---------- */
+const eye = document.getElementById("eye");
+function eyeOn(e){ e && e.preventDefault(); eye.classList.add("on"); svg.classList.add("show-labels"); if (quiz && quiz.q && !quiz.answered) quiz.q.hint = true; }
+function eyeOff(){ eye.classList.remove("on"); svg.classList.remove("show-labels"); }
+eye.addEventListener("pointerdown", e => { eye.setPointerCapture(e.pointerId); eyeOn(e); });
+["pointerup","pointercancel","lostpointercapture"].forEach(t => eye.addEventListener(t, eyeOff));
+eye.addEventListener("contextmenu", e => e.preventDefault());
+eye.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") eyeOn(e); });
+eye.addEventListener("keyup", eyeOff);
+
+/* ---------- 外から呼べる地図API（今後のクイズ用） ---------- */
+let tapHandlers = [];
+const JapanMap = {
+  onPrefectureTap(cb){ tapHandlers.push(cb); },
+  setPrefectureColor(code, color){ pathEl[code].style.fill = color; },
+  resetColors(){ Object.values(pathEl).forEach(p => { p.style.fill = ""; p.classList.remove("sel","ok","miss","flash-ok","flash-ng","blink","off"); }); },
+  highlightPrefecture(code){ const p = pathEl[code]; p.classList.remove("blink"); void p.getBBox(); p.classList.add("blink"); },
+  zoomToPrefecture(code){ fitBox(boxOf[code]); },
+  getPrefecture(code){ return byCode(code); },
+  prefectures: PREFS
+};
+window.JapanMap = JapanMap; window.QUIZ_TYPES = QUIZ_TYPES;
+
+function showTag(code, text) {
+  gTag.innerHTML = "";
+  const t = (code === 47 && insetShown) ? okiLabelCopy : labelEl[code], fs = +gTag.getAttribute("data-fs") * 1.1;
+  const x = +t.getAttribute("x"), y = +t.getAttribute("y");
+  const w = text.length * fs * 1.05 + fs, h = fs * 1.7;
+  const r = document.createElementNS(NS, "rect");
+  r.setAttribute("x", x - w/2); r.setAttribute("y", y - h/2); r.setAttribute("width", w); r.setAttribute("height", h); r.setAttribute("rx", h/2);
+  const tx = document.createElementNS(NS, "text");
+  tx.setAttribute("x", x); tx.setAttribute("y", y); tx.setAttribute("font-size", fs); tx.textContent = text;
+  gTag.append(r, tx);
+}
+const clearTag = () => gTag.innerHTML = "";
+
+/* ---------- 画面 ---------- */
+const top_ = document.getElementById("top"), sheet = document.getElementById("sheet"), combo = document.getElementById("combo");
+let mode = "home", quiz = null, selected = null;
+
+function muteBtn(){ return `<button class="iconbtn" id="mute" type="button" aria-label="音のオンオフ">${store.mute ? "音OFF" : "音ON"}</button>`; }
+function bindMute(){ const m = document.getElementById("mute"); if (m) m.onclick = () => { store.mute = !store.mute; save(); m.textContent = store.mute ? "音OFF" : "音ON"; }; }
+
+function home() {
+  mode = "home"; quiz = null; selected = null; clearTag(); combo.hidden = true;
+  JapanMap.resetColors(); svg.classList.add("explore");
+  Object.values(labelEl).forEach(t => t.classList.remove("off"));
+  homeBox = FULL; fitLater(FULL); svg.classList.remove("region-quiz");
+  top_.innerHTML = `<div class="brand">日本地図タップクイズ<small>中学受験 社会・地理</small></div>${muteBtn()}`;
+  bindMute();
+  sheet.classList.add("home");
+  sheet.innerHTML = `
+    <div class="info" id="info"><span class="hint">県をさわると名前が出るよ。虫めがねでその地方へズーム。</span></div>
+    <h2>地方をえらんでスタート</h2>
+    <div class="chips">${AREAS.map(a => {
+      const b = store.best[a.id];
+      return `<button class="chip${a.wide ? " wide" : ""}" type="button" data-area="${a.id}">${a.name}<small>${b != null ? `ベスト ${b}/${a.codes.length}` : `${a.codes.length}問`}</small></button>`;
+    }).join("")}</div>`;
+  sheet.querySelectorAll("[data-area]").forEach(btn => btn.onclick = () => {
+    const a = AREAS.find(x => x.id === btn.dataset.area); startQuiz(a, a.codes);
+  });
+}
+
+function showInfo(code) {
+  const p = byCode(code);
+  if (selected) pathEl[selected].classList.remove("sel");
+  selected = code; pathEl[code].classList.add("sel");
+  const info = document.getElementById("info");
+  if (info) info.innerHTML = `<span class="nm">${p.name}</span><span class="sub">${p.kana}・${p.region}・県庁所在地 ${p.capital}</span>`;
+}
+
+function shuffle(a){ a = a.slice(); for (let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; }
+
+function startQuiz(area, codes, typeId="prefName") {
+  sheet.classList.remove("home");
+  mode = "quiz"; selected = null; clearTag(); JapanMap.resetColors(); svg.classList.remove("explore");
+  const inArea = new Set(area.codes);
+  PREFS.forEach(p => { pathEl[p.code].classList.toggle("off", !inArea.has(p.code)); labelEl[p.code].classList.toggle("off", !inArea.has(p.code)); });
+  homeBox = area.wide ? FULL : unionBox(area.codes); fitLater(homeBox);
+  svg.classList.toggle("region-quiz", !area.wide);
+  quiz = { area, type: typeId, qs: shuffle(QUIZ_TYPES[typeId].make(codes)), i: 0, combo: 0, maxCombo: 0, log: [], inArea };
+  nextQ();
+}
+
+function progressBar(){
+  return `<div class="progress">${quiz.qs.map((q,i) => {
+    const l = quiz.log[i]; return `<i class="${l ? (l.ok ? (l.hint ? "hintd" : "ok") : "ng") : (i === quiz.i ? "now" : "")}"></i>`;
+  }).join("")}</div>`;
+}
+
+function nextQ() {
+  clearTag();
+  if (quiz.i >= quiz.qs.length) return result();
+  const q = quiz.q = quiz.qs[quiz.i]; q.hint = false; quiz.answered = false;
+  top_.innerHTML = `<div class="ask"><span class="meta">${quiz.area.name}　${quiz.i+1} / ${quiz.qs.length}</span><span class="q">${q.text}</span><span class="kana">${q.sub || ""}</span></div><button class="iconbtn" id="quit" type="button">やめる</button>`;
+  document.getElementById("quit").onclick = home;
+  sheet.innerHTML = `${progressBar()}<p class="hint">地図の県をタップしてね。わからない時は目のボタン（押している間だけ県名）。</p>`;
+}
+
+function handleTap(code) {
+  tapHandlers.forEach(cb => { try { cb(code); } catch(e){} });
+  if (mode === "home") return showInfo(code);
+  if (mode !== "quiz" || quiz.answered || !quiz.inArea.has(code)) return;
+  const q = quiz.q, ok = q.answers.includes(code);
+  quiz.answered = true; eyeOff();
+  const p = byCode(code), ans = byCode(q.answers[0]);
+  quiz.log[quiz.i] = {ok, hint:q.hint, code:q.answers[0]};
+  if (ok) {
+    sndOk();
+    pathEl[code].classList.add("flash-ok");
+    setTimeout(() => { pathEl[code].classList.remove("flash-ok"); pathEl[code].classList.add("ok"); }, 450);
+    if (q.hint) quiz.combo = 0; else { quiz.combo++; quiz.maxCombo = Math.max(quiz.maxCombo, quiz.combo); }
+    if (quiz.combo >= 2) { combo.textContent = `${quiz.combo}れんぞく！`; combo.hidden = false; combo.classList.remove("pop"); void combo.offsetWidth; combo.classList.add("pop"); }
+    else combo.hidden = true;
+    sheet.innerHTML = `${progressBar()}<div class="fb ok"><div class="mark">◯</div><div class="txt"><b>せいかい！ ${ans.name}</b><span>${q.hint ? "（ヒントを見て正解）" : ""}${q.explain}</span></div></div>`;
+    setTimeout(() => { quiz.i++; nextQ(); }, 1300);
+  } else {
+    sndNg(); quiz.combo = 0; combo.hidden = true;
+    store.miss[ans.code] = (store.miss[ans.code] || 0) + 1; save();
+    pathEl[code].classList.add("flash-ng"); showTag(code, p.short);
+    setTimeout(() => pathEl[code].classList.remove("flash-ng"), 900);
+    pathEl[ans.code].classList.add("miss");
+    JapanMap.highlightPrefecture(ans.code);
+    sheet.innerHTML = `${progressBar()}<div class="fb ng"><div class="mark">✕</div><div class="txt"><b>そこは ${p.name}</b><span>${ans.name}は、光っているところ。${q.explain}</span></div></div><div class="row"><button class="btn primary" id="next" type="button">つぎへ</button></div>`;
+    document.getElementById("next").onclick = () => { pathEl[ans.code].classList.remove("blink"); quiz.i++; nextQ(); };
+  }
+}
+
+function result() {
+  mode = "result"; combo.hidden = true; clearTag();
+  const total = quiz.qs.length, correct = quiz.log.filter(l => l.ok).length, clean = quiz.log.filter(l => l.ok && !l.hint).length;
+  const missed = quiz.log.filter(l => !l.ok).map(l => l.code);
+  if (quiz.qs.length === quiz.area.codes.length) { store.best[quiz.area.id] = Math.max(store.best[quiz.area.id] || 0, clean); save(); }
+  const msg = clean === total ? "パーフェクト！ 地図マスター！" : correct === total ? "全問正解！ 次はヒントなしで！" : missed.length <= 2 ? "あと少し！ まちがえた県をもう一回" : "まちがえた県だけ、くりかえそう";
+  top_.innerHTML = `<div class="ask"><span class="meta">${quiz.area.name}　けっか</span><span class="q">${msg}</span></div>${muteBtn()}`;
+  bindMute();
+  sheet.innerHTML = `
+    <div class="score"><span class="big">${correct}<small style="font-size:1.2rem"> / ${total}</small></span><span class="msg">ヒントなし正解 ${clean}問・最高 ${quiz.maxCombo}れんぞく</span></div>
+    ${missed.length ? `<h2>まちがえた県</h2><div class="misslist">${missed.map(c => `<span>${byCode(c).name}</span>`).join("")}</div>` : ""}
+    <div class="row">
+      ${missed.length ? `<button class="btn primary" id="retryMiss" type="button">まちがえた県だけ もう一回</button>` : ""}
+      <button class="btn${missed.length ? "" : " primary"}" id="retry" type="button">もう一回</button>
+      <button class="btn" id="back" type="button">地方をえらぶ</button>
+    </div>`;
+  const area = quiz.area;
+  if (missed.length) document.getElementById("retryMiss").onclick = () => startQuiz(area, missed);
+  document.getElementById("retry").onclick = () => startQuiz(area, area.codes);
+  document.getElementById("back").onclick = home;
+}
+
+window.addEventListener("load", home);
+if (document.readyState === "complete") home();
+</script>
