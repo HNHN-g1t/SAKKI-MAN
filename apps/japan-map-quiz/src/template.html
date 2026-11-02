@@ -339,8 +339,9 @@ const QUIZ_TYPES = {
   industry: {
     title: "農林水産業・工業", kind: "tap",
     // area.cat（farm／fruit／sea／maker／craft）の問題。地図で答えの都道府県をタップ
-    make: (codes, area) => INDUSTRY.filter(f => (!area || !area.cat || f.cat === area.cat) && codes.includes(f.pref)).map(f => (
-      { key: f.id, prefs: [f.pref], text: INDUSTRY_CATS[f.cat].ask(f.word), sub: f.kana, answers: [f.pref], explain: f.note }))
+    // 出題停止（status:"stop"）の問題は出さない。出題数・完了・👑の判定もこの数で行う
+    make: (codes, area) => industryLive().filter(f => (!area || !area.cat || f.cat === area.cat) && codes.includes(f.pref)).map(f => (
+      { key: f.id, prefs: [f.pref], text: f.q || INDUSTRY_CATS[f.cat].ask(f.word), sub: f.kana, answers: [f.pref], explain: f.note }))
   },
   designated: {
     title: "政令指定都市", kind: "tap",
@@ -351,67 +352,152 @@ const QUIZ_TYPES = {
 };
 
 /* ---------- 農林水産業・工業（産業）。地図の都道府県をタップして答える ----------
-   [id, ステージ, 問題のことば, よみ, 答えの県コード, 解説]。答えが1つに決まり、順位が毎年ほぼ入れかわらないものだけ入れる
-   （僅差で入れかわる茶・キャベツ・日本なし・さつまいも・ほたて・真珠などは入れない） */
+   1問 = 1オブジェクト。毎年の統計更新では year・note・source・url・checked を書きかえ、status で出す／止めるを決める
+     id      問題ID（保存データの got/clean/miss のキー。変えない）
+     cat     ステージ（INDUSTRY_CATS のキー）
+     word    問題のことば（farm/fruit/craft はステージの決まった問い方に入る。sea/maker は問題文そのもの）
+     q       問い方を個別に変えるときの問題文（統計年を入れる・指標をかえるなど。なければ word から作る）
+     kana    よみ（問題文の下に出る）
+     pref    答えの都道府県コード（1〜47。答えは1つだけ）
+     note    正解後の解説（確認できた事実だけ書く）
+     basis   正解の根拠になる指標
+     year    統計の対象年（公表日ではない）
+     source  出典の正式名称 ／ url 出典URL ／ checked 最終確認日
+     status  "ok"＝確認済み（出題する） "check"＝要確認（出題する。答えは確認済みだが、解説・年次などに確認が残る） "stop"＝出題停止（出題しない）
+   答えが1県に決まるものだけ入れる。僅差で入れかわる品目（茶・キャベツ・日本なし・さつまいも・ほたて・真珠など）は入れない */
 const INDUSTRY_CATS = {
-  farm:  {name:"農業（米・野菜・花）", ask: w => `<em>${w}</em>の生産量が全国一の都道府県は？`},
-  fruit: {name:"くだもの", ask: w => `<em>${w}</em>の生産量が全国一の都道府県は？`},
+  farm:  {name:"農業（米・野菜・花）", ask: w => `<em>${w}</em>の収穫量が全国一の都道府県は？`},
+  fruit: {name:"くだもの", ask: w => `<em>${w}</em>の収穫量が全国一の都道府県は？`},
   sea:   {name:"畜産・林業・水産業", ask: w => w},
   maker: {name:"工業地帯・地場産業", ask: w => w},
   craft: {name:"伝統工芸品", ask: w => `<em>${w}</em>がつくられている都道府県は？`},
 };
+const IND_CHECKED = "2026-11-02";
+const SRC = {
+  gaiyou: n => ({source: "農林水産省「都道府県の農林水産業の概要（令和7年版）」", url: `https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-${String(n).padStart(2, "0")}.pdf`}),
+  meti: {source: "経済産業省「伝統的工芸品指定品目一覧［都道府県別］」（令和7年10月27日現在）", url: "https://www.meti.go.jp/press/2025/10/20251027001/20251027001-b.pdf"},
+};
 const INDUSTRY = [
-  ["rice","farm","米","こめ",15,"新潟県。信濃川・阿賀野川の流れる越後平野が大きな米どころ"],
-  ["potato","farm","じゃがいも","",1,"北海道。すずしい気候と広い畑を生かす（十勝平野など）"],
-  ["onion","farm","たまねぎ","",1,"北海道。2位は佐賀県"],
-  ["lettuce","farm","レタス","",20,"長野県。夏もすずしい高原で育てる高原野菜（抑制栽培）"],
-  ["pepper","farm","ピーマン","",8,"茨城県。大都市の近くで野菜をつくる近郊農業。2位は宮崎県（促成栽培）"],
-  ["strawberry","farm","いちご","",9,"栃木県。「とちおとめ」などの品種で知られる"],
-  ["peanut","farm","落花生","らっかせい",12,"千葉県。全国の8割ほどをつくる"],
-  ["konjac","farm","こんにゃくいも","",10,"群馬県。全国の9割以上をつくる"],
-  ["sugarcane","farm","さとうきび","",47,"沖縄県。暑い気候と台風に強い作物。鹿児島県の南の島々でもつくる"],
-  ["chrysanthemum","farm","菊","きく",23,"愛知県。渥美半島で、夜に電灯をあてて開花をおくらせる電照菊"],
-  ["apple","fruit","りんご","",2,"青森県。すずしい気候に合う。2位は長野県"],
-  ["mikan","fruit","みかん","",30,"和歌山県。あたたかい地方の山の斜面でつくる。愛媛県・静岡県も多い"],
-  ["grape","fruit","ぶどう","",19,"山梨県。水はけのよい甲府盆地の扇状地でつくる"],
-  ["peach","fruit","もも","",19,"山梨県。2位は福島県"],
-  ["cherry","fruit","さくらんぼ","",6,"山形県。全国の7割ほどをつくる"],
-  ["pear","fruit","西洋なし","せいようなし",6,"山形県。「ラ・フランス」で知られる"],
-  ["ume","fruit","うめ","",30,"和歌山県。「南高梅」で知られる"],
-  ["melon","fruit","メロン","",8,"茨城県。2位は熊本県、3位は北海道"],
-  ["pineapple","fruit","パイナップル","",47,"沖縄県。国内でつくっているのはほぼ沖縄県だけ"],
-  ["dairy","sea","<em>乳牛</em>（乳用牛）の飼育頭数が全国一の都道府県は？","にゅうぎゅう",1,"北海道。根釧台地などで酪農がさかん"],
-  ["pig","sea","<em>豚</em>の飼育頭数が全国一の都道府県は？","ぶた",46,"鹿児島県。2位は宮崎県。シラス台地で畜産がさかん"],
-  ["kiso","sea","<em>木曽ひのき</em>（天然の三大美林）がある都道府県は？","きそひのき",20,"長野県。ほかの天然の三大美林は秋田すぎ（秋田県）・青森ひば（青森県）"],
-  ["akita","sea","<em>秋田すぎ</em>（天然の三大美林）がある都道府県は？","あきたすぎ",5,"秋田県。米代川の流域に広がる"],
-  ["yoshino","sea","<em>吉野すぎ</em>（人工の三大美林）がある都道府県は？","よしのすぎ",29,"奈良県。ほかの人工の三大美林は天竜すぎ（静岡県）・尾鷲ひのき（三重県）"],
-  ["choshi","sea","水あげ量が日本一の漁港、<em>銚子港</em>がある都道府県は？","ちょうしこう",12,"千葉県。沖で暖流の黒潮と寒流の親潮がぶつかり、よい漁場になる"],
-  ["yaizu","sea","まぐろ・かつおの水あげで有名な<em>焼津港</em>がある都道府県は？","やいづこう",22,"静岡県。遠洋漁業の基地"],
-  ["hachinohe","sea","<em>八戸港</em>（いか・さばの水あげが多い）がある都道府県は？","はちのへこう",2,"青森県。太平洋側の漁港"],
-  ["sakaiminato","sea","日本海側の大きな漁港、<em>境港</em>がある都道府県は？","さかいみなとこう",31,"鳥取県。かにの水あげで知られる"],
-  ["oyster","sea","<em>かき</em>の養殖が全国一の都道府県は？","",34,"広島県。おだやかな瀬戸内海の広島湾でいかだを使って育てる"],
-  ["nori","sea","<em>のり</em>の養殖が全国一の都道府県は？","",41,"佐賀県。有明海の遠浅の海で育てる"],
-  ["output","maker","<em>製造品出荷額</em>が全国一の都道府県は？","せいぞうひんしゅっかがく",23,"愛知県。豊田市の自動車工業を中心とする中京工業地帯"],
-  ["keiyo","maker","<em>京葉工業地域</em>の中心の都道府県は？","けいようこうぎょうちいき",12,"千葉県。東京湾の東岸の埋め立て地に化学・鉄鋼の工場が並ぶ"],
-  ["tokai","maker","<em>東海工業地域</em>の中心の都道府県は？","とうかいこうぎょうちいき",22,"静岡県。浜松市の楽器・オートバイ、富士市の製紙"],
-  ["kitakyu","maker","<em>北九州工業地帯（地域）</em>の中心の都道府県は？","きたきゅうしゅう",40,"福岡県。官営の八幡製鉄所（1901年）から始まった"],
-  ["kashima","maker","<em>鹿島臨海工業地域</em>がある都道府県は？","かしまりんかいこうぎょうちいき",8,"茨城県。砂浜をほりこんでつくった港に鉄鋼・石油化学の工場"],
-  ["mizushima","maker","<em>水島</em>（倉敷市）の石油化学コンビナートがある都道府県は？","みずしま",33,"岡山県。瀬戸内工業地域の中心のひとつ"],
-  ["sabae","maker","めがねフレームの産地、<em>鯖江市</em>がある都道府県は？","さばえし",18,"福井県。国産めがねフレームの9割ほどをつくる"],
-  ["imabari","maker","タオルの産地、<em>今治市</em>がある都道府県は？","いまばりし",38,"愛媛県。今治タオルで知られる"],
-  ["tsubame","maker","金属洋食器の産地、<em>燕市</em>がある都道府県は？","つばめし",15,"新潟県。スプーン・フォークなど。となりの三条市は刃物"],
-  ["nanbu","craft","南部鉄器","なんぶてっき",3,"岩手県（盛岡市・奥州市）の鉄びんなど"],
-  ["tendo","craft","将棋の駒（天童）","てんどう",6,"山形県天童市。全国の将棋の駒のほとんどをつくる"],
-  ["aizu","craft","会津塗","あいづぬり",7,"福島県（会津若松市）の漆器"],
-  ["mashiko","craft","益子焼","ましこやき",9,"栃木県益子町の焼き物"],
-  ["wajima","craft","輪島塗","わじまぬり",17,"石川県輪島市の漆器。石川県は九谷焼も有名"],
-  ["shigaraki","craft","信楽焼","しがらきやき",25,"滋賀県甲賀市。たぬきの置物で知られる"],
-  ["nishijin","craft","西陣織","にしじんおり",26,"京都府（京都市）の織物。京都府は清水焼・京友禅も"],
-  ["bizen","craft","備前焼","びぜんやき",33,"岡山県備前市の焼き物。釉薬（うわぐすり）を使わない"],
-  ["arita","craft","有田焼","ありたやき",41,"佐賀県有田町の焼き物（伊万里焼）"],
-  ["hakata","craft","博多人形","はかたにんぎょう",40,"福岡県（福岡市）の人形"],
-].map(([id, cat, word, kana, pref, note]) => ({id, cat, word, kana, pref, note}));
+  // ---- 農業（米・野菜・花） ----
+  {id:"rice", cat:"farm", word:"米", kana:"こめ", pref:15, note:"新潟県（令和7年産で全国一）。2位は北海道、3位は秋田県",
+   basis:"水稲の収穫量（主食用）", year:"令和7年産", source:"農林水産省「作物統計調査 令和7年産水陸稲の収穫量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kome/pdf/syukaku_suiriku_25.pdf", status:"ok"},
+  {id:"potato", cat:"farm", word:"じゃがいも", kana:"", pref:1, note:"北海道（令和7年産の春植えばれいしょで全国の82％）。2位は鹿児島県",
+   basis:"春植えばれいしょの収穫量", year:"令和7年産", source:"農林水産省「作物統計調査 令和7年産春植えばれいしょの作付面積、収穫量及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_yasai/pdf/syukaku_barei_25.pdf", status:"ok"},
+  {id:"onion", cat:"farm", word:"たまねぎ", kana:"", pref:1, note:"北海道（令和5年産で全国の約64％）",
+   basis:"たまねぎの収穫量", year:"令和5年産（令和6・7年産の都道府県別は未確認）", ...SRC.gaiyou(1), status:"check"},
+  {id:"lettuce", cat:"farm", word:"レタス", kana:"", pref:20, note:"長野県（令和5年産で全国一）。夏もすずしい高原でつくる「高原野菜」の代表",
+   basis:"レタスの収穫量", year:"令和5年産", ...SRC.gaiyou(20), status:"ok"},
+  {id:"pepper", cat:"farm", word:"ピーマン", kana:"", pref:8, note:"茨城県（令和5年産で全国一）",
+   basis:"ピーマンの収穫量", year:"令和5年産", ...SRC.gaiyou(8), status:"ok"},
+  {id:"strawberry", cat:"farm", word:"いちご", kana:"", pref:9, note:"栃木県（令和5年産で全国一。2位の福岡県の約1.5倍）。「とちおとめ」「とちあいか」などの品種がある",
+   basis:"いちごの収穫量", year:"令和5年産", ...SRC.gaiyou(9), status:"ok"},
+  {id:"peanut", cat:"farm", word:"落花生", kana:"らっかせい", pref:12, note:"千葉県（全国の8割強）。八街市が主な産地",
+   basis:"らっかせいの収穫量", year:"未確認（令和7年版の概要に掲載の年次）", ...SRC.gaiyou(12), status:"check"},
+  {id:"konjac", cat:"farm", word:"こんにゃくいも", kana:"", pref:10, note:"群馬県（全国の9割以上）",
+   basis:"こんにゃくいもの収穫量", year:"令和6年産", source:"農林水産省「こんにゃくをめぐる事情」（令和7年7月）", url:"https://www.maff.go.jp/j/seisan/tokusan/attach/pdf/konnyaku-17.pdf", status:"ok"},
+  {id:"sugarcane", cat:"farm", word:"さとうきび", kana:"", pref:47, note:"沖縄県（令和5年産で全国の半分以上）。県のほぼ全域でつくる大事な作物。さとうきびは沖縄県と鹿児島県でつくられている",
+   basis:"さとうきびの収穫量", year:"令和5年産", ...SRC.gaiyou(47), status:"ok"},
+  {id:"chrysanthemum", cat:"farm", word:"菊", q:"<em>菊</em>（切り花）の出荷量が全国一の都道府県は？（令和6年産）", kana:"きく", pref:23,
+   note:"愛知県（令和6年産で全国の36％）。照明や光をさえぎる技術を組み合わせて、一年じゅう出荷している。2位は沖縄県",
+   basis:"きく（切り花）の出荷量", year:"令和6年産", source:"農林水産省「令和6年産花きの作付（収穫）面積及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kekka_gaiyou/sakumotu/sakkyou_kaki/sakutuke/r6/index.html", status:"ok"},
+  // ---- くだもの ----
+  {id:"apple", cat:"fruit", word:"りんご", kana:"", pref:2, note:"青森県（令和7年産で全国の61％）。2位は長野県",
+   basis:"りんごの収穫量", year:"令和7年産", source:"農林水産省「作物統計調査 令和7年産りんごの栽培面積、結果樹面積、収穫量及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_ringo_25.pdf", status:"ok"},
+  {id:"mikan", cat:"fruit", word:"みかん", kana:"", pref:30, note:"和歌山県（令和7年産で全国の22％。22年連続で全国一）。2位は愛媛県、3位は静岡県",
+   basis:"みかんの収穫量", year:"令和7年産", source:"農林水産省「作物統計調査 令和7年産みかんの栽培面積、結果樹面積、収穫量及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_mikan_25.pdf", status:"ok"},
+  {id:"grape", cat:"fruit", word:"ぶどう", kana:"", pref:19, note:"山梨県（令和7年産で全国の26％）。2位は長野県",
+   basis:"ぶどうの収穫量", year:"令和7年産", source:"農林水産省「作物統計調査 令和7年産日本なし、ぶどうの栽培面積、結果樹面積、収穫量及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_ninasi_25.pdf", status:"ok"},
+  {id:"peach", cat:"fruit", word:"もも", kana:"", pref:19, note:"山梨県（令和7年産で全国の32％）。2位は福島県",
+   basis:"ももの収穫量", year:"令和7年産", source:"農林水産省「作物統計調査 令和7年産もも、すももの栽培面積、結果樹面積、収穫量及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_momo_25.pdf", status:"ok"},
+  {id:"cherry", cat:"fruit", word:"さくらんぼ", kana:"", pref:6, note:"山形県（令和7年産のおうとう＝さくらんぼで全国の74％）",
+   basis:"おうとう（さくらんぼ）の収穫量", year:"令和7年産", source:"農林水産省「作物統計調査 令和7年産びわ、おうとう、うめの栽培面積、結果樹面積、収穫量及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_biwa_25.pdf", status:"ok"},
+  {id:"pear", cat:"fruit", word:"西洋なし", kana:"せいようなし", pref:6, note:"山形県（令和6年産で全国の70％）",
+   basis:"西洋なしの収穫量", year:"令和6年産", source:"農林水産省「作物統計調査 令和6年産西洋なし、かき、くりの結果樹面積、収穫量及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_senasi_24.pdf", status:"ok"},
+  {id:"ume", cat:"fruit", word:"うめ", kana:"", pref:30, note:"和歌山県（令和7年産で全国の58％）。みなべ町・田辺市が中心で、主な品種は「南高」",
+   basis:"うめの収穫量", year:"令和7年産", source:"農林水産省「作物統計調査 令和7年産びわ、おうとう、うめの栽培面積、結果樹面積、収穫量及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_biwa_25.pdf", status:"ok"},
+  {id:"melon", cat:"fruit", word:"メロン", kana:"", pref:8, note:"茨城県（令和5年産で全国一。2位の熊本県の約1.5倍）",
+   basis:"メロンの収穫量", year:"令和5年産", source:"関東農政局茨城県拠点「茨城県のメロン生産」（令和7年10月）", url:"https://www.maff.go.jp/kanto/chiikinet/ibaraki/ibarakitokei_bunnseki/attach/pdf/ibarakibunseki-3.pdf", status:"ok"},
+  {id:"pineapple", cat:"fruit", word:"パイナップル", kana:"", pref:47, note:"沖縄県（令和5年産の収穫量は6,750トン）。国の収穫量の統計は沖縄県だけを調べている",
+   basis:"パインアップルの収穫量", year:"令和5年産", source:"農林水産省「令和5年産パインアップルの収穫面積、収穫量及び出荷量（沖縄県）」", url:"https://www.maff.go.jp/j/tokei/kekka_gaiyou/sakumotu/sakkyou_kajyu/paineapp/r5/index.html", status:"ok"},
+  // ---- 畜産・林業・水産業 ----
+  {id:"dairy", cat:"sea", word:"<em>乳牛</em>（乳用牛）の飼育頭数が全国一の都道府県は？", kana:"にゅうぎゅう", pref:1, note:"北海道（令和7年2月1日現在で全国一）",
+   basis:"乳用牛の飼養頭数", year:"令和7年2月1日現在", source:"農林水産省「畜産統計」（鹿児島県「鹿児島県畜産の概要」の全国表で確認）", url:"http://www.pref.kagoshima.jp/ag07/sangyo-rodo/nogyo/tikusan/basic/gaiyou.html", status:"ok"},
+  {id:"pig", cat:"sea", word:"<em>豚</em>の飼育頭数が全国一の都道府県は？", kana:"ぶた", pref:46, note:"鹿児島県（令和7年2月1日現在で約120万頭、全国の約14％）。「かごしま黒豚」で知られる",
+   basis:"豚の飼養頭数", year:"令和7年2月1日現在", source:"鹿児島県「豚に関する情報」（農林水産省「畜産統計」より）", url:"https://www.pref.kagoshima.jp/ag07/sangyo-rodo/nogyo/tikusan/tokei/buta.html", status:"ok"},
+  {id:"kiso", cat:"sea", word:"<em>木曽ひのき</em>（天然の三大美林）がある都道府県は？", kana:"きそひのき", pref:20,
+   note:"長野県。林野庁は、青森ヒバ（青森県）・秋田スギ（秋田県）・木曽ヒノキ（長野県）の天然林を日本三大美林としている（木曽ヒノキの林は岐阜県の一部にも広がる）",
+   basis:"日本三大美林（天然林）", year:"―", source:"林野庁東北森林管理局「日本三大美林について」", url:"https://www.rinya.maff.go.jp/tohoku/keikaku/sandaibirin.html", status:"ok"},
+  {id:"akita", cat:"sea", word:"<em>秋田すぎ</em>（天然の三大美林）がある都道府県は？", kana:"あきたすぎ", pref:5,
+   note:"秋田県。林野庁は、青森ヒバ・秋田スギ・木曽ヒノキの天然林を日本三大美林としている",
+   basis:"日本三大美林（天然林）", year:"―", source:"林野庁東北森林管理局「日本三大美林について」", url:"https://www.rinya.maff.go.jp/tohoku/keikaku/sandaibirin.html", status:"ok"},
+  {id:"yoshino", cat:"sea", word:"<em>吉野すぎ</em>（人工の三大美林）がある都道府県は？", kana:"よしのすぎ", pref:29,
+   note:"奈良県。川上村が吉野林業の中心で、室町時代から植林が行われてきた。天竜すぎ（静岡県）・尾鷲ひのき（三重県）とならぶ日本三大人工美林",
+   basis:"日本三大人工美林", year:"―", source:"奈良県川上村「川上村のプロフィール」", url:"https://www.vill.kawakami.nara.jp/life/docs/2017013100120/", status:"ok"},
+  {id:"choshi", cat:"sea", word:"水あげ量が全国トップクラスの漁港、<em>銚子港</em>がある都道府県は？", kana:"ちょうしこう", pref:12,
+   note:"千葉県。2025年の水あげ量は全国の主要漁港で1位（2023年・2024年は北海道の釧路港が1位）",
+   basis:"主要漁港の水あげ量", year:"2025年（令和7年）", source:"八戸市「水産統計」（全国主要漁港の水揚げ状況）", url:"https://www.city.hachinohe.aomori.jp/soshikikarasagasu/suisanjimusho/1_1/3836.html", status:"ok"},
+  {id:"yaizu", cat:"sea", word:"冷凍のまぐろ・かつおの水あげが多い<em>焼津港</em>がある都道府県は？", kana:"やいづこう", pref:22,
+   note:"静岡県。静岡県の漁港は、冷凍のまぐろ類・かつおの水あげ量が全国一（令和6年）",
+   basis:"冷凍まぐろ類・かつおの上場水揚量（静岡県内の漁港の合計）", year:"令和6年", source:"静岡県「みなみまぐろ(冷凍)…かつお(冷凍)の上場水揚量 日本一」（水産庁「水産物流通調査」より）", url:"https://www.pref.shizuoka.jp/kensei/information/myshizuoka/1002255/1040934/1011248.html", status:"ok"},
+  {id:"hachinohe", cat:"sea", word:"<em>八戸港</em>（いか・さばの水あげが多い）がある都道府県は？", kana:"はちのへこう", pref:2,
+   note:"青森県。主に水あげされる魚は、いか・さば・いわし。年によって一番多い魚が入れかわる",
+   basis:"八戸港の魚種別水あげ量", year:"2024年・2025年", source:"八戸市「水産統計」", url:"https://www.city.hachinohe.aomori.jp/soshikikarasagasu/suisanjimusho/1_1/3836.html", status:"ok"},
+  {id:"sakaiminato", cat:"sea", word:"日本海側の大きな漁港、<em>境港</em>がある都道府県は？", kana:"さかいみなとこう", pref:31,
+   note:"鳥取県。境港市はベニズワイガニの水あげ日本一の港町",
+   basis:"ベニズワイガニの水あげ量", year:"―", source:"鳥取県「蟹取県」紹介ページ", url:"https://www.pref.tottori.lg.jp/178225.htm", status:"ok"},
+  {id:"oyster", cat:"sea", word:"<em>かき</em>の養殖が全国一の都道府県は？", kana:"", pref:34,
+   note:"広島県（2023年の養殖かきの生産量で全国の61％）。2位は宮城県",
+   basis:"かき類の養殖収獲量", year:"2023年（令和5年）", source:"水産庁「カキ養殖をめぐる情勢について」（令和7年11月）", url:"https://www.jfa.maff.go.jp/j/saibai/attach/pdf/kaki_youshoku-3.pdf", status:"ok"},
+  {id:"nori", cat:"sea", word:"<em>のり</em>の養殖が全国一の都道府県は？", kana:"", pref:41,
+   note:"（出題停止中）佐賀県・兵庫県などが上位で、年や指標（収獲量・共販枚数）によって1位が入れかわる可能性がある。最新の都道府県別統計を確認できなかった",
+   basis:"のり類の養殖収獲量", year:"未確認", source:"水産庁「ノリ養殖をめぐる情勢について」（令和7年6月）", url:"https://www.jfa.maff.go.jp/j/saibai/attach/pdf/norimeguji-6.pdf", status:"stop"},
+  // ---- 工業地帯・地場産業 ----
+  {id:"output", cat:"maker", word:"<em>製造品出荷額</em>が全国一の都道府県は？", kana:"せいぞうひんしゅっかがく", pref:23,
+   note:"愛知県（全国の約14.5％で46年連続の全国一）。2位は大阪府、3位は静岡県",
+   basis:"製造品出荷額等", year:"2022年（2023年経済構造実態調査）", source:"愛知県「あいちの産業」（経済構造実態調査 製造業事業所調査より）", url:"https://www.pref.aichi.jp/soshiki/ricchitsusho/miryoku-kouzou.html", status:"ok"},
+  {id:"keiyo", cat:"maker", word:"<em>京葉工業地域</em>の中心の都道府県は？", kana:"けいようこうぎょうちいき", pref:12,
+   note:"千葉県。東京湾ぞいの千葉市から富津市にかけて、石油・化学・鉄鋼などの工場が集まる（京葉臨海コンビナート）",
+   basis:"工業地域の位置", year:"―", source:"千葉県「京葉臨海コンビナート カーボンニュートラル推進協議会」資料", url:"https://www.pref.chiba.lg.jp/sanshin/keiyo-rinkai/kyogikai/documents/04jimukyokusetumei.pdf", status:"ok"},
+  {id:"tokai", cat:"maker", word:"<em>東海工業地域</em>の中心の都道府県は？", kana:"とうかいこうぎょうちいき", pref:22,
+   note:"静岡県。浜松市の楽器・オートバイ、富士市の製紙が有名",
+   basis:"工業地域の位置", year:"―", source:"静岡県「西部地域の産業」・富士市「産業史」", url:"https://www.pref.shizuoka.jp/kensei/chiikikyoku/seibuchiiki/1058188/1035261.html", status:"ok"},
+  {id:"kitakyu", cat:"maker", word:"<em>北九州工業地帯（地域）</em>の中心の都道府県は？", kana:"きたきゅうしゅう", pref:40,
+   note:"福岡県。1901年に操業を始めた官営八幡製鐵所から発展した。筑豊炭田に近く、洞海湾に面していた",
+   basis:"工業地帯の位置", year:"―", source:"北九州市「八幡のあゆみ」", url:"https://www.city.kitakyushu.lg.jp/yahatahigashi/file_0008.html", status:"ok"},
+  {id:"kashima", cat:"maker", word:"<em>鹿島臨海工業地域</em>がある都道府県は？", kana:"かしまりんかいこうぎょうちいき", pref:8,
+   note:"茨城県。陸地をほりこんでつくった鹿島港のまわりに、鉄鋼・石油化学の工場が集まる",
+   basis:"工業地域の位置", year:"―", source:"茨城県「鹿島港の概要」", url:"https://www.pref.ibaraki.jp/doboku/kako/gaiyo.html", status:"ok"},
+  {id:"mizushima", cat:"maker", word:"<em>水島</em>（倉敷市）の石油化学コンビナートがある都道府県は？", kana:"みずしま", pref:33,
+   note:"岡山県。倉敷市の水島臨海工業地帯には、石油精製・石油化学・鉄鋼・自動車の工場が集まる",
+   basis:"工業地帯の位置", year:"―", source:"岡山県「水島臨海工業地帯の現状」（令和7年3月）", url:"https://www.pref.okayama.jp/uploaded/life/906116_9310850_misc.pdf", status:"ok"},
+  {id:"sabae", cat:"maker", word:"めがねフレームの産地、<em>鯖江市</em>がある都道府県は？", kana:"さばえし", pref:18,
+   note:"福井県。鯖江市は国産めがねフレームの大部分をつくる産地の中心",
+   basis:"めがねフレームの産地", year:"―", source:"鯖江市「ものづくり」", url:"https://www.city.sabae.fukui.jp/kanko/about/mono.html", status:"ok"},
+  {id:"imabari", cat:"maker", word:"タオルの産地、<em>今治市</em>がある都道府県は？", kana:"いまばりし", pref:38,
+   note:"愛媛県。今治市は国産タオルの半分以上をつくる産地（2020年の政府広報）",
+   basis:"タオルの産地", year:"2020年ごろ", source:"政府広報オンライン「Highlighting Japan」2020年9月号", url:"https://www.gov-online.go.jp/eng/publicity/book/hlj/html/202009/202009_06_jp.html", status:"ok"},
+  {id:"tsubame", cat:"maker", word:"金属洋食器の産地、<em>燕市</em>がある都道府県は？", kana:"つばめし", pref:15,
+   note:"新潟県。燕市はスプーン・フォークなど金属洋食器の国内生産の9割以上をしめる",
+   basis:"金属洋食器の産地", year:"―", source:"燕市「金属洋食器」地域未来投資促進法 基本計画", url:"https://www.cas.go.jp/jp/seisaku/chiikimirai2/sangyo-keikaku/pdf/c-keikaku/niigataken-tsubameshi_kinzokuyoshokki_2-1.pdf", status:"ok"},
+  // ---- 伝統工芸品（すべて国の伝統的工芸品） ----
+  {id:"nanbu", cat:"craft", word:"南部鉄器", kana:"なんぶてっき", pref:3, note:"岩手県。国の伝統的工芸品", basis:"伝統的工芸品の指定", year:"―", ...SRC.meti, status:"ok"},
+  {id:"tendo", cat:"craft", word:"天童将棋駒", kana:"てんどうしょうぎこま", pref:6, note:"山形県（天童市）。国の伝統的工芸品", basis:"伝統的工芸品の指定", year:"―", ...SRC.meti, status:"ok"},
+  {id:"aizu", cat:"craft", word:"会津塗", kana:"あいづぬり", pref:7, note:"福島県。国の伝統的工芸品の漆器", basis:"伝統的工芸品の指定", year:"―", ...SRC.meti, status:"ok"},
+  {id:"mashiko", cat:"craft", word:"益子焼", kana:"ましこやき", pref:9, note:"栃木県（益子町）。1979年に国の伝統的工芸品になった焼き物", basis:"伝統的工芸品の指定", year:"―",
+   source:"栃木県「国指定の伝統的工芸品」", url:"https://www.pref.tochigi.lg.jp/f02/work/shoukougyou/dentoukougei/national.html", status:"ok"},
+  {id:"wajima", cat:"craft", word:"輪島塗", kana:"わじまぬり", pref:17, note:"石川県（輪島市）。国の伝統的工芸品の漆器。石川県は九谷焼・加賀友禅も国の伝統的工芸品", basis:"伝統的工芸品の指定", year:"―",
+   source:"石川県「こども向け県庁ガイド 伝統的工芸品」", url:"https://www.pref.ishikawa.lg.jp/kensei/koho/kids/kodomo/dentou/main.html", status:"ok"},
+  {id:"shigaraki", cat:"craft", word:"信楽焼", kana:"しがらきやき", pref:25, note:"滋賀県。国の伝統的工芸品の焼き物", basis:"伝統的工芸品の指定", year:"―",
+   source:"滋賀県「滋賀県の伝統的工芸品について」", url:"https://www.pref.shiga.lg.jp/ippan/shigotosangyou/kigyou/20017.html", status:"ok"},
+  {id:"nishijin", cat:"craft", word:"西陣織", kana:"にしじんおり", pref:26, note:"京都府（京都市）。国の伝統的工芸品の織物", basis:"伝統的工芸品の指定", year:"―", ...SRC.meti, status:"ok"},
+  {id:"bizen", cat:"craft", word:"備前焼", kana:"びぜんやき", pref:33, note:"岡山県。国の伝統的工芸品の焼き物", basis:"伝統的工芸品の指定", year:"―", ...SRC.meti, status:"ok"},
+  {id:"arita", cat:"craft", word:"伊万里・有田焼", kana:"いまり・ありたやき", pref:41, note:"佐賀県。1977年に国の伝統的工芸品になった焼き物", basis:"伝統的工芸品の指定", year:"―",
+   source:"九州経済産業局「九州の伝統的工芸品」", url:"https://www.kyushu.meti.go.jp/seisaku/dento/210330pamphlet.pdf", status:"ok"},
+  {id:"hakata", cat:"craft", word:"博多人形", kana:"はかたにんぎょう", pref:40, note:"福岡県。1976年に国の伝統的工芸品になった人形", basis:"伝統的工芸品の指定", year:"―",
+   source:"九州経済産業局「九州の伝統的工芸品」", url:"https://www.kyushu.meti.go.jp/seisaku/dento/210330pamphlet.pdf", status:"ok"},
+].map(f => Object.assign({checked: IND_CHECKED}, f));
 const industryOf = id => INDUSTRY.find(f => f.id === id);
+const industryLive = () => INDUSTRY.filter(f => f.status !== "stop");   // 出題する問題（出題停止を除く）
 const industryName = f => (f.word.match(/<em>(.*?)<\/em>/) || [0, f.word])[1];   // 結果の一覧に出す短い名前
 
 const TERRAIN_CATS = { mount: "山地・山脈・山", river: "川", plain: "平野" };
@@ -443,9 +529,9 @@ const COURSES = [
           "図形は教材の略地図程度のおおまかな形（石狩川・最上川・利根川は Natural Earth の線）"]},
   {id:"industry", name:"農林水産業・工業", master:"産業マスター", from:"g5", ready:true, stages:true, unlock:{course:"terrain", need:"complete"},
    stageList:Object.entries(INDUSTRY_CATS).map(([id, c]) => ({id, cat:id, name:c.name, codes:range(1,47)})),
-   rules:[`5ステージ（全${INDUSTRY.length}問）。生産量が全国一の都道府県や、工業地域・伝統工芸品の場所を地図でタップ`, "ステージ👑：そのステージをヒントなしで全問正解",
+   rules:[`5ステージ（全${industryLive().length}問）。収穫量などが全国一の都道府県や、工業地域・伝統工芸品の場所を地図でタップ`, "ステージ👑：そのステージをヒントなしで全問正解",
           "👑産業マスター：5ステージすべて👑", "完了：5ステージすべてを最後まで解く",
-          "順位は2020年代前半の統計で、毎年ほぼ入れかわらないものだけを出題"]}
+          "順位は国や県の統計で確認したもの。解説に統計の年を書いている"]}
 ];
 const courseOf = id => COURSES.find(c => c.id === id);
 // 歴史は地理とは別コースで設計する（今回は準備中の表示のみ）
