@@ -719,14 +719,15 @@ function progressBar(){
   }).join("")}</div>`;
 }
 
+// 下段に出す出題文（問題文＋よみ）
+const askBlock = () => `<div class="ask"><span class="q">${quiz.q.text}</span><span class="kana">${quiz.q.sub || ""}</span></div>`;
+
 function nextQ() {
   eyeOff(); clearTag();
   if (quiz.i >= quiz.qs.length) return result();
   const q = quiz.q = quiz.qs[quiz.i]; q.hint = false; quiz.answered = false;
-  // 4択は問いを選択肢のすぐ上（シート）に置き、上のバーには進み具合だけを出す
-  const choice = quiz.type.kind === "choice";
-  const askHtml = `<span class="q">${q.text}</span><span class="kana">${q.sub || ""}</span>`;
-  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${quiz.course.name}・${quiz.master ? "全国の挑戦" : quiz.area.name}　${quiz.i+1} / ${quiz.qs.length}</span>${choice ? "" : askHtml}</div>${debugBtn()}<button class="iconbtn" id="quit" type="button">やめる</button>`;
+  // 出題文はどのコースも下段（シート）に置き、上のバーには進み具合だけを出す。4択は出題文のすぐ下に選択肢
+  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${quiz.course.name}・${quiz.master ? "全国の挑戦" : quiz.area.name}　${quiz.i+1} / ${quiz.qs.length}</span></div>${debugBtn()}<button class="iconbtn" id="quit" type="button">やめる</button>`;
   bindBar(); byId("quit").onclick = home;
   if (debug) quizTimeout(autoAnswer, DEBUG_ANSWER_MS);
   if (quiz.type.kind === "choice") {
@@ -735,12 +736,12 @@ function nextQ() {
     pathEl[q.focus].classList.add("sel");
     if (quiz.area.wide) fitLater(unionBox(areaOfPref(q.focus).codes));
     q.order = shuffle(q.choices);
-    sheet.innerHTML = `${progressBar()}<div class="ask">${askHtml}</div><div class="choices">${q.order.map(([n, k], j) =>
+    sheet.innerHTML = `${progressBar()}${askBlock()}<div class="choices">${q.order.map(([n, k], j) =>
       `<button class="choice" type="button" data-j="${j}">${n}<small>${k}</small></button>`).join("")}</div>`;
     const owner = quiz;
     sheet.querySelectorAll("[data-j]").forEach(b => b.onclick = () => { if (quiz === owner && mode === "quiz") answerChoice(+b.dataset.j); });
   } else {
-    sheet.innerHTML = `${progressBar()}<p class="hint">地図の県をタップしてね。わからない時は目のボタン（押している間だけ県名）。</p>`;
+    sheet.innerHTML = `${progressBar()}${askBlock()}<p class="hint">地図の県をタップしてね。わからない時は目のボタン（押している間だけ県名）。</p>`;
   }
 }
 
@@ -800,7 +801,7 @@ function handleTap(code) {
   const p = byCode(code), ans = byCode(q.answers[0]);
   logAnswer(ok);
   if (quiz.course.id === "prefName" && !ok) { store.miss[ans.code] = (store.miss[ans.code] || 0) + 1; save(); }
-  sheet.innerHTML = progressBar();
+  sheet.innerHTML = progressBar() + askBlock();   // 正誤を出しても出題文は残す
   if (ok) {
     pathEl[code].classList.add("flash-ok");
     quizTimeout(() => { pathEl[code].classList.remove("flash-ok"); pathEl[code].classList.add("ok"); }, 450);
