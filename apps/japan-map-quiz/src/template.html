@@ -30,6 +30,7 @@
   --r-btn:14px; --r-sheet:20px; --r-pill:999px; --bw:2.5px; --tap:48px;
   --marker:.45em;   /* 県名マーカーの太さ（ダークは文字に重ならない細い下線にする） */
   --scrim:#282727B3;   /* 暗証番号の入力のうしろを暗くする幕 */
+  --river:#1F6FB2;     /* 地形コースの川の線 */
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --ink:#FEF3E6; --paper:#232222; --cream:#3A3632; --sea:#26313A; --bg:#141313;
@@ -100,7 +101,7 @@ svg#map:active{cursor:grabbing}
 .explore .pref:not([data-lv="0"]):is([data-r="2"],[data-r="5"]){fill:var(--tier-b)}
 .explore .pref:not([data-lv="0"]):is([data-r="3"],[data-r="6"]){fill:var(--tier-c)}
 .explore .pref[data-lv="2"]:is([data-r]){fill:var(--rich)}
-.explore .pref[data-lv="3"]:is([data-r]){fill:var(--rich2)}
+.explore .pref:is([data-lv="3"],[data-lv="4"]):is([data-r]){fill:var(--rich2)}
 /* 地方の境目（県境の約2.5倍）。ホームだけ表示し、タップは邪魔しない */
 .region-line{fill:none;stroke:var(--ink);stroke-width:2.5px;vector-effect:non-scaling-stroke;stroke-linejoin:round;pointer-events:none}
 svg:not(.explore) .region-line{display:none}
@@ -114,6 +115,15 @@ svg:not(.explore) .region-line{display:none}
 .pref.reveal{stroke-width:5px;animation:pulse .4s ease-in-out 3}
 @keyframes pulse{50%{stroke-width:10px}}
 .inset{fill:none;stroke:var(--ink);stroke-width:1.4;stroke-dasharray:7 5;vector-effect:non-scaling-stroke;opacity:.8}
+/* 地形（山・河川・平野）：問題の対象の図形だけを出す。山地・山脈＝黄の太線、川＝青い線、平野＝黄の面、山＝黄の三角 */
+.feat{display:none;pointer-events:none;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
+.feat.show{display:inline}
+.feat.case{fill:none;stroke:var(--ink);stroke-width:12px}
+.feat.range{fill:none;stroke:var(--brand);stroke-width:7px}
+.feat.river.case{stroke:var(--paper);stroke-width:8px}
+.feat.river{fill:none;stroke:var(--river);stroke-width:4px}
+.feat.plain,.feat.peak{fill:var(--brand);stroke:var(--ink);stroke-width:2.5px}
+.feat.plain{fill-opacity:.75}
 .zoom{cursor:pointer}
 .zoom circle{fill:var(--paper);stroke:var(--ink);stroke-width:2.5;vector-effect:non-scaling-stroke}
 .zoom path{fill:none;stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;vector-effect:non-scaling-stroke}
@@ -202,6 +212,7 @@ svg:not(.explore) .region-line{display:none}
     <svg id="map" class="explore" viewBox="0 0 880 980" preserveAspectRatio="xMidYMid meet" aria-label="日本地図">
       <g id="prefs"></g>
       <g id="regions"></g>
+      <g id="terrain"></g>
       <g id="insetg"><polyline class="inset" points="-100000,712 -11,712 -11,800 52,884 52,100000"></polyline></g>
       <g class="labels" id="labels"></g>
       <g id="zooms"></g>
@@ -305,6 +316,15 @@ const QUIZ_TYPES = {
         explain: c === 13 ? `東京都庁は ${ans[0]}（${ans[1]}）にあります` : `${p.name}の${p.office}所在地は ${ans[0]}（${ans[1]}）` };
     })
   },
+  terrain: {
+    title: "山・河川・平野", kind: "choice",
+    // area.cat（mount／river／plain）の図形を出題。選択肢は同じ種類からほかに3つ
+    make: (codes, area) => TERRAIN.filter(f => !area || !area.cat || f.cat === area.cat).map(f => {
+      const pool = shuffle(TERRAIN.filter(g => g.cat === f.cat && g.id !== f.id)).slice(0, 3);
+      return { key: f.id, prefs: [f.pref], focus: f.pref, feature: f.id, sub: "", choices: [[f.name, f.kana], ...pool.map(g => [g.name, g.kana])], correct: f.name,
+        text: `この<em>${TERRAIN_CATS[f.cat]}</em>の名前は？`, explain: `${f.name}（${f.kana}）` };
+    })
+  },
   designated: {
     title: "政令指定都市", kind: "tap",
     make: codes => CITIES.designated.map((d, i) => [d, i]).filter(([d]) => codes.includes(d[2])).map(([[name, kana, c], i]) => (
@@ -313,6 +333,7 @@ const QUIZ_TYPES = {
   }
 };
 
+const TERRAIN_CATS = { mount: "山地・山脈・山", river: "川", plain: "平野" };
 /* ---------- コース（地理）。出題数・完了・マスターの条件はここで管理 ----------
    from：このコースを出す最初のモード（仮設定）／unlock：前のコースで何を満たせば開くか
      need:"master"   … 全国の挑戦でヒントを使わず全問正解（👑マスター）
@@ -334,7 +355,11 @@ const COURSES = [
    rules:[`全国の挑戦：政令指定都市${CITIES.designated.length}市を1回ずつ。同じ県に複数あっても都市ごとに出す`,
           `完了：全国${CITIES.designated.length}問を最後まで解く`, `👑マスター：ヒントなしで全国${CITIES.designated.length}問すべて正解（ある都道府県をタップ）`,
           "都市そのものの位置を答える問題は準備中（記録は別に分けて持つ）"]},
-  {id:"terrain", name:"山・河川・平野", from:"g5", ready:false},
+  {id:"terrain", name:"山・河川・平野", master:"地形マスター", from:"g5", ready:true, stages:true, unlock:{course:"designated", need:"complete"},
+   stageList:[{id:"mount", cat:"mount", name:"山地・山脈", codes:range(1,47)}, {id:"river", cat:"river", name:"川", codes:range(1,47)}, {id:"plain", cat:"plain", name:"平野", codes:range(1,47)}],
+   rules:["山地・山脈（11）・川（10）・平野（10）の3ステージ。地図に出た図形の名前を4択で答える", "ステージ👑：そのステージをヒントなしで全問正解",
+          "👑地形マスター：3ステージすべて👑", "完了：3ステージすべてを最後まで解く",
+          "図形は教材の略地図程度のおおまかな形（石狩川・最上川・利根川は Natural Earth の線）"]},
   {id:"industry", name:"農林水産業・工業などの産業", from:"g5", ready:false}
 ];
 const courseOf = id => COURSES.find(c => c.id === id);
@@ -383,15 +408,16 @@ const masterOf = courseId => (recsOf(courseId).find(isMaster) || {}).master || n
 const crown = c => `👑${c.master}`;
 // 地方ステージ（stages:true のコース）。rec の stage[地方id] = {complete:bool, master:null|{at}}
 const STAGES = AREAS.filter(a => !a.wide);
+const stagesOf = c => c.stageList || STAGES;
 const stageDone = (courseId, areaId, need) => recsOf(courseId).some(r => { const s = (r.stage || {})[areaId]; return s && (need === "master" ? !!s.master : s.complete); });
-const stageCrowns = courseId => STAGES.filter(a => stageDone(courseId, a.id, "master")).length;
-const prefOfKey = (courseId, key) => courseId === "designated" ? CITIES.designated[key][2] : +key;
+const stageCrowns = courseId => stagesOf(courseOf(courseId)).filter(a => stageDone(courseId, a.id, "master")).length;
+const prefOfKey = (courseId, key) => courseId === "designated" ? CITIES.designated[key][2] : courseId === "terrain" ? (TERRAIN.find(f => f.id === key) || {}).pref : +key;
 const fullCount = courseId => QUIZ_TYPES[courseId].make(range(1,47)).length;
 function prefLevels() {
   const lv = {}; PREFS.forEach(p => lv[p.code] = 0);
   COURSES.filter(c => c.ready).forEach(c => {
     const got = new Set();
-    recsOf(c.id).forEach(r => Object.keys(r.got).forEach(k => got.add(prefOfKey(c.id, k))));
+    recsOf(c.id).forEach(r => Object.keys(r.got).forEach(k => { const p = prefOfKey(c.id, k); if (p) got.add(p); }));
     got.forEach(code => lv[code]++);
   });
   return lv;
@@ -448,6 +474,18 @@ const regionLine = (d, parent) => { const p = document.createElementNS(NS, "path
 REGION_LINES.forEach(o => regionLine(o.d, gRegions));
 const okiLine = regionLine(OKI.d, gRegions), okiLineCopy = regionLine(OKI.di, insetG);
 const OKI_TOP = OKI.b[1];
+
+/* 地形の図形（tools/build_terrain.py が data/terrain.json に書き出す。教材の略地図程度のおおまかな形） */
+const TERRAIN = __TERRAIN__;
+const gTerrain = document.getElementById("terrain"), featEls = {};
+TERRAIN.forEach(f => {
+  const els = [];
+  // 線の図形は、地図の上で見えるよう下に縁取りの線を敷く
+  if (f.kind === "range" || f.kind === "river") els.push(f.kind === "river" ? "feat river case" : "feat case");
+  els.push(`feat ${f.kind}`);
+  featEls[f.id] = els.map(cls => { const p = document.createElementNS(NS, "path"); p.setAttribute("d", f.d); p.setAttribute("class", cls); gTerrain.appendChild(p); return p; });
+});
+const showFeature = id => Object.entries(featEls).forEach(([k, els]) => els.forEach(p => p.classList.toggle("show", k === id)));
 let insetShown = true;
 
 /* 地方の虫眼鏡（緯度・経度で置く。タップでその地方へズーム） */
@@ -640,8 +678,8 @@ function fullRecs() {
   MODES.forEach(m => { R[m.id] = {}; COURSES.filter(c => c.ready).forEach(c => {
     const type = QUIZ_TYPES[c.id], all = Object.fromEntries(type.make(range(1,47)).map(q => [q.key, 1]));
     R[m.id][c.id] = { got: {...all}, clean: {...all}, miss: {}, complete: true, master: {at: 0, clean: true},
-      best: Object.fromEntries([...STAGES.map(a => [a.id, type.make(a.codes).length]), ["zenkoku", Object.keys(all).length]]),
-      stage: Object.fromEntries(STAGES.map(a => [a.id, {complete: true, master: {at: 0}}])) };
+      best: Object.fromEntries([...stagesOf(c).map(a => [a.id, type.make(a.codes, a).length]), ["zenkoku", Object.keys(all).length]]),
+      stage: Object.fromEntries(stagesOf(c).map(a => [a.id, {complete: true, master: {at: 0}}])) };
   }); });
   return R;
 }
@@ -704,7 +742,7 @@ function bindBar() {
 // ホーム系の画面（モード選択・コース一覧・コース）に共通：地図をコレクションの色で見せ、県をさわると名前を出す
 function toHomeScreen(box = FULL) {
   cancelQuizTimers(); eyeOff();
-  mode = "home"; quiz = null; selected = null; clearTag(); combo.hidden = true; pbar.innerHTML = "";
+  mode = "home"; quiz = null; selected = null; clearTag(); combo.hidden = true; pbar.innerHTML = ""; showFeature(null);
   JapanMap.resetColors(); svg.classList.add("explore"); svg.classList.remove("region-quiz");
   Object.values(labelEl).forEach(t => t.classList.remove("off"));
   const lv = prefLevels();
@@ -736,7 +774,7 @@ function courseStatus(c) {
   }
   const m = masterOf(c.id);
   if (m) return {text: crown(c), done: true};
-  if (c.stages) return {text: `ステージ👑 ${stageCrowns(c.id)} / ${STAGES.length}`};
+  if (c.stages) return {text: `ステージ👑 ${stageCrowns(c.id)} / ${stagesOf(c).length}`};
   const got = new Set(); recsOf(c.id).forEach(r => Object.keys(r.got).forEach(k => got.add(k)));
   return {text: `正解した問題 ${got.size} / ${fullCount(c.id)}`};
 }
@@ -777,11 +815,11 @@ function coursePage(c) {
   const best = Object.assign({}, ...recsOf(c.id).map(r => r.best));
   top_.innerHTML = `${titleBtn()}<div class="brand">${c.name}<small>${curMode().name}</small></div>${debugBtn()}<button class="iconbtn" id="back" type="button">もどる</button>`;
   bindBar(); byId("back").onclick = home;
-  const regions = AREAS.filter(a => !a.wide).map(a => ({a, n: type.make(a.codes).length})).filter(x => x.n > 0);
+  const regions = (c.stages ? stagesOf(c) : STAGES).map(a => ({a, n: type.make(a.codes, a).length})).filter(x => x.n > 0);
   sheet.innerHTML = `
     <div class="modebar">${m ? `<span class="medal">${crown(c)}</span>` : ""}</div>
     ${c.stages ? "" : `<div class="chips"><button class="chip wide" type="button" id="master">全国の挑戦<small>${total}問${best.zenkoku != null ? `・ベスト ${best.zenkoku}/${total}` : ""}</small></button></div>`}
-    <h2>${c.stages ? `地方ステージ（👑 ${stageCrowns(c.id)} / ${STAGES.length}）` : "地方ごとの練習"}</h2>
+    <h2>${c.stages ? `${c.stageList ? "" : "地方"}ステージ（👑 ${stageCrowns(c.id)} / ${stagesOf(c).length}）` : "地方ごとの練習"}</h2>
     <div class="chips">${regions.map(({a, n}) => {
       // 県名タップは v4 の地方ベスト（store.best）も参考に出す
       const b = Math.max(best[a.id] ?? -1, c.id === "prefName" ? (store.best[a.id] ?? -1) : -1);
@@ -791,7 +829,7 @@ function coursePage(c) {
     <h2>このコースのきまり</h2>
     <ul class="rules">${c.rules.map(r => `<li>${r}</li>`).join("")}<li>目のボタン（ヒント）を1回でも使うと👑マスターにはならない（正解は記録に残り、地図の色もつく）</li></ul>`;
   if (!c.stages) byId("master").onclick = () => startQuiz(c, zen, zen.codes, {master: true});
-  sheet.querySelectorAll("[data-area]").forEach(b => b.onclick = () => { const a = AREAS.find(x => x.id === b.dataset.area); startQuiz(c, a, a.codes, {stage: !!c.stages}); });
+  sheet.querySelectorAll("[data-area]").forEach(b => b.onclick = () => { const a = (c.stages ? stagesOf(c) : AREAS).find(x => x.id === b.dataset.area); startQuiz(c, a, a.codes, {stage: !!c.stages}); });
 }
 
 function showInfo(code) {
@@ -808,13 +846,13 @@ function shuffle(a){ a = a.slice(); for (let i=a.length-1;i>0;i--){ const j = Ma
 function startQuiz(course, area, codes, opts={}) {
   cancelQuizTimers(); eyeOff();
   const type = QUIZ_TYPES[course.id];
-  sheet.classList.remove("home");
+  sheet.classList.remove("home"); showFeature(null);
   mode = "quiz"; selected = null; clearTag(); JapanMap.resetColors(); svg.classList.remove("explore");
   const inArea = new Set(area.codes);
   PREFS.forEach(p => { pathEl[p.code].classList.toggle("off", !inArea.has(p.code)); labelEl[p.code].classList.toggle("off", !inArea.has(p.code)); });
   homeBox = area.wide ? FULL : unionBox(area.codes); fitLater(homeBox);
   svg.classList.toggle("region-quiz", !area.wide);
-  let qs = type.make(codes);
+  let qs = type.make(codes, area);
   if (opts.keys) qs = qs.filter(q => opts.keys.includes(q.key));
   const master = !!opts.master && !opts.keys && area.wide && qs.length === fullCount(course.id);
   const stage = !!opts.stage && !opts.keys && !!course.stages && !area.wide;
@@ -845,8 +883,14 @@ function nextQ() {
   if (quiz.type.kind === "choice") {
     // 対象の都道府県を地図で示し、選択肢の並びは毎回まぜる
     Object.values(pathEl).forEach(p => p.classList.remove("sel", "ok", "miss"));
-    pathEl[q.focus].classList.add("sel");
-    if (quiz.area.wide) fitLater(unionBox(areaOfPref(q.focus).codes));
+    if (q.feature) {
+      showFeature(q.feature);
+      const b = TERRAIN.find(f => f.id === q.feature).b, cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2, h = Math.max(b[2] - b[0], b[3] - b[1], 160) / 2;
+      fitLater([cx - h, cy - h, cx + h, cy + h]);
+    } else {
+      pathEl[q.focus].classList.add("sel");
+      if (quiz.area.wide) fitLater(unionBox(areaOfPref(q.focus).codes));
+    }
     q.order = shuffle(q.choices);
     sheet.innerHTML = `${askBlock()}<div class="choices">${q.order.map(([n, k], j) =>
       `<button class="choice" type="button" data-j="${j}">${n}<small>${k}</small></button>`).join("")}</div>`;
@@ -933,7 +977,7 @@ function handleTap(code) {
 function result() {
   cancelQuizTimers(); eyeOff();
   Object.values(pathEl).forEach(p => p.classList.remove("flash-ok", "flash-ng", "reveal"));
-  pbar.innerHTML = "";
+  pbar.innerHTML = ""; showFeature(null);
   // 正解した県の色は、途中の遅延処理が取り消されても結果画面で付けそろえる
   if (quiz.type.kind === "tap") quiz.log.forEach(l => l.ok && pathEl[l.pref].classList.add("ok"));
   mode = "result"; combo.hidden = true; clearTag();
@@ -948,8 +992,8 @@ function result() {
     s.complete = true;
     r.best[area.id] = Math.max(r.best[area.id] ?? 0, clean);
     if (clean === total && !stageDone(course.id, area.id, "master")) { s.master = {at: Date.now()}; newStage = true; }
-    if (STAGES.every(a => stageDone(course.id, a.id, "complete"))) r.complete = true;
-    if (STAGES.every(a => stageDone(course.id, a.id, "master")) && !masterOf(course.id)) { newMaster = {at: Date.now(), clean: true}; r.master = newMaster; }
+    if (stagesOf(course).every(a => stageDone(course.id, a.id, "complete"))) r.complete = true;
+    if (stagesOf(course).every(a => stageDone(course.id, a.id, "master")) && !masterOf(course.id)) { newMaster = {at: Date.now(), clean: true}; r.master = newMaster; }
   } else if (quiz.master) {
     // 全国の挑戦を最後まで解いた。47（または全都市）を重複なく、ヒントなしで全問正解したときだけ👑マスター
     r.complete = true;
@@ -964,8 +1008,8 @@ function result() {
   save();
   const opened = COURSES.filter(c => before.includes(c.id) && unlocked(c));
   const msg = newMaster ? `${crown(course)}！` : newStage ? `👑${quiz.area.name}ステージ クリア！` : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしで👑マスター" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
-  const nextStage = quiz.stage ? STAGES[STAGES.indexOf(quiz.area) + 1] : null;
-  const label = l => course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
+  const nextStage = quiz.stage ? stagesOf(course)[stagesOf(course).indexOf(quiz.area) + 1] : null;
+  const label = l => course.id === "terrain" ? TERRAIN.find(f => f.id === l.key).name : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
   top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}　けっか</span><span class="q shout">${msg}</span></div>${debugBtn()}${muteBtn()}`;
   bindBar();
   sheet.innerHTML = `
