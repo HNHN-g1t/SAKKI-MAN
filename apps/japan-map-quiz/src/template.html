@@ -40,10 +40,12 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:5
 .brand small{display:block;font-family:var(--body);font-weight:700;font-size:.72rem;color:var(--muted);letter-spacing:.08em}
 .ask{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .ask .meta{font-size:.75rem;color:var(--muted);font-weight:700;letter-spacing:.06em;font-variant-numeric:tabular-nums}
-.ask .q{font-family:var(--display);font-size:clamp(1.3rem,5.4vw,1.9rem);line-height:1.15;text-wrap:balance}
+.ask .q{font-family:var(--display);font-size:clamp(1.1rem,4.8vw,1.9rem);line-height:1.15;text-wrap:balance}
 .ask .q em{font-style:normal;color:var(--ink);background:linear-gradient(transparent 62%,var(--accent) 62%);padding:0 .1em}
 .ask .kana{font-size:.8rem;color:var(--muted);font-weight:700}
 .iconbtn{flex:none;min-width:44px;height:44px;padding:0 10px;white-space:nowrap;border-radius:12px;border:2px solid var(--sheet-line);background:var(--sheet);color:var(--ink);font:700 .8rem var(--body);display:grid;place-items:center;cursor:pointer}
+.iconbtn svg{width:22px;height:22px}
+.iconbtn.dbg-on{background:var(--accent);color:var(--accent-ink);border-color:var(--line)}
 .iconbtn:focus-visible,.btn:focus-visible,.chip:focus-visible,.eye:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 
 /* 中：地図 */
@@ -562,6 +564,28 @@ function muteBtn(){ return `<button class="iconbtn" id="mute" type="button" aria
 function bindMute(){ const m = document.getElementById("mute"); if (m) m.onclick = () => { store.mute = !store.mute; save(); m.textContent = store.mute ? "音OFF" : "音ON"; }; }
 const byId = id => document.getElementById(id);
 
+/* デバッグ：ONの間はクイズを高速で自動正解する（画面遷移の確認用。記録・マスターにもそのまま残る。保存はせず再読み込みでOFF） */
+let debug = false;
+const DEBUG_ANSWER_MS = 120, DEBUG_NEXT_MS = 150;
+function titleBtn(){ return `<button class="iconbtn" id="toTitle" type="button" aria-label="タイトル画面へ戻る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg></button>`; }
+function debugBtn(){ return `<button class="iconbtn${debug ? " dbg-on" : ""}" id="dbg" type="button" aria-pressed="${debug}" aria-label="デバッグモード">DBG</button>`; }
+// 上部バーの共通ボタン（タイトルへ・デバッグ・音）をつなぐ
+function bindBar() {
+  bindMute();
+  const t = byId("toTitle"); if (t) t.onclick = modeSelect;
+  const d = byId("dbg");
+  if (d) d.onclick = () => {
+    debug = !debug; d.classList.toggle("dbg-on", debug); d.setAttribute("aria-pressed", debug);
+    if (debug && mode === "quiz" && !quiz.answered) quizTimeout(autoAnswer, DEBUG_ANSWER_MS);
+  };
+}
+function autoAnswer() {
+  if (!debug || quiz.answered) return;
+  const q = quiz.q;
+  if (quiz.type.kind === "choice") answerChoice(q.order.findIndex(o => o[0] === q.correct));
+  else handleTap(q.answers[0]);
+}
+
 // ホーム系の画面（モード選択・コース一覧・コース）に共通：地図をコレクションの色で見せ、県をさわると名前を出す
 function toHomeScreen(box = FULL) {
   cancelQuizTimers(); eyeOff();
@@ -579,8 +603,8 @@ function toHomeScreen(box = FULL) {
 /* OP：モード選択 */
 function modeSelect() {
   toHomeScreen();
-  top_.innerHTML = `<div class="brand">日本地図タップクイズ<small>サッ記マン・中学受験 社会</small></div>${muteBtn()}`;
-  bindMute();
+  top_.innerHTML = `<div class="brand">日本地図タップクイズ<small>サッ記マン・中学受験 社会</small></div>${debugBtn()}${muteBtn()}`;
+  bindBar();
   sheet.innerHTML = `
     <h2>モードをえらんでね</h2>
     <div class="chips modes">${MODES.map(m => `<button class="chip${m.id === store.mode ? " now" : ""}" type="button" data-mode="${m.id}">${m.name}</button>`).join("")}</div>
@@ -606,8 +630,8 @@ function home() {
   if (!modeOf(store.mode)) return modeSelect();
   const lv = toHomeScreen();
   const colored = Object.values(lv).filter(n => n > 0).length;
-  top_.innerHTML = `<div class="brand">日本地図タップクイズ<small>${curMode().name}</small></div>${muteBtn()}`;
-  bindMute();
+  top_.innerHTML = `${titleBtn()}<div class="brand">日本地図タップクイズ<small>${curMode().name}</small></div>${debugBtn()}${muteBtn()}`;
+  bindBar();
   sheet.innerHTML = `
     <div class="modebar"><span class="badge">${curMode().name}</span><button class="linkbtn" id="chgMode" type="button">モードをかえる</button></div>
     <div class="info" id="info"><span class="hint">色がついた県 ${colored} / 47。正解した県から地図に色がつくよ。</span></div>
@@ -627,8 +651,8 @@ function coursePage(c) {
   toHomeScreen();
   const type = QUIZ_TYPES[c.id], total = fullCount(c.id), m = masterOf(c.id), zen = AREAS.find(a => a.wide);
   const best = Object.assign({}, ...recsOf(c.id).map(r => r.best));
-  top_.innerHTML = `<div class="brand">${c.name}<small>${curMode().name}</small></div><button class="iconbtn" id="back" type="button">もどる</button>`;
-  byId("back").onclick = home;
+  top_.innerHTML = `${titleBtn()}<div class="brand">${c.name}<small>${curMode().name}</small></div>${debugBtn()}<button class="iconbtn" id="back" type="button">もどる</button>`;
+  bindBar(); byId("back").onclick = home;
   const regions = AREAS.filter(a => !a.wide).map(a => ({a, n: type.make(a.codes).length})).filter(x => x.n > 0);
   sheet.innerHTML = `
     <div class="modebar">${m ? `<span class="medal${m.clean ? "" : " hinted"}">${c.master}${m.clean ? "（ヒントなし）" : "（ヒントあり）"}</span>` : ""}</div>
@@ -682,8 +706,9 @@ function nextQ() {
   eyeOff(); clearTag();
   if (quiz.i >= quiz.qs.length) return result();
   const q = quiz.q = quiz.qs[quiz.i]; q.hint = false; quiz.answered = false;
-  top_.innerHTML = `<div class="ask"><span class="meta">${quiz.course.name}・${quiz.master ? "全国の挑戦" : quiz.area.name}　${quiz.i+1} / ${quiz.qs.length}</span><span class="q">${q.text}</span><span class="kana">${q.sub || ""}</span></div><button class="iconbtn" id="quit" type="button">やめる</button>`;
-  byId("quit").onclick = home;
+  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${quiz.course.name}・${quiz.master ? "全国の挑戦" : quiz.area.name}　${quiz.i+1} / ${quiz.qs.length}</span><span class="q">${q.text}</span><span class="kana">${q.sub || ""}</span></div>${debugBtn()}<button class="iconbtn" id="quit" type="button">やめる</button>`;
+  bindBar(); byId("quit").onclick = home;
+  if (debug) quizTimeout(autoAnswer, DEBUG_ANSWER_MS);
   if (quiz.type.kind === "choice") {
     // 対象の都道府県を地図で示し、選択肢の並びは毎回まぜる
     Object.values(pathEl).forEach(p => p.classList.remove("sel", "ok", "miss"));
@@ -721,7 +746,7 @@ function afterAnswer(ok, html) {
     if (quiz.combo >= 2) { combo.textContent = `${quiz.combo}れんぞく！`; combo.hidden = false; combo.classList.remove("pop"); void combo.offsetWidth; combo.classList.add("pop"); }
     else combo.hidden = true;
     sheet.insertAdjacentHTML("beforeend", html);
-    quizTimeout(() => { quiz.i++; nextQ(); }, 1300);
+    quizTimeout(() => { quiz.i++; nextQ(); }, debug ? DEBUG_NEXT_MS : 1300);
   } else {
     sndNg(); quiz.combo = 0; combo.hidden = true;
     sheet.insertAdjacentHTML("beforeend", `${html}<div class="row"><button class="btn primary" id="next" type="button">つぎへ</button></div>`);
@@ -772,6 +797,8 @@ function handleTap(code) {
 function result() {
   cancelQuizTimers(); eyeOff();
   Object.values(pathEl).forEach(p => p.classList.remove("flash-ok", "flash-ng", "blink"));
+  // 正解した県の色は、途中の遅延処理が取り消されても結果画面で付けそろえる
+  if (quiz.type.kind === "tap") quiz.log.forEach(l => l.ok && pathEl[l.pref].classList.add("ok"));
   mode = "result"; combo.hidden = true; clearTag();
   const course = quiz.course, total = quiz.qs.length, correct = quiz.log.filter(l => l.ok).length, clean = quiz.log.filter(l => l.ok && !l.hint).length;
   const missed = quiz.log.filter(l => !l.ok);
@@ -794,8 +821,8 @@ function result() {
   const opened = COURSES.filter(c => before.includes(c.id) && unlocked(c));
   const msg = newMaster ? `${course.master}！` : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ 次はヒントなしで！" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
   const label = l => course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
-  top_.innerHTML = `<div class="ask"><span class="meta">${course.name}・${quiz.master ? "全国の挑戦" : quiz.area.name}　けっか</span><span class="q">${msg}</span></div>${muteBtn()}`;
-  bindMute();
+  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${course.name}・${quiz.master ? "全国の挑戦" : quiz.area.name}　けっか</span><span class="q">${msg}</span></div>${debugBtn()}${muteBtn()}`;
+  bindBar();
   sheet.innerHTML = `
     <div class="score"><span class="big">${correct}<small style="font-size:1.2rem"> / ${total}</small></span><span class="msg">ヒントなし正解 ${clean}問・最高 ${quiz.maxCombo}れんぞく</span></div>
     ${newMaster ? `<div class="modebar"><span class="medal${newMaster.clean ? "" : " hinted"}">${course.master}${newMaster.clean ? "（ヒントなし）" : "（ヒントあり）"}</span></div>` : ""}
