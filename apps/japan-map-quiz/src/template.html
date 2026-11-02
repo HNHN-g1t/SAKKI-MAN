@@ -11,162 +11,186 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Dela+Gothic+One&display=swap">
 <style>
-/* 白地図（受験用の白い地図）を机に広げたイメージ：海の青＋白い陸＋黒い県境。上に問題、下に答えのシート */
+/* サッと記憶のサッ記マン：ブランド黄と墨の配色。問題画面は白を基調にし、黄色は選択・正解・主要ボタンだけに使う。
+   色はこの3か所（:root／ダーク2か所）の変数でだけ定義する。ほかの場所に色コードを書かない。
+   --brand と --on-brand はダークでも変えない（黄色の上の文字は常に墨。白やクリームの上に黄色の文字は置かない） */
 :root{
-  --bg:#e3e5e7; --sea:#bcdcec; --land:#fdfcf7; --land-dim:#e4ebee; --land-none:#c9cdd1; --line:#2c3d4a;
-  --ink:#1d2b35; --muted:#5a6d7a; --sheet:#ffffff; --sheet-line:#c9dbe4;
-  --accent:#f2a516; --accent-ink:#4a3000; --ok:#2e9a58; --ok-soft:#bfe6cc; --ng:#d9472f; --ng-soft:#f7c9bd;
-  --r1:#cfe3f7; --r2:#f6d7d9; --r3:#d9efcf; --r4:#f7e6bf; --r5:#e3d9f3; --r6:#cdeee9; --r7:#f6dcc6;
-  --display:"Dela Gothic One","Hiragino Kaku Gothic StdN","Yu Gothic",sans-serif;
-  --body:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
-  --shadow:0 -6px 24px rgba(30,60,80,.12);
+  --brand:#FED003; --on-brand:#282727;
+  --ink:#282727; --paper:#FFFFFF; --cream:#FEF3E6; --sea:#DCE6EA; --bg:#ECEBE9;
+  --muted:#5E5A58; --line-soft:#CFCCCA; --off:#E1E1DF;
+  --ok:#1E7B45; --ng:#C23A2B; --on-strong:#FFFFFF; --ok-soft:#CBEBD6; --ng-soft:#F9D4CD;
+  --land-none:#C9CCCF; --tier-a:#FFFFFF; --tier-b:#FEF3E6; --tier-c:#FFF4BF; --rich:#FFE680; --rich2:#FFDA4D;
+  --display:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
+  --body:"BIZ UDPGothic","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+  /* 文字サイズ7段階・余白6段階・角丸 */
+  --fs12:12px; --fs14:14px; --fs16:16px; --fs20:20px; --fs28:28px; --fs40:40px; --fs56:56px;
+  --s4:4px; --s8:8px; --s12:12px; --s16:16px; --s24:24px; --s32:32px;
+  --r-btn:14px; --r-sheet:20px; --r-pill:999px; --bw:2.5px; --tap:48px;
+  --marker:.45em;   /* 県名マーカーの太さ（ダークは文字に重ならない細い下線にする） */
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#1c1f22; --sea:#12304a; --land:#2b3c49; --land-dim:#1b2b37; --land-none:#454a50; --line:#a9c0cf;
-  --ink:#e9f1f6; --muted:#9bb0be; --sheet:#152836; --sheet-line:#2b4558;
-  --accent:#f5b53a; --accent-ink:#2a1a00; --ok:#4cc27b; --ok-soft:#24543a; --ng:#f06a52; --ng-soft:#5b2a22;
-  --r1:#2c4a66; --r2:#5a3540; --r3:#355239; --r4:#5a4a26; --r5:#433a5e; --r6:#265250; --r7:#5a3f2d;
-  --shadow:0 -6px 24px rgba(0,0,0,.4); color-scheme:dark}}
+  --ink:#FEF3E6; --paper:#232222; --cream:#3A3632; --sea:#26313A; --bg:#141313;
+  --muted:#C8BEB1; --line-soft:#4D4A47; --off:#2B2928;
+  --ok:#1E7B45; --ng:#C23A2B; --ok-soft:#24543A; --ng-soft:#6A2A22;
+  --land-none:#4B4B4B; --tier-a:#2F2D2B; --tier-b:#3A3632; --tier-c:#4A4227; --rich:#6B5A1C; --rich2:#7A6614;
+  --marker:4px; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#1c1f22; --sea:#12304a; --land:#2b3c49; --land-dim:#1b2b37; --land-none:#454a50; --line:#a9c0cf;
-  --ink:#e9f1f6; --muted:#9bb0be; --sheet:#152836; --sheet-line:#2b4558;
-  --accent:#f5b53a; --accent-ink:#2a1a00; --ok:#4cc27b; --ok-soft:#24543a; --ng:#f06a52; --ng-soft:#5b2a22;
-  --r1:#2c4a66; --r2:#5a3540; --r3:#355239; --r4:#5a4a26; --r5:#433a5e; --r6:#265250; --r7:#5a3f2d;
-  --shadow:0 -6px 24px rgba(0,0,0,.4); color-scheme:dark}
+  --ink:#FEF3E6; --paper:#232222; --cream:#3A3632; --sea:#26313A; --bg:#141313;
+  --muted:#C8BEB1; --line-soft:#4D4A47; --off:#2B2928;
+  --ok:#1E7B45; --ng:#C23A2B; --ok-soft:#24543A; --ng-soft:#6A2A22;
+  --land-none:#4B4B4B; --tier-a:#2F2D2B; --tier-b:#3A3632; --tier-c:#4A4227; --rich:#6B5A1C; --rich2:#7A6614;
+  --marker:4px; color-scheme:dark}
 
-html,body{height:100%}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:500;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-.app{height:100%;display:grid;grid-template-rows:auto 1fr auto;max-width:900px;margin:0 auto}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:400;font-size:var(--fs16);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.app{height:100%;display:grid;grid-template-rows:auto auto 1fr auto;max-width:900px;margin:0 auto;background:var(--paper)}
 
-/* 上：問題バー */
-.top{padding-block:10px 8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:10px;min-height:56px}
-.brand{font-family:var(--display);font-size:1.15rem;letter-spacing:.02em;flex:1;min-width:0;line-height:1.2}
-.brand small{display:block;font-family:var(--body);font-weight:700;font-size:.72rem;color:var(--muted);letter-spacing:.08em}
-.ask{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.ask .meta{font-size:.75rem;color:var(--muted);font-weight:700;letter-spacing:.06em;font-variant-numeric:tabular-nums}
-.ask .q{font-family:var(--display);font-size:clamp(1.1rem,4.8vw,1.9rem);line-height:1.15;text-wrap:balance}
-.ask .q em{font-style:normal;color:var(--ink);background:linear-gradient(transparent 62%,var(--accent) 62%);padding:0 .1em}
-.ask .kana{font-size:.8rem;color:var(--muted);font-weight:700}
-.iconbtn{flex:none;min-width:44px;height:44px;padding:0 10px;white-space:nowrap;border-radius:12px;border:2px solid var(--sheet-line);background:var(--sheet);color:var(--ink);font:700 .8rem var(--body);display:grid;place-items:center;cursor:pointer}
-.iconbtn svg{width:22px;height:22px}
-.iconbtn.dbg-on{background:var(--accent);color:var(--accent-ink);border-color:var(--line)}
-.iconbtn:focus-visible,.btn:focus-visible,.chip:focus-visible,.eye:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+/* 上の帯（白） */
+.top{background:var(--paper);padding-block:var(--s8);padding-left:max(var(--s16),env(safe-area-inset-left,0px));padding-right:max(var(--s16),env(safe-area-inset-right,0px));display:flex;align-items:center;gap:var(--s8);min-height:64px;box-sizing:border-box}
+.brand{font-family:var(--display);font-size:var(--fs20);flex:1;min-width:0;line-height:1.2}
+.brand small{display:block;font-family:var(--body);font-weight:700;font-size:var(--fs12);color:var(--muted)}
+.ask{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--s4)}
+.ask .meta{font-size:var(--fs14);color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+.ask .q{font-family:var(--body);font-weight:700;font-size:var(--fs28);line-height:1.25;text-wrap:balance}
+.ask .q.shout{font-family:var(--display);font-weight:400;font-size:var(--fs20)}
+/* 県名だけ黄色のマーカー線（下半分） */
+.ask .q em{font-style:normal;box-shadow:inset 0 calc(-1 * var(--marker)) 0 var(--brand)}
+.ask .kana{font-size:var(--fs14);color:var(--muted);font-weight:700}
 
-/* 中：地図 */
-.mapwrap{position:relative;min-height:0;background:var(--sea);border-block:2px solid var(--sheet-line)}
+/* 進み具合：帯のすぐ下に画面幅いっぱい。いまの問題は背を高くする */
+.pbar{display:flex;align-items:flex-end;gap:2px;background:var(--paper);padding:0 max(var(--s16),env(safe-area-inset-right,0px)) var(--s8) max(var(--s16),env(safe-area-inset-left,0px));min-height:12px}
+.pbar:empty{min-height:0;padding-block:0}   /* 段は残す（消すとグリッドの段がずれる） */
+.pbar i{flex:1;height:6px;border-radius:var(--r-pill);background:var(--line-soft)}
+.pbar i.now{height:12px;background:var(--brand);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.pbar i.ok{background:var(--ok)} .pbar i.ng{background:var(--ng)}
+.pbar i.hintd{background:repeating-linear-gradient(135deg,var(--ok) 0 3px,var(--ok-soft) 3px 6px)}
+
+/* ボタンは3種類：主要（黄色＋墨の枠＋真下の影。押すと沈む）／補助（白＋墨の枠、影なし）／最小限（文字だけ） */
+.btn,.iconbtn,.chip,.course,.choice,.zoomreset{box-sizing:border-box;min-height:var(--tap);border:var(--bw) solid var(--ink);border-radius:var(--r-btn);background:var(--paper);color:var(--ink);font-family:var(--body);font-weight:700;cursor:pointer}
+.btn:active,.iconbtn:active,.chip:active,.course:active,.choice:active,.zoomreset:active{transform:translateY(2px)}
+.btn.primary,.chip.wide{background:var(--brand);color:var(--on-brand);box-shadow:0 4px 0 var(--ink)}
+.btn.primary:active,.chip.wide:active{transform:translateY(4px);box-shadow:none}
+.linkbtn{border:0;background:none;color:var(--ink);font:700 var(--fs14) var(--body);text-decoration:underline;cursor:pointer;min-height:var(--tap);padding:0 var(--s4)}
+.iconbtn{flex:none;min-width:var(--tap);height:var(--tap);padding:0 var(--s12);white-space:nowrap;font-size:var(--fs14);display:grid;place-items:center}
+.iconbtn svg{width:24px;height:24px}
+.iconbtn.dbg-on{background:var(--brand);color:var(--on-brand)}
+.btn:focus-visible,.iconbtn:focus-visible,.chip:focus-visible,.course:focus-visible,.choice:focus-visible,.zoomreset:focus-visible,.linkbtn:focus-visible,.eye:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+
+/* 地図（問題中は海と陸を落ち着かせ、黄色は選択・正解表示の時だけ） */
+.mapwrap{position:relative;min-height:0;background:var(--sea)}
 svg#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block;cursor:grab}
 svg#map:active{cursor:grabbing}
-.pref{fill:var(--land);stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;transition:fill .25s}
-/* コレクション：⓪グレー → ①地方の色 → ②色・陰影がリッチに（data-lv＝その県で正解したコースの数） */
+.pref{fill:var(--cream);stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;transition:fill .25s}
+/* ホーム：⓪まだの県はグレー → ①地方の3段階（A白・Bクリーム・C淡い黄）→ ②③色が濃くなる（data-lv＝正解したコースの数） */
 .explore .pref{fill:var(--land-none)}
-.explore .pref:not([data-lv="0"])[data-r="1"]{fill:var(--r1)} .explore .pref:not([data-lv="0"])[data-r="2"]{fill:var(--r2)} .explore .pref:not([data-lv="0"])[data-r="3"]{fill:var(--r3)}
-.explore .pref:not([data-lv="0"])[data-r="4"]{fill:var(--r4)} .explore .pref:not([data-lv="0"])[data-r="5"]{fill:var(--r5)} .explore .pref:not([data-lv="0"])[data-r="6"]{fill:var(--r6)} .explore .pref:not([data-lv="0"])[data-r="7"]{fill:var(--r7)}
-.explore .pref[data-lv="2"]{filter:saturate(1.8) brightness(.95)}
-.explore .pref[data-lv="3"]{filter:saturate(2.3) brightness(.9) drop-shadow(0 1px 1px rgba(0,0,0,.35))}
-.pref.off{fill:var(--land-dim);stroke-opacity:.35}
-.pref.sel{fill:var(--accent)!important}
+.explore .pref:not([data-lv="0"]):is([data-r="1"],[data-r="4"],[data-r="7"]){fill:var(--tier-a)}
+.explore .pref:not([data-lv="0"]):is([data-r="2"],[data-r="5"]){fill:var(--tier-b)}
+.explore .pref:not([data-lv="0"]):is([data-r="3"],[data-r="6"]){fill:var(--tier-c)}
+.explore .pref[data-lv="2"]:is([data-r]){fill:var(--rich)}
+.explore .pref[data-lv="3"]:is([data-r]){fill:var(--rich2)}
+/* 地方の境目（県境の約2.5倍）。ホームだけ表示し、タップは邪魔しない */
+.region-line{fill:none;stroke:var(--ink);stroke-width:2.5px;vector-effect:non-scaling-stroke;stroke-linejoin:round;pointer-events:none}
+svg:not(.explore) .region-line{display:none}
+.pref.off{fill:var(--off);stroke-opacity:.35}
+/* 状態は色だけに頼らない：選択＝黄色＋墨の太枠／正解の場所＝太枠が3回脈打って残る */
+.pref.sel{fill:var(--brand)!important;stroke-width:3px}
 .pref.ok{fill:var(--ok-soft)!important}
 .pref.miss{fill:var(--ng-soft)!important}
 .pref.flash-ok{fill:var(--ok)!important}
 .pref.flash-ng{fill:var(--ng)!important}
-.pref.blink{animation:blink .5s ease-in-out 5}
-@keyframes blink{0%,100%{fill:var(--land)}50%{fill:var(--ok)}}
-.inset{fill:none;stroke:var(--line);stroke-width:1.4;stroke-dasharray:7 5;vector-effect:non-scaling-stroke;opacity:.8}
-.inset-cap{font-family:var(--body);font-weight:700;fill:var(--muted);font-size:9px}
+.pref.reveal{stroke-width:5px;animation:pulse .4s ease-in-out 3}
+@keyframes pulse{50%{stroke-width:10px}}
+.inset{fill:none;stroke:var(--ink);stroke-width:1.4;stroke-dasharray:7 5;vector-effect:non-scaling-stroke;opacity:.8}
 .zoom{cursor:pointer}
-.zoom circle{fill:var(--sheet);stroke:var(--line);stroke-width:2;vector-effect:non-scaling-stroke}
-.zoom path{fill:none;stroke:var(--line);stroke-width:2.4;stroke-linecap:round;vector-effect:non-scaling-stroke}
-.zoom:hover circle{fill:var(--accent)}
+.zoom circle{fill:var(--paper);stroke:var(--ink);stroke-width:2.5;vector-effect:non-scaling-stroke}
+.zoom path{fill:none;stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.zoom:hover circle{fill:var(--brand)}
 .zooms-off #zooms,.region-quiz #zooms{display:none}
 .labels{pointer-events:none;opacity:0;transition:opacity .12s}
 .show-labels .labels{opacity:1}
-.labels text{font-family:var(--body);font-weight:900;fill:var(--ink);stroke:var(--land);stroke-width:3px;paint-order:stroke;vector-effect:non-scaling-stroke;text-anchor:middle;dominant-baseline:central}
+.labels text{font-family:var(--body);font-weight:700;fill:var(--ink);stroke:var(--cream);stroke-width:3px;paint-order:stroke;vector-effect:non-scaling-stroke;text-anchor:middle;dominant-baseline:central}
 .labels text.off{display:none}
 .tag{pointer-events:none}
-.tag text{font-family:var(--body);font-weight:900;fill:#fff;text-anchor:middle;dominant-baseline:central}
+.tag text{font-family:var(--body);font-weight:700;fill:var(--on-strong);text-anchor:middle;dominant-baseline:central}
 .tag rect{fill:var(--ng)}
 
-.eye{position:absolute;right:calc(12px + env(safe-area-inset-right,0px));bottom:30px;width:64px;height:64px;border-radius:50%;border:3px solid var(--line);background:var(--sheet);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 0 var(--line);touch-action:none}
+/* 目ボタン：墨の丸に黄色の目。押している間は黄色の丸に墨の目で4px沈む */
+.eye{position:absolute;right:calc(var(--s16) + env(safe-area-inset-right,0px));bottom:calc(var(--r-sheet) + var(--s32) + var(--s8));width:64px;height:64px;border-radius:50%;border:var(--bw) solid var(--ink);background:var(--on-brand);color:var(--brand);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 0 var(--ink);touch-action:none;padding:0}
 .eye svg{width:34px;height:34px}
-.eye.on{background:var(--accent);color:var(--accent-ink);transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
-.eye .cap{position:absolute;bottom:-22px;font-size:.68rem;font-weight:900;color:var(--ink);white-space:nowrap;background:var(--sheet);padding:1px 6px;border-radius:8px}
-.zoomreset{position:absolute;left:calc(10px + env(safe-area-inset-left,0px));top:10px;box-shadow:0 2px 0 var(--sheet-line);height:44px;padding:0 14px;border-radius:22px;border:2px solid var(--sheet-line);background:var(--sheet);color:var(--ink);font:700 .85rem var(--body);cursor:pointer}
-.combo{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-family:var(--display);font-size:1.4rem;color:var(--accent-ink);background:var(--accent);padding:4px 16px;border-radius:999px;box-shadow:0 3px 0 var(--line);pointer-events:none}
-.combo.pop{animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
-@keyframes pop{from{transform:translateX(-50%) scale(.4)}to{transform:translateX(-50%) scale(1)}}
+.eye.on{background:var(--brand);color:var(--on-brand);transform:translateY(4px);box-shadow:none}
+.eye .cap{position:absolute;right:0;bottom:-26px;font-size:var(--fs12);font-weight:700;color:var(--ink);white-space:nowrap;background:var(--paper);border:1.5px solid var(--ink);padding:1px var(--s8);border-radius:var(--r-pill)}
+.zoomreset{position:absolute;left:calc(var(--s16) + env(safe-area-inset-left,0px));top:var(--s12);padding:0 var(--s16);font-size:var(--fs14)}
+.combo{position:absolute;left:50%;top:var(--s16);transform:translateX(-50%);font-family:var(--display);font-size:var(--fs20);color:var(--on-brand);background:var(--brand);border:var(--bw) solid var(--on-brand);padding:var(--s4) var(--s16);border-radius:var(--r-pill);pointer-events:none}
+.combo.pop{animation:pop .3s ease-out 1}
+@keyframes pop{50%{transform:translateX(-50%) scale(1.2)}}
 
-/* 下：シート */
-.sheet{background:var(--sheet);box-shadow:var(--shadow);padding-block:14px calc(14px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px;max-height:40vh;overflow-y:auto}
-.sheet.home{max-height:33vh;gap:6px}
-.home .chips{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-.home .chip{min-height:40px;font-size:.8rem;letter-spacing:-.04em;padding:2px 3px;border-radius:11px;overflow:hidden;white-space:normal;line-height:1.15;text-align:center}
-.home .chip small{font-size:.64rem}
+/* 下のシート */
+.sheet{position:relative;z-index:1;margin-top:calc(-1 * var(--r-sheet));background:var(--paper);border-radius:var(--r-sheet) var(--r-sheet) 0 0;border-top:var(--bw) solid var(--ink);padding-block:var(--s16) calc(var(--s16) + env(safe-area-inset-bottom,0px));padding-left:max(var(--s16),env(safe-area-inset-left,0px));padding-right:max(var(--s16),env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:var(--s12);max-height:44vh;overflow-y:auto}
+.sheet.home{max-height:36vh;gap:var(--s8)}
+.sheet h2{margin:0;font-size:var(--fs14);color:var(--muted);font-weight:700}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:var(--s8)}
+.chip{font-size:var(--fs16);white-space:nowrap;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:var(--s4) var(--s8)}
+.chip small{font-size:var(--fs12);color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+.chip.wide{grid-column:1/-1}
+.chip.wide small{color:var(--on-brand)}
+.chip.now{background:var(--brand);color:var(--on-brand)}
+.home .chips{grid-template-columns:repeat(4,minmax(0,1fr))}
+.home .chip{font-size:var(--fs14);padding:2px var(--s4);overflow:hidden;white-space:normal;line-height:1.15;text-align:center}
 .home .chip.wide{grid-column:span 2}
 .home #master{grid-column:1/-1}
 .home .chips.modes{grid-template-columns:1fr 1fr}
-.home .chips.modes .chip{min-height:48px;font-size:.95rem;letter-spacing:0}
-.home .chips.modes .chip.now{background:var(--accent);color:var(--accent-ink)}
-.sheet h2{margin:0;font-size:.82rem;letter-spacing:.1em;color:var(--muted);font-weight:900}
-.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:7px}
-.chip{min-height:46px;border-radius:14px;border:2px solid var(--line);background:var(--land);color:var(--ink);font:900 .92rem var(--body);white-space:nowrap;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-shadow:0 3px 0 var(--line);padding:4px 6px}
-.chip:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
-.chip small{font-size:.7rem;color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
-.chip.wide{grid-column:1/-1;background:var(--accent);color:var(--accent-ink)}
-.chip.wide small{color:var(--accent-ink);opacity:.8}
-.info{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-height:2.2em}
-.info .nm{font-family:var(--display);font-size:1.5rem}
-.info .sub{color:var(--muted);font-weight:700;font-size:.9rem}
-.hint{color:var(--muted);font-size:.85rem;font-weight:700;margin:0}
-.fb{display:flex;align-items:center;gap:12px;min-height:58px}
-.fb .mark{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:1.7rem;color:#fff}
-.fb.ok .mark{background:var(--ok)} .fb.ng .mark{background:var(--ng)}
+.home .chips.modes .chip{font-size:var(--fs16)}
+.info{display:flex;align-items:baseline;gap:var(--s8);flex-wrap:wrap;min-height:2.2em}
+.info .nm{font-weight:700;font-size:var(--fs20)}
+.info .sub{color:var(--muted);font-weight:700;font-size:var(--fs14)}
+.hint{color:var(--muted);font-size:var(--fs14);font-weight:700;margin:0;line-height:1.5}
+/* 答えた後：左に記号の丸（56px。次回キャラクターの顔に差し替える場所）、右に文字 */
+.fb{display:flex;align-items:center;gap:var(--s12);min-height:56px}
+.face{flex:none;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:var(--fs28);color:var(--on-strong)}
+.fb.ok .face{background:var(--ok);animation:bounce .3s ease-out 1}
+.fb.ng .face{background:var(--ng)}
+@keyframes bounce{50%{transform:scale(1.2)}}
 .fb .txt{flex:1;min-width:0;line-height:1.45}
-.fb .txt b{font-family:var(--display);font-weight:400;font-size:1.2rem}
-.fb .txt span{display:block;color:var(--muted);font-size:.86rem;font-weight:700}
-.row{display:flex;gap:8px;flex-wrap:wrap}
-.btn{flex:1 1 140px;min-height:50px;border-radius:14px;border:2px solid var(--line);background:var(--sheet);color:var(--ink);font:900 1rem var(--body);cursor:pointer;box-shadow:0 3px 0 var(--line)}
-.btn.primary{background:var(--accent);color:var(--accent-ink)}
-.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
-.progress{display:flex;gap:4px;flex-wrap:wrap}
-.progress i{width:14px;height:8px;border-radius:4px;background:var(--sheet-line)}
-.progress i.ok{background:var(--ok)} .progress i.ng{background:var(--ng)} .progress i.now{background:var(--accent)} .progress i.hintd{background:var(--ok);opacity:.45}
-.score{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
-.score .big{font-family:var(--display);font-size:2.6rem;line-height:1;font-variant-numeric:tabular-nums}
-.score .msg{font-weight:900;font-size:1.05rem}
-.misslist{display:flex;gap:6px;flex-wrap:wrap}
-.misslist span{background:var(--ng-soft);border-radius:8px;padding:3px 8px;font-weight:900;font-size:.9rem}
+.fb .txt b{display:block;font-weight:700;font-size:var(--fs20)}
+.fb .txt span{display:block;color:var(--muted);font-size:var(--fs14);font-weight:700}
+.row{display:flex;gap:var(--s8);flex-wrap:wrap}
+.btn{flex:1 1 140px;font-size:var(--fs16);padding:0 var(--s12)}
+.score{display:flex;align-items:baseline;gap:var(--s12);flex-wrap:wrap}
+.score .big{font-family:var(--display);font-size:var(--fs40);line-height:1;font-variant-numeric:tabular-nums}
+.score .big small{font-size:var(--fs20)}
+.score .msg{font-weight:700;font-size:var(--fs16)}
+.misslist{display:flex;gap:var(--s8);flex-wrap:wrap}
+.misslist span{background:var(--ng-soft);color:var(--ink);border-radius:var(--r-pill);padding:2px var(--s12);font-weight:700;font-size:var(--fs14)}
 /* モード・コース */
-.modebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.badge{background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:3px 12px;font-weight:900;font-size:.85rem}
-.linkbtn{border:0;background:none;color:var(--ink);font:700 .85rem var(--body);text-decoration:underline;cursor:pointer;min-height:36px;padding:0 4px}
-.courses{display:grid;gap:6px}
-.course{display:flex;align-items:center;gap:10px;text-align:left;min-height:50px;border-radius:14px;border:2px solid var(--line);background:var(--land);color:var(--ink);font:900 .95rem var(--body);cursor:pointer;box-shadow:0 3px 0 var(--line);padding:6px 12px}
-.course .no{flex:none;width:28px;height:28px;border-radius:50%;background:var(--sheet-line);display:grid;place-items:center;font-family:var(--display);font-weight:400;font-size:.9rem}
+.modebar{display:flex;align-items:center;gap:var(--s8);flex-wrap:wrap}
+.badge{background:var(--brand);color:var(--on-brand);border-radius:var(--r-pill);padding:2px var(--s12);font-weight:700;font-size:var(--fs14)}
+.courses{display:grid;gap:var(--s8)}
+.course{display:flex;align-items:center;gap:var(--s12);text-align:left;min-height:56px;font-size:var(--fs16);padding:var(--s8) var(--s12)}
+.course .no{flex:none;width:32px;height:32px;border-radius:50%;background:var(--cream);color:var(--ink);display:grid;place-items:center;font-family:var(--display);font-weight:400;font-size:var(--fs14)}
 .course span{flex:1;min-width:0}
-.course small{display:block;color:var(--muted);font-weight:700;font-size:.74rem}
-.course.done{border-color:var(--ok)} .course.done .no{background:var(--ok);color:#fff}
-.course:disabled{opacity:.5;cursor:default;box-shadow:none}
-.rules{margin:0;padding-left:1.2em;font-size:.78rem;color:var(--muted);font-weight:700;line-height:1.5}
-.medal{display:inline-block;background:var(--ok);color:#fff;border-radius:999px;padding:2px 10px;font-weight:900;font-size:.8rem}
-.medal.hinted{background:var(--sheet-line);color:var(--ink)}
-.choices{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.choice{min-height:62px;border-radius:14px;border:2px solid var(--line);background:var(--land);color:var(--ink);font:900 1.1rem var(--body);cursor:pointer;box-shadow:0 3px 0 var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px 6px;line-height:1.2}
-.choice small{font-size:.74rem;color:var(--muted);font-weight:700}
-.choice:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
+.course small{display:block;color:var(--muted);font-weight:700;font-size:var(--fs12)}
+.course.done .no{background:var(--ok);color:var(--on-strong)}
+.course:disabled{opacity:.5;cursor:default}
+.rules{margin:0;padding-left:1.2em;font-size:var(--fs14);color:var(--muted);font-weight:700;line-height:1.5}
+.medal{display:inline-block;background:var(--ok);color:var(--on-strong);border-radius:var(--r-pill);padding:2px var(--s12);font-weight:700;font-size:var(--fs14)}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:var(--s8)}
+.choice{min-height:64px;font-size:var(--fs20);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:var(--s4) var(--s8);line-height:1.2}
+.choice small{font-size:var(--fs12);color:var(--muted);font-weight:700}
 .choice:disabled{cursor:default}
-.choice.right{background:var(--ok);border-color:var(--ok);color:#fff} .choice.right small{color:#fff}
-.choice.wrong{background:var(--ng);border-color:var(--ng);color:#fff} .choice.wrong small{color:#fff}
-.choice:focus-visible,.course:focus-visible,.linkbtn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.choice.right{background:var(--ok);border-color:var(--ok);color:var(--on-strong)} .choice.right small{color:var(--on-strong)}
+.choice.wrong{background:var(--ng);border-color:var(--ng);color:var(--on-strong)} .choice.wrong small{color:var(--on-strong)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
 <div class="app" id="app">
   <header class="top" id="top"></header>
+  <div class="pbar" id="pbar" aria-hidden="true"></div>
   <div class="mapwrap" id="mapwrap">
     <svg id="map" class="explore" viewBox="0 0 880 980" preserveAspectRatio="xMidYMid meet" aria-label="日本地図">
       <g id="prefs"></g>
+      <g id="regions"></g>
       <g id="insetg"><polyline class="inset" points="-100000,712 -11,712 -11,800 52,884 52,100000"></polyline></g>
       <g class="labels" id="labels"></g>
       <g id="zooms"></g>
@@ -175,7 +199,7 @@ svg#map:active{cursor:grabbing}
     <div class="combo" id="combo" hidden></div>
     <button class="zoomreset" id="zoomreset" type="button">ぜんこく</button>
     <button class="eye" id="eye" type="button" aria-label="押している間だけ県名を表示">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
       <span class="cap">おしてる間だけ</span>
     </button>
   </div>
@@ -403,6 +427,12 @@ gLabels.appendChild(okiLabelCopy);
 new MutationObserver(() => { okiCopy.setAttribute("class", pathEl[47].getAttribute("class")); okiCopy.style.fill = pathEl[47].style.fill; okiLabelCopy.setAttribute("class", labelEl[47].getAttribute("class") || ""); })
   .observe(pathEl[47], {attributes:true, attributeFilter:["class","style"]});
 new MutationObserver(() => okiLabelCopy.setAttribute("class", labelEl[47].getAttribute("class") || "")).observe(labelEl[47], {attributes:true, attributeFilter:["class"]});
+/* 地方の境目の太線（tools/build_paths.py が data/regions.json に書き出す）。ホームだけ表示 */
+const REGION_LINES = __REGIONS__;
+const gRegions = document.getElementById("regions");
+const regionLine = (d, parent) => { const p = document.createElementNS(NS, "path"); p.setAttribute("d", d); p.setAttribute("class", "region-line"); parent.appendChild(p); return p; };
+REGION_LINES.forEach(o => regionLine(o.d, gRegions));
+const okiLine = regionLine(OKI.d, gRegions), okiLineCopy = regionLine(OKI.di, insetG);
 const OKI_TOP = OKI.b[1];
 let insetShown = true;
 
@@ -431,7 +461,7 @@ function apply() {
   insetShown = view.w > 700 || view.y + view.h < OKI_TOP - 4;
   insetG.style.display = insetShown ? "" : "none";
   okiLabelCopy.style.display = insetShown ? "" : "none";
-  pathEl[47].style.visibility = labelEl[47].style.visibility = insetShown ? "hidden" : "";
+  pathEl[47].style.visibility = labelEl[47].style.visibility = okiLine.style.visibility = insetShown ? "hidden" : "";
   // 虫眼鏡は画面上で同じ大きさ。広く見ている時だけ出す
   const s = view.w / box().w;
   svg.classList.toggle("zooms-off", view.w < 330);
@@ -537,12 +567,14 @@ let tapHandlers = [];
 const JapanMap = {
   onPrefectureTap(cb){ tapHandlers.push(cb); },
   setPrefectureColor(code, color){ pathEl[code].style.fill = color; },
-  resetColors(){ Object.values(pathEl).forEach(p => { p.style.fill = ""; p.classList.remove("sel","ok","miss","flash-ok","flash-ng","blink","off"); }); },
-  highlightPrefecture(code){ const p = pathEl[code]; p.classList.remove("blink"); void p.getBBox(); p.classList.add("blink"); },
+  resetColors(){ Object.values(pathEl).forEach(p => { p.style.fill = ""; p.classList.remove("sel","ok","miss","flash-ok","flash-ng","reveal","off"); }); },
+  highlightPrefecture(code){ const p = pathEl[code]; p.classList.remove("reveal"); void p.getBBox(); p.classList.add("reveal"); toFront(code); },
   zoomToPrefecture(code){ fitBox(boxOf[code]); },
   getPrefecture(code){ return byCode(code); },
   prefectures: PREFS
 };
+// 太い枠が隣の県に隠れないよう、その県を最前面に描く
+function toFront(code) { const p = pathEl[code]; p.parentNode.appendChild(p); }
 window.JapanMap = JapanMap; window.QUIZ_TYPES = QUIZ_TYPES; window.COURSES = COURSES;
 
 function showTag(code, text) {
@@ -605,7 +637,7 @@ function autoAnswer() {
 // ホーム系の画面（モード選択・コース一覧・コース）に共通：地図をコレクションの色で見せ、県をさわると名前を出す
 function toHomeScreen(box = FULL) {
   cancelQuizTimers(); eyeOff();
-  mode = "home"; quiz = null; selected = null; clearTag(); combo.hidden = true;
+  mode = "home"; quiz = null; selected = null; clearTag(); combo.hidden = true; pbar.innerHTML = "";
   JapanMap.resetColors(); svg.classList.add("explore"); svg.classList.remove("region-quiz");
   Object.values(labelEl).forEach(t => t.classList.remove("off"));
   const lv = prefLevels();
@@ -698,7 +730,7 @@ function coursePage(c) {
 function showInfo(code) {
   const p = byCode(code);
   if (selected) pathEl[selected].classList.remove("sel");
-  selected = code; pathEl[code].classList.add("sel");
+  selected = code; pathEl[code].classList.add("sel"); toFront(code);
   const info = byId("info");
   if (info) info.innerHTML = `<span class="nm">${p.name}</span><span class="sub">${p.kana}・${p.region}・${capitalLabel(p)}</span>`;
 }
@@ -723,10 +755,12 @@ function startQuiz(course, area, codes, opts={}) {
   nextQ();
 }
 
-function progressBar(){
-  return `<div class="progress">${quiz.qs.map((q,i) => {
+// 進み具合：未回答＝薄い墨／いま＝黄（背が高い）／正解＝緑／ヒントあり正解＝緑の斜線／不正解＝赤
+const pbar = document.getElementById("pbar");
+function renderProgress(){
+  pbar.innerHTML = quiz ? quiz.qs.map((q,i) => {
     const l = quiz.log[i]; return `<i class="${l ? (l.ok ? (l.hint ? "hintd" : "ok") : "ng") : (i === quiz.i ? "now" : "")}"></i>`;
-  }).join("")}</div>`;
+  }).join("") : "";
 }
 
 // 下段に出す出題文（問題文＋よみ）
@@ -737,7 +771,9 @@ function nextQ() {
   if (quiz.i >= quiz.qs.length) return result();
   const q = quiz.q = quiz.qs[quiz.i]; q.hint = false; quiz.answered = false;
   // 出題文はどのコースも下段（シート）に置き、上のバーには進み具合だけを出す。4択は出題文のすぐ下に選択肢
-  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${quiz.course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}　${quiz.i+1} / ${quiz.qs.length}</span></div>${debugBtn()}<button class="iconbtn" id="quit" type="button">やめる</button>`;
+  // 上の帯：左端に✕（やめる）、小さい文字で「関東　3 / 7」、右に DBG とタイトルへ戻る家のボタン
+  top_.innerHTML = `<button class="iconbtn" id="quit" type="button" aria-label="やめる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><div class="ask"><span class="meta">${quiz.master ? "全国" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}　${quiz.i+1} / ${quiz.qs.length}</span></div>${debugBtn()}${titleBtn()}`;
+  renderProgress();
   bindBar(); byId("quit").onclick = home;
   if (debug) quizTimeout(autoAnswer, DEBUG_ANSWER_MS);
   if (quiz.type.kind === "choice") {
@@ -746,12 +782,12 @@ function nextQ() {
     pathEl[q.focus].classList.add("sel");
     if (quiz.area.wide) fitLater(unionBox(areaOfPref(q.focus).codes));
     q.order = shuffle(q.choices);
-    sheet.innerHTML = `${progressBar()}${askBlock()}<div class="choices">${q.order.map(([n, k], j) =>
+    sheet.innerHTML = `${askBlock()}<div class="choices">${q.order.map(([n, k], j) =>
       `<button class="choice" type="button" data-j="${j}">${n}<small>${k}</small></button>`).join("")}</div>`;
     const owner = quiz;
     sheet.querySelectorAll("[data-j]").forEach(b => b.onclick = () => { if (quiz === owner && mode === "quiz") answerChoice(+b.dataset.j); });
   } else {
-    sheet.innerHTML = `${progressBar()}${askBlock()}<p class="hint">地図の県をタップしてね。わからない時は目のボタン（押している間だけ県名）。</p>`;
+    sheet.innerHTML = `${askBlock()}<p class="hint">地図の県をタップしてね。わからない時は目のボタン（押している間だけ県名）。</p>`;
   }
 }
 
@@ -763,6 +799,9 @@ function logAnswer(ok) {
   else r.miss[q.key] = (r.miss[q.key] || 0) + 1;
   save();
 }
+
+// 正誤の記号の丸。キャラクターの顔アイコンに差し替えるときは、ここだけ変えればよい
+const face = state => `<div class="face" aria-hidden="true">${state === "ok" ? "◯" : "✕"}</div>`;
 
 function noteHtml(code) {
   const ns = GEO_NOTES[code] || [];
@@ -782,7 +821,7 @@ function afterAnswer(ok, html) {
     sndNg(); quiz.combo = 0; combo.hidden = true;
     sheet.insertAdjacentHTML("beforeend", `${html}<div class="row"><button class="btn primary" id="next" type="button">つぎへ</button></div>`);
     const owner = quiz;
-    byId("next").onclick = () => { if (quiz !== owner || mode !== "quiz") return; Object.values(pathEl).forEach(p => p.classList.remove("blink")); quiz.i++; nextQ(); };
+    byId("next").onclick = () => { if (quiz !== owner || mode !== "quiz") return; Object.values(pathEl).forEach(p => p.classList.remove("reveal", "flash-ng")); quiz.i++; nextQ(); };
   }
 }
 
@@ -795,11 +834,11 @@ function answerChoice(j) {
     const c = q.order[+b.dataset.j]; b.disabled = true;
     if (c[0] === q.correct) b.classList.add("right"); else if (+b.dataset.j === j) b.classList.add("wrong");
   });
-  sheet.querySelector(".progress").outerHTML = progressBar();
+  renderProgress();
   const ans = q.choices[0];
   afterAnswer(ok, ok
-    ? `<div class="fb ok"><div class="mark">◯</div><div class="txt"><b>せいかい！ ${ans[0]}</b><span>${q.hint ? "（ヒントを見て正解）" : ""}${q.explain}</span>${noteHtml(q.focus)}</div></div>`
-    : `<div class="fb ng"><div class="mark">✕</div><div class="txt"><b>正しくは ${ans[0]}</b><span>${q.explain}</span>${noteHtml(q.focus)}</div></div>`);
+    ? `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans[0]}</b><span>${q.hint ? "（ヒントを見て正解）" : ""}${q.explain}</span>${noteHtml(q.focus)}</div></div>`
+    : `<div class="fb ng">${face("ng")}<div class="txt"><b>ざんねん　正しくは ${ans[0]}</b><span>${q.explain}</span>${noteHtml(q.focus)}</div></div>`);
 }
 
 function handleTap(code) {
@@ -811,23 +850,24 @@ function handleTap(code) {
   const p = byCode(code), ans = byCode(q.answers[0]);
   logAnswer(ok);
   if (quiz.course.id === "prefName" && !ok) { store.miss[ans.code] = (store.miss[ans.code] || 0) + 1; save(); }
-  sheet.innerHTML = progressBar() + askBlock();   // 正誤を出しても出題文は残す
+  sheet.innerHTML = askBlock();   // 正誤を出しても出題文は残す
+  renderProgress();
   if (ok) {
     pathEl[code].classList.add("flash-ok");
     quizTimeout(() => { pathEl[code].classList.remove("flash-ok"); pathEl[code].classList.add("ok"); }, 450);
-    afterAnswer(true, `<div class="fb ok"><div class="mark">◯</div><div class="txt"><b>せいかい！ ${ans.name}</b><span>${q.hint ? "（ヒントを見て正解）" : ""}${q.explain}</span>${noteHtml(ans.code)}</div></div>`);
+    afterAnswer(true, `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans.name}</b><span>${q.hint ? "（ヒントを見て正解）" : ""}${q.explain}</span>${noteHtml(ans.code)}</div></div>`);
   } else {
     pathEl[code].classList.add("flash-ng"); showTag(code, p.short);
-    quizTimeout(() => pathEl[code].classList.remove("flash-ng"), 900);
     pathEl[ans.code].classList.add("miss");
     JapanMap.highlightPrefecture(ans.code);
-    afterAnswer(false, `<div class="fb ng"><div class="mark">✕</div><div class="txt"><b>そこは ${p.name}</b><span>${ans.name}は、光っているところ。${q.explain}</span>${noteHtml(ans.code)}</div></div>`);
+    afterAnswer(false, `<div class="fb ng">${face("ng")}<div class="txt"><b>ざんねん　そこは ${p.name}</b><span>${ans.name}は太い枠のところ。${q.explain}</span>${noteHtml(ans.code)}</div></div>`);
   }
 }
 
 function result() {
   cancelQuizTimers(); eyeOff();
-  Object.values(pathEl).forEach(p => p.classList.remove("flash-ok", "flash-ng", "blink"));
+  Object.values(pathEl).forEach(p => p.classList.remove("flash-ok", "flash-ng", "reveal"));
+  pbar.innerHTML = "";
   // 正解した県の色は、途中の遅延処理が取り消されても結果画面で付けそろえる
   if (quiz.type.kind === "tap") quiz.log.forEach(l => l.ok && pathEl[l.pref].classList.add("ok"));
   mode = "result"; combo.hidden = true; clearTag();
@@ -860,7 +900,7 @@ function result() {
   const msg = newMaster ? `${crown(course)}！` : newStage ? `👑${quiz.area.name}ステージ クリア！` : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしで👑マスター" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
   const nextStage = quiz.stage ? STAGES[STAGES.indexOf(quiz.area) + 1] : null;
   const label = l => course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
-  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}　けっか</span><span class="q">${msg}</span></div>${debugBtn()}${muteBtn()}`;
+  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}　けっか</span><span class="q shout">${msg}</span></div>${debugBtn()}${muteBtn()}`;
   bindBar();
   sheet.innerHTML = `
     <div class="score"><span class="big">${correct}<small style="font-size:1.2rem"> / ${total}</small></span><span class="msg">ヒントなし正解 ${clean}問・最高 ${quiz.maxCombo}れんぞく</span></div>

@@ -31,6 +31,7 @@ def proj(x, y):
 
 
 out = []
+proj_polys = {}   # 県コード -> 画面座標の Polygon（地方の外形線づくりに使う）
 for ft in d["features"]:
     p = ft["properties"]
     code = int(p["iso_3166_2"].split("-")[1])
@@ -50,6 +51,7 @@ for ft in d["features"]:
         pts = [proj(x, y) for x, y in ring]
         xs += [a for a, _ in pts]; ys += [b for _, b in pts]
         parts.append("M" + "L".join(f"{a:.1f},{b:.1f}" for a, b in pts[:-1]) + "Z")
+        proj_polys.setdefault(code, []).append(Polygon(pts).buffer(0))
     bb = biggest.bounds
     bx0, by1 = proj(bb[0], bb[1]); bx1, by0 = proj(bb[2], bb[3])
     rp = biggest.representative_point()
@@ -80,3 +82,20 @@ oki = out[46]["b"]
 print("okinawa box", oki)
 with open(str(DATA / "paths.json"), "w", encoding="utf-8") as f:
     json.dump(out, f, separators=(",", ":"))
+
+# 地方の外形線（ホームで地方の境目を太線で重ねる）。template の AREAS と同じ分け方。
+# 沖縄（47）は枠内コピーと実際の位置を切り替えるので、template 側で県の線をそのまま使う
+from shapely.ops import unary_union
+REGIONS = {"tohoku": range(1, 8), "kanto": range(8, 15), "chubu": range(15, 24), "kinki": range(24, 31),
+           "chugoku": range(31, 36), "shikoku": range(36, 40), "kyushu": range(40, 47)}
+CLOSE = 0.8   # 県ごとに簡略化した県境の小さなすき間を閉じる幅（画面座標）
+regions = []
+for rid, codes in REGIONS.items():
+    u = unary_union([p for c in codes for p in proj_polys[c]]).buffer(CLOSE, join_style=2).buffer(-CLOSE, join_style=2)
+    polys = list(u.geoms) if isinstance(u, MultiPolygon) else [u]
+    rings = [q.exterior for q in polys] + [h for q in polys for h in q.interiors]
+    dd = "".join("M" + "L".join(f"{a:.1f},{b:.1f}" for a, b in list(r.coords)[:-1]) + "Z" for r in rings)
+    regions.append({"id": rid, "d": dd})
+with open(str(DATA / "regions.json"), "w", encoding="utf-8") as f:
+    json.dump(regions, f, separators=(",", ":"))
+print("regions size", len(json.dumps(regions, separators=(",", ":"))))

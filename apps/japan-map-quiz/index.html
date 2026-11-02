@@ -11,162 +11,186 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Dela+Gothic+One&display=swap">
 <style>
-/* 白地図（受験用の白い地図）を机に広げたイメージ：海の青＋白い陸＋黒い県境。上に問題、下に答えのシート */
+/* サッと記憶のサッ記マン：ブランド黄と墨の配色。問題画面は白を基調にし、黄色は選択・正解・主要ボタンだけに使う。
+   色はこの3か所（:root／ダーク2か所）の変数でだけ定義する。ほかの場所に色コードを書かない。
+   --brand と --on-brand はダークでも変えない（黄色の上の文字は常に墨。白やクリームの上に黄色の文字は置かない） */
 :root{
-  --bg:#e3e5e7; --sea:#bcdcec; --land:#fdfcf7; --land-dim:#e4ebee; --land-none:#c9cdd1; --line:#2c3d4a;
-  --ink:#1d2b35; --muted:#5a6d7a; --sheet:#ffffff; --sheet-line:#c9dbe4;
-  --accent:#f2a516; --accent-ink:#4a3000; --ok:#2e9a58; --ok-soft:#bfe6cc; --ng:#d9472f; --ng-soft:#f7c9bd;
-  --r1:#cfe3f7; --r2:#f6d7d9; --r3:#d9efcf; --r4:#f7e6bf; --r5:#e3d9f3; --r6:#cdeee9; --r7:#f6dcc6;
-  --display:"Dela Gothic One","Hiragino Kaku Gothic StdN","Yu Gothic",sans-serif;
-  --body:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
-  --shadow:0 -6px 24px rgba(30,60,80,.12);
+  --brand:#FED003; --on-brand:#282727;
+  --ink:#282727; --paper:#FFFFFF; --cream:#FEF3E6; --sea:#DCE6EA; --bg:#ECEBE9;
+  --muted:#5E5A58; --line-soft:#CFCCCA; --off:#E1E1DF;
+  --ok:#1E7B45; --ng:#C23A2B; --on-strong:#FFFFFF; --ok-soft:#CBEBD6; --ng-soft:#F9D4CD;
+  --land-none:#C9CCCF; --tier-a:#FFFFFF; --tier-b:#FEF3E6; --tier-c:#FFF4BF; --rich:#FFE680; --rich2:#FFDA4D;
+  --display:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
+  --body:"BIZ UDPGothic","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+  /* 文字サイズ7段階・余白6段階・角丸 */
+  --fs12:12px; --fs14:14px; --fs16:16px; --fs20:20px; --fs28:28px; --fs40:40px; --fs56:56px;
+  --s4:4px; --s8:8px; --s12:12px; --s16:16px; --s24:24px; --s32:32px;
+  --r-btn:14px; --r-sheet:20px; --r-pill:999px; --bw:2.5px; --tap:48px;
+  --marker:.45em;   /* 県名マーカーの太さ（ダークは文字に重ならない細い下線にする） */
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#1c1f22; --sea:#12304a; --land:#2b3c49; --land-dim:#1b2b37; --land-none:#454a50; --line:#a9c0cf;
-  --ink:#e9f1f6; --muted:#9bb0be; --sheet:#152836; --sheet-line:#2b4558;
-  --accent:#f5b53a; --accent-ink:#2a1a00; --ok:#4cc27b; --ok-soft:#24543a; --ng:#f06a52; --ng-soft:#5b2a22;
-  --r1:#2c4a66; --r2:#5a3540; --r3:#355239; --r4:#5a4a26; --r5:#433a5e; --r6:#265250; --r7:#5a3f2d;
-  --shadow:0 -6px 24px rgba(0,0,0,.4); color-scheme:dark}}
+  --ink:#FEF3E6; --paper:#232222; --cream:#3A3632; --sea:#26313A; --bg:#141313;
+  --muted:#C8BEB1; --line-soft:#4D4A47; --off:#2B2928;
+  --ok:#1E7B45; --ng:#C23A2B; --ok-soft:#24543A; --ng-soft:#6A2A22;
+  --land-none:#4B4B4B; --tier-a:#2F2D2B; --tier-b:#3A3632; --tier-c:#4A4227; --rich:#6B5A1C; --rich2:#7A6614;
+  --marker:4px; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#1c1f22; --sea:#12304a; --land:#2b3c49; --land-dim:#1b2b37; --land-none:#454a50; --line:#a9c0cf;
-  --ink:#e9f1f6; --muted:#9bb0be; --sheet:#152836; --sheet-line:#2b4558;
-  --accent:#f5b53a; --accent-ink:#2a1a00; --ok:#4cc27b; --ok-soft:#24543a; --ng:#f06a52; --ng-soft:#5b2a22;
-  --r1:#2c4a66; --r2:#5a3540; --r3:#355239; --r4:#5a4a26; --r5:#433a5e; --r6:#265250; --r7:#5a3f2d;
-  --shadow:0 -6px 24px rgba(0,0,0,.4); color-scheme:dark}
+  --ink:#FEF3E6; --paper:#232222; --cream:#3A3632; --sea:#26313A; --bg:#141313;
+  --muted:#C8BEB1; --line-soft:#4D4A47; --off:#2B2928;
+  --ok:#1E7B45; --ng:#C23A2B; --ok-soft:#24543A; --ng-soft:#6A2A22;
+  --land-none:#4B4B4B; --tier-a:#2F2D2B; --tier-b:#3A3632; --tier-c:#4A4227; --rich:#6B5A1C; --rich2:#7A6614;
+  --marker:4px; color-scheme:dark}
 
-html,body{height:100%}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:500;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-.app{height:100%;display:grid;grid-template-rows:auto 1fr auto;max-width:900px;margin:0 auto}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:400;font-size:var(--fs16);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.app{height:100%;display:grid;grid-template-rows:auto auto 1fr auto;max-width:900px;margin:0 auto;background:var(--paper)}
 
-/* 上：問題バー */
-.top{padding-block:10px 8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:10px;min-height:56px}
-.brand{font-family:var(--display);font-size:1.15rem;letter-spacing:.02em;flex:1;min-width:0;line-height:1.2}
-.brand small{display:block;font-family:var(--body);font-weight:700;font-size:.72rem;color:var(--muted);letter-spacing:.08em}
-.ask{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.ask .meta{font-size:.75rem;color:var(--muted);font-weight:700;letter-spacing:.06em;font-variant-numeric:tabular-nums}
-.ask .q{font-family:var(--display);font-size:clamp(1.1rem,4.8vw,1.9rem);line-height:1.15;text-wrap:balance}
-.ask .q em{font-style:normal;color:var(--ink);background:linear-gradient(transparent 62%,var(--accent) 62%);padding:0 .1em}
-.ask .kana{font-size:.8rem;color:var(--muted);font-weight:700}
-.iconbtn{flex:none;min-width:44px;height:44px;padding:0 10px;white-space:nowrap;border-radius:12px;border:2px solid var(--sheet-line);background:var(--sheet);color:var(--ink);font:700 .8rem var(--body);display:grid;place-items:center;cursor:pointer}
-.iconbtn svg{width:22px;height:22px}
-.iconbtn.dbg-on{background:var(--accent);color:var(--accent-ink);border-color:var(--line)}
-.iconbtn:focus-visible,.btn:focus-visible,.chip:focus-visible,.eye:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+/* 上の帯（白） */
+.top{background:var(--paper);padding-block:var(--s8);padding-left:max(var(--s16),env(safe-area-inset-left,0px));padding-right:max(var(--s16),env(safe-area-inset-right,0px));display:flex;align-items:center;gap:var(--s8);min-height:64px;box-sizing:border-box}
+.brand{font-family:var(--display);font-size:var(--fs20);flex:1;min-width:0;line-height:1.2}
+.brand small{display:block;font-family:var(--body);font-weight:700;font-size:var(--fs12);color:var(--muted)}
+.ask{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--s4)}
+.ask .meta{font-size:var(--fs14);color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+.ask .q{font-family:var(--body);font-weight:700;font-size:var(--fs28);line-height:1.25;text-wrap:balance}
+.ask .q.shout{font-family:var(--display);font-weight:400;font-size:var(--fs20)}
+/* 県名だけ黄色のマーカー線（下半分） */
+.ask .q em{font-style:normal;box-shadow:inset 0 calc(-1 * var(--marker)) 0 var(--brand)}
+.ask .kana{font-size:var(--fs14);color:var(--muted);font-weight:700}
 
-/* 中：地図 */
-.mapwrap{position:relative;min-height:0;background:var(--sea);border-block:2px solid var(--sheet-line)}
+/* 進み具合：帯のすぐ下に画面幅いっぱい。いまの問題は背を高くする */
+.pbar{display:flex;align-items:flex-end;gap:2px;background:var(--paper);padding:0 max(var(--s16),env(safe-area-inset-right,0px)) var(--s8) max(var(--s16),env(safe-area-inset-left,0px));min-height:12px}
+.pbar:empty{min-height:0;padding-block:0}   /* 段は残す（消すとグリッドの段がずれる） */
+.pbar i{flex:1;height:6px;border-radius:var(--r-pill);background:var(--line-soft)}
+.pbar i.now{height:12px;background:var(--brand);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.pbar i.ok{background:var(--ok)} .pbar i.ng{background:var(--ng)}
+.pbar i.hintd{background:repeating-linear-gradient(135deg,var(--ok) 0 3px,var(--ok-soft) 3px 6px)}
+
+/* ボタンは3種類：主要（黄色＋墨の枠＋真下の影。押すと沈む）／補助（白＋墨の枠、影なし）／最小限（文字だけ） */
+.btn,.iconbtn,.chip,.course,.choice,.zoomreset{box-sizing:border-box;min-height:var(--tap);border:var(--bw) solid var(--ink);border-radius:var(--r-btn);background:var(--paper);color:var(--ink);font-family:var(--body);font-weight:700;cursor:pointer}
+.btn:active,.iconbtn:active,.chip:active,.course:active,.choice:active,.zoomreset:active{transform:translateY(2px)}
+.btn.primary,.chip.wide{background:var(--brand);color:var(--on-brand);box-shadow:0 4px 0 var(--ink)}
+.btn.primary:active,.chip.wide:active{transform:translateY(4px);box-shadow:none}
+.linkbtn{border:0;background:none;color:var(--ink);font:700 var(--fs14) var(--body);text-decoration:underline;cursor:pointer;min-height:var(--tap);padding:0 var(--s4)}
+.iconbtn{flex:none;min-width:var(--tap);height:var(--tap);padding:0 var(--s12);white-space:nowrap;font-size:var(--fs14);display:grid;place-items:center}
+.iconbtn svg{width:24px;height:24px}
+.iconbtn.dbg-on{background:var(--brand);color:var(--on-brand)}
+.btn:focus-visible,.iconbtn:focus-visible,.chip:focus-visible,.course:focus-visible,.choice:focus-visible,.zoomreset:focus-visible,.linkbtn:focus-visible,.eye:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+
+/* 地図（問題中は海と陸を落ち着かせ、黄色は選択・正解表示の時だけ） */
+.mapwrap{position:relative;min-height:0;background:var(--sea)}
 svg#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block;cursor:grab}
 svg#map:active{cursor:grabbing}
-.pref{fill:var(--land);stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;transition:fill .25s}
-/* コレクション：⓪グレー → ①地方の色 → ②色・陰影がリッチに（data-lv＝その県で正解したコースの数） */
+.pref{fill:var(--cream);stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;transition:fill .25s}
+/* ホーム：⓪まだの県はグレー → ①地方の3段階（A白・Bクリーム・C淡い黄）→ ②③色が濃くなる（data-lv＝正解したコースの数） */
 .explore .pref{fill:var(--land-none)}
-.explore .pref:not([data-lv="0"])[data-r="1"]{fill:var(--r1)} .explore .pref:not([data-lv="0"])[data-r="2"]{fill:var(--r2)} .explore .pref:not([data-lv="0"])[data-r="3"]{fill:var(--r3)}
-.explore .pref:not([data-lv="0"])[data-r="4"]{fill:var(--r4)} .explore .pref:not([data-lv="0"])[data-r="5"]{fill:var(--r5)} .explore .pref:not([data-lv="0"])[data-r="6"]{fill:var(--r6)} .explore .pref:not([data-lv="0"])[data-r="7"]{fill:var(--r7)}
-.explore .pref[data-lv="2"]{filter:saturate(1.8) brightness(.95)}
-.explore .pref[data-lv="3"]{filter:saturate(2.3) brightness(.9) drop-shadow(0 1px 1px rgba(0,0,0,.35))}
-.pref.off{fill:var(--land-dim);stroke-opacity:.35}
-.pref.sel{fill:var(--accent)!important}
+.explore .pref:not([data-lv="0"]):is([data-r="1"],[data-r="4"],[data-r="7"]){fill:var(--tier-a)}
+.explore .pref:not([data-lv="0"]):is([data-r="2"],[data-r="5"]){fill:var(--tier-b)}
+.explore .pref:not([data-lv="0"]):is([data-r="3"],[data-r="6"]){fill:var(--tier-c)}
+.explore .pref[data-lv="2"]:is([data-r]){fill:var(--rich)}
+.explore .pref[data-lv="3"]:is([data-r]){fill:var(--rich2)}
+/* 地方の境目（県境の約2.5倍）。ホームだけ表示し、タップは邪魔しない */
+.region-line{fill:none;stroke:var(--ink);stroke-width:2.5px;vector-effect:non-scaling-stroke;stroke-linejoin:round;pointer-events:none}
+svg:not(.explore) .region-line{display:none}
+.pref.off{fill:var(--off);stroke-opacity:.35}
+/* 状態は色だけに頼らない：選択＝黄色＋墨の太枠／正解の場所＝太枠が3回脈打って残る */
+.pref.sel{fill:var(--brand)!important;stroke-width:3px}
 .pref.ok{fill:var(--ok-soft)!important}
 .pref.miss{fill:var(--ng-soft)!important}
 .pref.flash-ok{fill:var(--ok)!important}
 .pref.flash-ng{fill:var(--ng)!important}
-.pref.blink{animation:blink .5s ease-in-out 5}
-@keyframes blink{0%,100%{fill:var(--land)}50%{fill:var(--ok)}}
-.inset{fill:none;stroke:var(--line);stroke-width:1.4;stroke-dasharray:7 5;vector-effect:non-scaling-stroke;opacity:.8}
-.inset-cap{font-family:var(--body);font-weight:700;fill:var(--muted);font-size:9px}
+.pref.reveal{stroke-width:5px;animation:pulse .4s ease-in-out 3}
+@keyframes pulse{50%{stroke-width:10px}}
+.inset{fill:none;stroke:var(--ink);stroke-width:1.4;stroke-dasharray:7 5;vector-effect:non-scaling-stroke;opacity:.8}
 .zoom{cursor:pointer}
-.zoom circle{fill:var(--sheet);stroke:var(--line);stroke-width:2;vector-effect:non-scaling-stroke}
-.zoom path{fill:none;stroke:var(--line);stroke-width:2.4;stroke-linecap:round;vector-effect:non-scaling-stroke}
-.zoom:hover circle{fill:var(--accent)}
+.zoom circle{fill:var(--paper);stroke:var(--ink);stroke-width:2.5;vector-effect:non-scaling-stroke}
+.zoom path{fill:none;stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.zoom:hover circle{fill:var(--brand)}
 .zooms-off #zooms,.region-quiz #zooms{display:none}
 .labels{pointer-events:none;opacity:0;transition:opacity .12s}
 .show-labels .labels{opacity:1}
-.labels text{font-family:var(--body);font-weight:900;fill:var(--ink);stroke:var(--land);stroke-width:3px;paint-order:stroke;vector-effect:non-scaling-stroke;text-anchor:middle;dominant-baseline:central}
+.labels text{font-family:var(--body);font-weight:700;fill:var(--ink);stroke:var(--cream);stroke-width:3px;paint-order:stroke;vector-effect:non-scaling-stroke;text-anchor:middle;dominant-baseline:central}
 .labels text.off{display:none}
 .tag{pointer-events:none}
-.tag text{font-family:var(--body);font-weight:900;fill:#fff;text-anchor:middle;dominant-baseline:central}
+.tag text{font-family:var(--body);font-weight:700;fill:var(--on-strong);text-anchor:middle;dominant-baseline:central}
 .tag rect{fill:var(--ng)}
 
-.eye{position:absolute;right:calc(12px + env(safe-area-inset-right,0px));bottom:30px;width:64px;height:64px;border-radius:50%;border:3px solid var(--line);background:var(--sheet);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 0 var(--line);touch-action:none}
+/* 目ボタン：墨の丸に黄色の目。押している間は黄色の丸に墨の目で4px沈む */
+.eye{position:absolute;right:calc(var(--s16) + env(safe-area-inset-right,0px));bottom:calc(var(--r-sheet) + var(--s32) + var(--s8));width:64px;height:64px;border-radius:50%;border:var(--bw) solid var(--ink);background:var(--on-brand);color:var(--brand);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 0 var(--ink);touch-action:none;padding:0}
 .eye svg{width:34px;height:34px}
-.eye.on{background:var(--accent);color:var(--accent-ink);transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
-.eye .cap{position:absolute;bottom:-22px;font-size:.68rem;font-weight:900;color:var(--ink);white-space:nowrap;background:var(--sheet);padding:1px 6px;border-radius:8px}
-.zoomreset{position:absolute;left:calc(10px + env(safe-area-inset-left,0px));top:10px;box-shadow:0 2px 0 var(--sheet-line);height:44px;padding:0 14px;border-radius:22px;border:2px solid var(--sheet-line);background:var(--sheet);color:var(--ink);font:700 .85rem var(--body);cursor:pointer}
-.combo{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-family:var(--display);font-size:1.4rem;color:var(--accent-ink);background:var(--accent);padding:4px 16px;border-radius:999px;box-shadow:0 3px 0 var(--line);pointer-events:none}
-.combo.pop{animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
-@keyframes pop{from{transform:translateX(-50%) scale(.4)}to{transform:translateX(-50%) scale(1)}}
+.eye.on{background:var(--brand);color:var(--on-brand);transform:translateY(4px);box-shadow:none}
+.eye .cap{position:absolute;right:0;bottom:-26px;font-size:var(--fs12);font-weight:700;color:var(--ink);white-space:nowrap;background:var(--paper);border:1.5px solid var(--ink);padding:1px var(--s8);border-radius:var(--r-pill)}
+.zoomreset{position:absolute;left:calc(var(--s16) + env(safe-area-inset-left,0px));top:var(--s12);padding:0 var(--s16);font-size:var(--fs14)}
+.combo{position:absolute;left:50%;top:var(--s16);transform:translateX(-50%);font-family:var(--display);font-size:var(--fs20);color:var(--on-brand);background:var(--brand);border:var(--bw) solid var(--on-brand);padding:var(--s4) var(--s16);border-radius:var(--r-pill);pointer-events:none}
+.combo.pop{animation:pop .3s ease-out 1}
+@keyframes pop{50%{transform:translateX(-50%) scale(1.2)}}
 
-/* 下：シート */
-.sheet{background:var(--sheet);box-shadow:var(--shadow);padding-block:14px calc(14px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px;max-height:40vh;overflow-y:auto}
-.sheet.home{max-height:33vh;gap:6px}
-.home .chips{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-.home .chip{min-height:40px;font-size:.8rem;letter-spacing:-.04em;padding:2px 3px;border-radius:11px;overflow:hidden;white-space:normal;line-height:1.15;text-align:center}
-.home .chip small{font-size:.64rem}
+/* 下のシート */
+.sheet{position:relative;z-index:1;margin-top:calc(-1 * var(--r-sheet));background:var(--paper);border-radius:var(--r-sheet) var(--r-sheet) 0 0;border-top:var(--bw) solid var(--ink);padding-block:var(--s16) calc(var(--s16) + env(safe-area-inset-bottom,0px));padding-left:max(var(--s16),env(safe-area-inset-left,0px));padding-right:max(var(--s16),env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:var(--s12);max-height:44vh;overflow-y:auto}
+.sheet.home{max-height:36vh;gap:var(--s8)}
+.sheet h2{margin:0;font-size:var(--fs14);color:var(--muted);font-weight:700}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:var(--s8)}
+.chip{font-size:var(--fs16);white-space:nowrap;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:var(--s4) var(--s8)}
+.chip small{font-size:var(--fs12);color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+.chip.wide{grid-column:1/-1}
+.chip.wide small{color:var(--on-brand)}
+.chip.now{background:var(--brand);color:var(--on-brand)}
+.home .chips{grid-template-columns:repeat(4,minmax(0,1fr))}
+.home .chip{font-size:var(--fs14);padding:2px var(--s4);overflow:hidden;white-space:normal;line-height:1.15;text-align:center}
 .home .chip.wide{grid-column:span 2}
 .home #master{grid-column:1/-1}
 .home .chips.modes{grid-template-columns:1fr 1fr}
-.home .chips.modes .chip{min-height:48px;font-size:.95rem;letter-spacing:0}
-.home .chips.modes .chip.now{background:var(--accent);color:var(--accent-ink)}
-.sheet h2{margin:0;font-size:.82rem;letter-spacing:.1em;color:var(--muted);font-weight:900}
-.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:7px}
-.chip{min-height:46px;border-radius:14px;border:2px solid var(--line);background:var(--land);color:var(--ink);font:900 .92rem var(--body);white-space:nowrap;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-shadow:0 3px 0 var(--line);padding:4px 6px}
-.chip:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
-.chip small{font-size:.7rem;color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
-.chip.wide{grid-column:1/-1;background:var(--accent);color:var(--accent-ink)}
-.chip.wide small{color:var(--accent-ink);opacity:.8}
-.info{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-height:2.2em}
-.info .nm{font-family:var(--display);font-size:1.5rem}
-.info .sub{color:var(--muted);font-weight:700;font-size:.9rem}
-.hint{color:var(--muted);font-size:.85rem;font-weight:700;margin:0}
-.fb{display:flex;align-items:center;gap:12px;min-height:58px}
-.fb .mark{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:1.7rem;color:#fff}
-.fb.ok .mark{background:var(--ok)} .fb.ng .mark{background:var(--ng)}
+.home .chips.modes .chip{font-size:var(--fs16)}
+.info{display:flex;align-items:baseline;gap:var(--s8);flex-wrap:wrap;min-height:2.2em}
+.info .nm{font-weight:700;font-size:var(--fs20)}
+.info .sub{color:var(--muted);font-weight:700;font-size:var(--fs14)}
+.hint{color:var(--muted);font-size:var(--fs14);font-weight:700;margin:0;line-height:1.5}
+/* 答えた後：左に記号の丸（56px。次回キャラクターの顔に差し替える場所）、右に文字 */
+.fb{display:flex;align-items:center;gap:var(--s12);min-height:56px}
+.face{flex:none;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:var(--fs28);color:var(--on-strong)}
+.fb.ok .face{background:var(--ok);animation:bounce .3s ease-out 1}
+.fb.ng .face{background:var(--ng)}
+@keyframes bounce{50%{transform:scale(1.2)}}
 .fb .txt{flex:1;min-width:0;line-height:1.45}
-.fb .txt b{font-family:var(--display);font-weight:400;font-size:1.2rem}
-.fb .txt span{display:block;color:var(--muted);font-size:.86rem;font-weight:700}
-.row{display:flex;gap:8px;flex-wrap:wrap}
-.btn{flex:1 1 140px;min-height:50px;border-radius:14px;border:2px solid var(--line);background:var(--sheet);color:var(--ink);font:900 1rem var(--body);cursor:pointer;box-shadow:0 3px 0 var(--line)}
-.btn.primary{background:var(--accent);color:var(--accent-ink)}
-.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
-.progress{display:flex;gap:4px;flex-wrap:wrap}
-.progress i{width:14px;height:8px;border-radius:4px;background:var(--sheet-line)}
-.progress i.ok{background:var(--ok)} .progress i.ng{background:var(--ng)} .progress i.now{background:var(--accent)} .progress i.hintd{background:var(--ok);opacity:.45}
-.score{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
-.score .big{font-family:var(--display);font-size:2.6rem;line-height:1;font-variant-numeric:tabular-nums}
-.score .msg{font-weight:900;font-size:1.05rem}
-.misslist{display:flex;gap:6px;flex-wrap:wrap}
-.misslist span{background:var(--ng-soft);border-radius:8px;padding:3px 8px;font-weight:900;font-size:.9rem}
+.fb .txt b{display:block;font-weight:700;font-size:var(--fs20)}
+.fb .txt span{display:block;color:var(--muted);font-size:var(--fs14);font-weight:700}
+.row{display:flex;gap:var(--s8);flex-wrap:wrap}
+.btn{flex:1 1 140px;font-size:var(--fs16);padding:0 var(--s12)}
+.score{display:flex;align-items:baseline;gap:var(--s12);flex-wrap:wrap}
+.score .big{font-family:var(--display);font-size:var(--fs40);line-height:1;font-variant-numeric:tabular-nums}
+.score .big small{font-size:var(--fs20)}
+.score .msg{font-weight:700;font-size:var(--fs16)}
+.misslist{display:flex;gap:var(--s8);flex-wrap:wrap}
+.misslist span{background:var(--ng-soft);color:var(--ink);border-radius:var(--r-pill);padding:2px var(--s12);font-weight:700;font-size:var(--fs14)}
 /* モード・コース */
-.modebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.badge{background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:3px 12px;font-weight:900;font-size:.85rem}
-.linkbtn{border:0;background:none;color:var(--ink);font:700 .85rem var(--body);text-decoration:underline;cursor:pointer;min-height:36px;padding:0 4px}
-.courses{display:grid;gap:6px}
-.course{display:flex;align-items:center;gap:10px;text-align:left;min-height:50px;border-radius:14px;border:2px solid var(--line);background:var(--land);color:var(--ink);font:900 .95rem var(--body);cursor:pointer;box-shadow:0 3px 0 var(--line);padding:6px 12px}
-.course .no{flex:none;width:28px;height:28px;border-radius:50%;background:var(--sheet-line);display:grid;place-items:center;font-family:var(--display);font-weight:400;font-size:.9rem}
+.modebar{display:flex;align-items:center;gap:var(--s8);flex-wrap:wrap}
+.badge{background:var(--brand);color:var(--on-brand);border-radius:var(--r-pill);padding:2px var(--s12);font-weight:700;font-size:var(--fs14)}
+.courses{display:grid;gap:var(--s8)}
+.course{display:flex;align-items:center;gap:var(--s12);text-align:left;min-height:56px;font-size:var(--fs16);padding:var(--s8) var(--s12)}
+.course .no{flex:none;width:32px;height:32px;border-radius:50%;background:var(--cream);color:var(--ink);display:grid;place-items:center;font-family:var(--display);font-weight:400;font-size:var(--fs14)}
 .course span{flex:1;min-width:0}
-.course small{display:block;color:var(--muted);font-weight:700;font-size:.74rem}
-.course.done{border-color:var(--ok)} .course.done .no{background:var(--ok);color:#fff}
-.course:disabled{opacity:.5;cursor:default;box-shadow:none}
-.rules{margin:0;padding-left:1.2em;font-size:.78rem;color:var(--muted);font-weight:700;line-height:1.5}
-.medal{display:inline-block;background:var(--ok);color:#fff;border-radius:999px;padding:2px 10px;font-weight:900;font-size:.8rem}
-.medal.hinted{background:var(--sheet-line);color:var(--ink)}
-.choices{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.choice{min-height:62px;border-radius:14px;border:2px solid var(--line);background:var(--land);color:var(--ink);font:900 1.1rem var(--body);cursor:pointer;box-shadow:0 3px 0 var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px 6px;line-height:1.2}
-.choice small{font-size:.74rem;color:var(--muted);font-weight:700}
-.choice:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
+.course small{display:block;color:var(--muted);font-weight:700;font-size:var(--fs12)}
+.course.done .no{background:var(--ok);color:var(--on-strong)}
+.course:disabled{opacity:.5;cursor:default}
+.rules{margin:0;padding-left:1.2em;font-size:var(--fs14);color:var(--muted);font-weight:700;line-height:1.5}
+.medal{display:inline-block;background:var(--ok);color:var(--on-strong);border-radius:var(--r-pill);padding:2px var(--s12);font-weight:700;font-size:var(--fs14)}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:var(--s8)}
+.choice{min-height:64px;font-size:var(--fs20);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:var(--s4) var(--s8);line-height:1.2}
+.choice small{font-size:var(--fs12);color:var(--muted);font-weight:700}
 .choice:disabled{cursor:default}
-.choice.right{background:var(--ok);border-color:var(--ok);color:#fff} .choice.right small{color:#fff}
-.choice.wrong{background:var(--ng);border-color:var(--ng);color:#fff} .choice.wrong small{color:#fff}
-.choice:focus-visible,.course:focus-visible,.linkbtn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.choice.right{background:var(--ok);border-color:var(--ok);color:var(--on-strong)} .choice.right small{color:var(--on-strong)}
+.choice.wrong{background:var(--ng);border-color:var(--ng);color:var(--on-strong)} .choice.wrong small{color:var(--on-strong)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
 <div class="app" id="app">
   <header class="top" id="top"></header>
+  <div class="pbar" id="pbar" aria-hidden="true"></div>
   <div class="mapwrap" id="mapwrap">
     <svg id="map" class="explore" viewBox="0 0 880 980" preserveAspectRatio="xMidYMid meet" aria-label="日本地図">
       <g id="prefs"></g>
+      <g id="regions"></g>
       <g id="insetg"><polyline class="inset" points="-100000,712 -11,712 -11,800 52,884 52,100000"></polyline></g>
       <g class="labels" id="labels"></g>
       <g id="zooms"></g>
@@ -175,7 +199,7 @@ svg#map:active{cursor:grabbing}
     <div class="combo" id="combo" hidden></div>
     <button class="zoomreset" id="zoomreset" type="button">ぜんこく</button>
     <button class="eye" id="eye" type="button" aria-label="押している間だけ県名を表示">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
       <span class="cap">おしてる間だけ</span>
     </button>
   </div>
@@ -403,6 +427,12 @@ gLabels.appendChild(okiLabelCopy);
 new MutationObserver(() => { okiCopy.setAttribute("class", pathEl[47].getAttribute("class")); okiCopy.style.fill = pathEl[47].style.fill; okiLabelCopy.setAttribute("class", labelEl[47].getAttribute("class") || ""); })
   .observe(pathEl[47], {attributes:true, attributeFilter:["class","style"]});
 new MutationObserver(() => okiLabelCopy.setAttribute("class", labelEl[47].getAttribute("class") || "")).observe(labelEl[47], {attributes:true, attributeFilter:["class"]});
+/* 地方の境目の太線（tools/build_paths.py が data/regions.json に書き出す）。ホームだけ表示 */
+const REGION_LINES = [{"id":"tohoku","d":"M763.8,96.8L764.4,97.0L764.5,96.8L765.8,96.6L754.9,92.8L747.8,89.0L745.2,85.1L742.5,84.3L727.2,72.8L710.2,55.0L705.8,46.9L690.3,30.0L682.3,23.9L677.7,17.4L675.7,17.0L673.7,19.0L673.5,21.1L671.0,22.6L664.6,23.9L663.9,21.3L662.5,21.8L662.5,27.5L659.4,32.9L659.5,38.1L667.6,54.9L669.7,69.5L667.3,82.5L662.8,91.4L663.6,104.0L662.1,111.7L656.7,117.5L649.7,120.5L647.4,125.2L650.0,133.3L648.5,136.6L652.4,143.5L651.6,148.9L645.8,156.2L639.2,159.5L632.1,157.5L631.2,156.4L631.6,154.3L621.1,156.3L606.1,145.7L603.6,148.3L600.0,148.5L598.5,153.0L598.9,155.4L606.1,163.0L608.1,167.1L607.8,168.2L600.8,174.4L596.2,182.6L592.2,179.1L589.1,183.2L584.3,186.8L576.5,188.2L574.4,192.7L575.2,197.2L574.6,202.6L571.2,209.3L572.7,213.8L576.8,216.3L579.0,219.7L583.8,221.7L589.5,229.0L589.9,233.2L588.5,236.0L588.6,239.2L586.5,240.0L583.4,246.2L581.5,253.1L584.3,261.4L587.4,263.2L592.6,263.9L595.8,259.1L603.5,256.2L603.5,249.3L604.5,247.1L611.8,243.8L614.5,238.4L617.8,239.3L618.1,240.4L616.4,242.4L616.9,243.3L622.5,241.8L631.3,245.3L636.9,241.2L640.7,240.0L636.2,235.7L629.8,233.2L623.1,226.6L620.0,221.9L617.1,220.0L609.1,221.7L596.7,212.4L596.5,207.0L598.3,202.0L602.7,195.7L606.8,193.2L618.1,194.2L626.2,202.7L627.1,205.6L630.4,207.6L627.7,208.3L629.9,210.0L635.5,204.5L651.8,194.1L661.9,191.1L670.7,192.0L676.0,194.5L682.6,199.8L687.7,200.4L693.2,206.0L701.9,211.7L716.4,218.5L726.2,221.7L733.7,226.3L739.8,232.3L744.2,221.6L743.9,214.2L745.1,208.9L756.0,191.8L771.1,177.3L778.7,172.4L792.3,167.8L794.0,168.0L795.6,170.6L799.2,171.8L805.7,171.1L812.7,172.5L814.7,171.9L812.4,169.2L815.4,165.2L817.4,165.6L817.5,167.6L820.3,169.2L825.9,168.6L826.5,167.4L825.3,165.3L828.9,166.0L833.4,163.2L831.2,162.7L831.9,160.3L836.4,159.5L839.9,157.6L847.2,157.0L851.0,157.9L850.3,157.5L853.0,152.6L855.7,149.4L858.4,149.4L865.2,145.6L857.3,145.2L853.5,147.9L849.3,151.8L850.3,154.3L840.8,151.4L840.0,150.5L841.2,149.0L842.8,149.9L844.3,149.7L840.3,146.0L838.8,141.3L838.2,139.8L837.5,137.7L835.4,131.3L841.3,134.1L838.6,135.7L839.0,136.9L842.8,134.7L840.3,132.4L834.5,131.0L830.8,126.8L828.7,121.5L832.2,110.8L837.8,103.8L839.3,98.7L843.2,93.1L843.3,90.5L841.8,87.3L837.3,91.7L835.0,95.7L827.6,100.7L817.0,111.5L812.6,113.1L795.1,110.6L790.2,105.8L789.1,103.2L789.4,101.5L788.4,100.8L787.1,101.3L785.8,105.0L784.1,106.8L781.8,106.1L782.8,103.2L785.0,101.6L782.4,100.3L776.6,100.0L773.6,102.2L763.5,101.2L761.1,97.1ZM775.5,99.1L767.6,97.9L773.8,99.7ZM598.1,286.4L596.9,295.6L595.0,300.3L592.1,300.8L588.4,303.3L584.7,301.9L582.4,303.5L578.9,309.2L575.7,311.5L575.5,312.6L578.4,312.8L579.7,315.3L579.8,322.2L583.7,326.7L581.4,340.5L577.8,346.9L573.9,350.3L568.0,347.7L567.8,348.7L568.9,350.9L568.4,352.5L570.8,356.5L574.9,356.3L576.5,354.4L578.7,354.1L580.9,355.2L583.8,358.5L585.4,364.4L584.9,377.7L582.3,388.4L578.5,392.3L576.7,401.1L571.5,419.0L563.0,429.1L560.6,435.3L568.0,438.3L568.4,444.7L575.0,448.2L576.2,450.8L574.9,453.5L572.5,455.3L567.3,455.9L563.9,473.4L564.6,475.2L569.1,478.8L560.0,490.5L560.8,497.6L554.3,497.8L552.5,500.4L544.9,501.2L543.1,502.9L544.1,506.7L541.5,514.4L542.6,516.6L543.9,516.5L545.4,519.6L545.6,525.6L544.5,532.2L551.4,533.9L555.6,530.6L578.5,519.4L587.3,521.7L591.0,524.5L593.7,528.0L594.0,532.5L604.3,540.3L605.9,540.2L609.9,536.2L610.2,532.4L612.3,534.2L621.2,537.2L621.5,534.8L629.1,530.0L631.4,520.0L631.4,514.4L633.1,505.4L632.4,489.1L631.4,487.3L632.1,484.4L627.8,474.6L627.4,465.0L630.4,455.6L634.9,450.3L634.9,449.3L633.4,449.4L634.9,446.3L637.4,445.7L638.4,448.6L639.3,448.6L639.8,445.7L640.9,444.9L647.2,443.5L651.8,445.2L652.4,445.7L651.7,447.4L653.7,448.6L653.5,450.0L656.5,451.9L657.4,449.8L656.5,446.4L655.4,445.7L656.3,444.6L657.7,444.9L656.2,443.9L654.7,444.5L653.9,442.2L655.7,441.2L655.1,440.3L656.0,437.5L657.4,439.1L657.6,436.9L656.7,435.1L656.0,435.9L653.7,433.8L657.0,430.1L653.5,428.3L657.4,425.6L658.5,425.8L658.6,424.3L656.4,421.9L659.5,418.8L659.6,415.1L661.9,414.5L663.7,416.9L662.1,409.9L662.7,408.1L665.8,411.2L666.7,410.4L665.7,409.5L667.4,408.7L666.4,405.8L672.2,406.7L671.0,404.6L673.4,404.2L669.0,401.5L675.4,402.1L672.0,398.9L675.5,397.8L676.0,396.8L675.6,396.8L677.1,392.6L675.4,390.3L678.8,388.4L678.7,386.9L675.0,388.2L677.8,385.5L676.6,384.9L681.4,382.6L682.4,380.0L681.3,379.0L679.4,381.3L677.3,380.4L680.8,378.4L680.6,378.3L683.0,375.0L681.1,372.9L681.3,369.7L677.3,372.5L680.0,362.8L678.2,355.0L676.8,352.5L677.7,350.8L677.1,348.2L671.9,343.8L672.2,341.1L673.6,339.6L670.5,337.0L671.9,334.5L667.1,325.0L664.1,320.9L659.0,315.5L656.9,316.1L654.9,314.3L651.6,304.5L650.0,292.0L650.0,278.3L653.5,262.4L649.6,265.6L644.4,266.8L640.5,264.8L636.3,260.2L631.2,258.8L626.5,255.7L626.2,259.1L623.1,262.9L621.5,268.2L619.7,279.3L622.0,280.3L624.4,278.2L628.4,277.6L629.9,276.2L633.9,277.0L638.2,273.8L639.3,271.5L641.0,272.1L643.5,275.3L644.5,278.7L643.0,281.6L642.0,288.8L640.0,293.3L637.2,295.6L633.9,293.0L629.8,291.7L630.1,290.4L628.5,288.6L625.6,287.4L624.3,290.6L623.3,290.8L624.8,291.3L623.9,295.0L621.3,297.7L616.6,296.8L615.2,294.3L613.6,285.5L613.2,276.3L609.1,274.4L604.9,277.0L599.1,272.1L598.0,279.0L594.5,280.6L597.1,281.3L598.3,285.2L598.2,285.5L600.2,286.0L601.4,289.9ZM643.2,42.0L646.1,40.5L647.3,38.5L644.1,34.5L640.9,33.1L637.4,35.4L638.3,39.2ZM629.4,20.2L631.1,22.9L631.0,27.0L632.8,32.1L634.6,22.5L633.6,21.0L631.4,21.6L630.4,20.0ZM555.6,224.7L558.7,222.0L559.2,217.5L561.3,214.1L560.6,213.4L554.5,216.5L553.9,218.8Z"},{"id":"kanto","d":"M532.2,533.9L529.9,535.3L528.6,538.4L525.3,539.8L524.0,542.5L510.0,546.7L509.4,549.3L506.6,550.5L505.1,553.8L503.7,559.9L504.3,561.9L507.3,564.1L513.7,563.0L515.7,565.0L516.0,569.4L513.9,571.8L514.8,576.8L513.1,578.8L515.2,581.0L515.2,586.1L519.4,589.8L520.2,594.2L527.6,597.7L530.2,597.9L535.7,606.2L539.9,608.8L538.4,617.2L530.7,621.8L529.1,625.1L533.3,625.1L534.0,630.6L532.4,634.2L533.2,637.0L535.3,639.9L538.5,641.0L539.8,639.0L541.6,639.8L541.0,633.9L542.9,632.2L554.1,628.9L557.6,630.0L560.4,629.5L564.2,635.3L563.2,635.9L563.9,640.0L566.2,639.9L567.2,639.6L566.3,636.4L569.3,635.6L569.2,634.0L570.1,633.1L565.4,630.1L565.9,625.4L564.8,623.9L567.3,624.0L567.3,622.1L565.1,620.7L568.6,620.1L572.1,617.3L572.7,615.6L571.8,613.0L573.1,609.7L574.6,611.1L575.3,609.7L577.5,611.1L579.6,609.8L578.6,608.3L581.7,607.9L586.4,611.8L586.8,614.8L582.8,619.6L577.6,622.6L578.0,625.3L577.3,626.1L575.0,625.4L574.0,628.3L571.9,628.9L575.2,630.4L576.0,633.2L575.9,634.6L574.0,636.1L573.7,638.5L575.2,644.5L574.5,646.4L576.2,648.0L570.5,649.5L570.7,650.6L573.3,651.4L574.9,654.0L578.9,653.6L580.7,651.5L582.1,646.8L587.4,643.5L589.0,640.6L594.0,641.3L596.8,639.2L598.1,640.2L599.4,637.2L600.8,637.4L601.6,636.2L602.5,629.9L601.2,625.1L603.0,618.6L606.0,614.0L614.6,606.7L617.3,606.1L617.5,607.0L622.7,605.2L624.3,606.7L625.2,604.8L624.4,604.5L613.9,587.2L610.6,578.3L609.9,571.0L612.8,566.2L612.1,562.0L612.8,557.6L616.2,550.9L618.5,541.9L621.2,537.2L612.3,534.2L610.2,532.4L609.9,536.2L605.9,540.2L604.3,540.3L594.3,532.7L593.9,528.6L591.5,524.8L587.3,521.7L577.0,519.6L572.4,523.1L566.9,524.8L551.4,533.9L544.5,532.2L538.4,525.6L535.6,528.8L532.3,530.0ZM576.5,762.7L571.2,759.0L569.9,760.0L572.2,764.5L574.5,765.6ZM564.2,714.9L562.7,714.3L562.2,716.2L564.2,716.6ZM561.9,702.6L561.0,701.2L559.4,701.3L557.9,702.4L557.6,704.4L558.5,705.8L559.9,705.7ZM555.8,662.6L551.3,660.2L551.0,664.8L554.4,667.4L556.0,667.3ZM548.6,682.9L547.1,684.2L546.3,687.5L547.0,688.6L548.3,685.9Z"},{"id":"chubu","d":"M363.0,615.4L361.2,616.9L361.5,620.9L365.0,625.6L373.2,628.2L375.8,627.7L379.5,624.9L382.3,625.1L385.0,617.8L387.3,619.2L392.3,617.1L393.0,614.5L395.4,613.7L394.5,608.2L396.4,607.5L400.8,609.3L403.5,615.5L405.8,616.0L407.6,620.8L408.1,624.4L406.5,632.0L407.7,635.8L414.0,634.2L416.7,637.5L421.0,639.7L424.8,646.4L427.1,646.6L427.1,646.5L429.6,645.9L430.1,647.2L428.3,650.7L428.5,655.7L430.3,657.8L429.2,661.9L429.9,663.6L435.5,666.2L435.1,663.9L432.8,661.4L433.6,656.8L437.8,661.0L445.2,661.0L445.2,662.2L446.0,661.8L446.3,659.6L450.5,659.5L452.5,661.6L451.9,664.4L450.6,664.1L442.2,670.5L440.4,668.1L437.7,673.3L443.7,672.6L459.6,667.7L470.0,667.8L475.3,669.6L480.2,667.9L483.8,668.0L496.7,672.3L494.8,669.5L495.9,665.3L499.6,662.1L502.0,658.4L501.3,656.7L502.6,653.8L510.4,649.2L511.2,647.0L509.8,647.3L509.6,646.0L512.3,642.2L519.2,639.7L524.4,640.7L529.5,646.2L523.6,646.4L522.4,649.2L523.7,653.6L522.0,655.2L521.7,659.2L523.0,662.9L521.5,664.3L521.7,666.5L526.0,672.2L531.1,668.3L533.6,669.0L533.9,664.0L536.5,661.3L538.8,656.6L540.8,655.8L540.9,651.5L538.2,648.2L539.1,645.0L537.6,644.8L538.5,641.0L534.9,639.5L532.7,635.7L532.5,633.0L534.0,630.6L533.3,625.1L528.8,625.7L530.7,621.8L538.8,616.5L539.9,608.8L533.6,604.0L530.2,597.9L525.7,597.3L520.2,594.2L519.4,589.8L515.2,586.1L515.2,581.0L513.1,578.8L514.8,576.8L513.9,571.8L516.1,568.6L515.3,564.0L513.0,562.9L506.7,564.0L504.3,561.9L503.7,559.9L506.3,550.9L509.4,549.3L509.6,547.1L518.4,544.2L524.0,542.5L525.3,539.8L529.3,537.8L529.9,535.3L532.2,533.9L532.3,530.0L536.6,528.1L537.8,525.8L541.3,528.3L542.1,530.4L544.4,531.3L545.6,525.6L545.4,519.6L543.9,516.5L542.6,516.6L541.5,514.4L544.1,506.7L543.1,502.9L544.9,501.2L552.5,500.4L554.3,497.8L560.8,497.6L560.0,490.5L569.1,478.8L565.7,476.5L563.9,473.4L566.9,456.7L568.0,455.5L572.5,455.3L574.9,453.5L576.2,450.8L575.8,449.1L568.4,444.7L568.0,438.3L560.6,435.3L556.9,443.2L554.6,458.9L548.7,465.5L544.4,468.6L537.3,470.7L527.0,478.3L524.7,482.4L521.7,492.2L517.4,496.5L512.1,505.3L506.6,508.7L497.3,517.0L493.4,518.3L490.1,517.7L488.0,520.2L480.4,524.5L466.7,529.5L461.1,530.7L457.6,532.7L455.5,540.0L453.1,542.2L446.4,542.5L440.8,540.6L437.1,537.8L436.3,535.7L439.3,530.1L439.5,530.0L439.5,529.7L439.2,522.1L435.9,525.2L433.6,523.2L430.1,523.4L430.5,521.3L431.7,520.9L431.1,519.5L431.0,519.5L431.1,519.4L430.5,518.0L431.0,517.7L431.4,518.2L431.7,517.6L433.9,514.7L437.6,516.9L440.3,514.9L442.1,511.0L444.9,509.9L448.0,510.5L449.7,507.6L448.4,505.2L449.2,502.3L454.2,500.8L453.4,497.0L451.2,496.1L442.4,498.7L440.3,500.8L433.7,504.0L429.2,504.0L424.7,506.5L423.4,508.5L423.9,510.9L422.2,513.6L420.9,519.0L422.1,519.8L422.7,519.0L423.6,520.4L423.3,524.7L425.6,529.1L424.8,532.5L425.5,533.2L425.2,535.8L419.4,548.2L409.2,562.0L399.3,570.9L396.2,572.9L394.4,572.8L394.9,574.5L394.2,576.0L390.4,581.4L388.3,586.5L386.5,588.0L386.3,589.6L388.1,591.8L388.0,594.9L391.8,598.5L393.2,601.5L392.9,602.5L392.7,603.8L391.6,608.6L391.5,608.2L389.6,607.1L390.6,605.8L389.3,602.1L386.2,604.3L387.4,610.2L384.4,611.5L379.2,609.4L381.3,613.3L378.8,613.5L380.3,615.9L378.3,616.1L375.6,613.8L374.1,614.3L373.4,615.2L376.1,618.0L369.3,619.6L372.3,615.9L371.3,615.4L366.9,618.5L364.6,618.1L364.7,615.1L363.5,616.8ZM438.8,520.8L439.2,518.9L432.3,519.4L434.3,522.2ZM506.9,463.8L507.0,461.9L510.0,453.5L510.4,448.6L508.2,449.2L506.2,452.6L500.5,457.9L497.2,463.7L496.7,467.5L497.4,469.3L500.7,468.2L502.0,470.0L499.4,473.6L499.2,477.1L495.9,478.2L496.2,479.9L503.4,478.3L509.7,473.6L513.3,465.9L513.3,463.5Z"},{"id":"kinki","d":"M315.1,660.8L315.3,662.1L316.4,662.4L325.0,661.4L327.4,662.0L337.9,669.4L338.5,669.5L338.9,669.7L341.1,670.2L342.0,670.5L348.7,668.9L348.8,667.5L351.6,669.0L350.9,667.5L353.7,667.2L353.7,665.7L356.4,665.5L358.3,667.1L361.1,665.2L359.4,668.5L359.6,675.5L357.9,676.9L357.9,678.9L352.2,685.4L343.9,690.0L343.2,690.9L342.8,692.0L345.6,693.5L349.5,699.9L345.7,699.8L346.0,701.5L344.4,703.9L347.2,705.1L347.6,706.5L343.5,709.4L343.5,710.5L344.7,710.7L343.2,712.2L343.6,713.6L342.6,713.9L342.6,715.2L345.5,714.4L351.1,721.1L354.9,722.1L359.7,725.9L356.4,726.4L355.7,727.7L358.0,729.4L358.6,732.4L361.4,734.9L370.7,738.3L376.9,739.1L376.7,742.0L378.1,741.5L377.8,739.6L379.1,737.7L382.7,736.3L385.7,733.3L386.4,732.4L385.3,731.0L388.0,726.8L393.4,714.5L395.0,714.6L398.0,712.7L398.6,711.3L399.4,711.7L399.4,709.7L401.6,709.7L401.9,707.0L398.9,703.5L400.6,701.5L402.1,703.1L403.3,702.6L403.8,701.5L402.7,700.5L402.8,698.7L404.7,697.0L411.2,693.7L413.3,694.2L413.7,691.6L415.5,692.4L416.2,691.2L417.8,692.1L420.7,690.1L419.9,689.2L423.8,687.5L423.4,688.3L422.4,690.3L424.4,689.9L425.9,689.5L427.5,690.8L427.5,689.5L429.4,689.5L429.2,692.0L430.0,692.6L430.0,692.6L429.2,692.4L427.5,692.0L425.9,691.6L426.9,692.8L428.9,693.2L431.8,692.0L431.2,688.3L432.5,686.7L430.8,685.8L432.8,685.4L432.8,682.0L431.2,681.7L429.7,678.9L424.8,677.2L419.1,672.5L415.1,671.9L414.9,668.9L413.5,667.1L414.3,662.1L419.4,654.7L420.3,649.0L424.8,646.4L421.0,639.7L416.7,637.5L414.0,634.2L407.5,635.9L406.6,634.1L408.1,624.4L407.6,620.8L405.8,616.0L403.5,615.5L400.8,609.3L396.4,607.5L394.5,608.2L395.4,613.1L394.9,614.5L393.0,614.5L392.3,617.1L387.3,619.2L385.0,617.8L382.3,625.1L379.5,624.9L375.8,627.7L373.2,628.2L365.0,625.6L361.5,620.9L361.2,616.9L363.2,614.4L361.7,613.7L362.3,611.8L360.0,614.3L356.2,615.8L357.0,617.9L349.9,614.8L352.9,614.2L351.0,611.2L352.4,608.6L354.6,607.7L354.0,605.3L350.8,601.7L343.9,603.7L336.2,609.5L333.1,608.5L332.1,609.3L330.0,608.1L317.3,607.7L309.0,612.0L311.5,615.3L312.8,621.7L315.8,628.7L316.0,631.7L313.0,634.9L310.5,634.2L310.4,639.6L304.0,647.9L303.7,657.8L306.3,661.8L306.0,665.5L308.4,665.7L309.8,663.6L311.8,664.5ZM339.9,671.5L336.8,674.9L334.1,676.2L332.5,679.5L330.0,681.2L326.2,688.2L324.4,688.3L323.1,690.7L324.6,693.4L326.4,692.8L325.3,694.7L326.6,696.5L330.1,696.0L337.8,691.8L334.7,685.6L335.1,682.9L341.2,673.3Z"},{"id":"chugoku","d":"M159.3,683.5L157.9,681.8L153.9,682.2L154.9,684.4L154.0,685.9L152.5,685.3L152.1,683.3L149.2,682.5L146.1,683.4L144.5,681.7L143.1,682.9L142.4,684.2L147.3,685.1L140.4,687.4L139.4,691.2L141.9,697.0L138.9,701.2L139.7,703.9L141.4,704.8L141.6,707.3L140.7,711.0L139.8,711.7L141.5,713.2L147.4,705.1L150.6,706.2L153.7,709.4L154.3,712.2L156.1,711.0L158.1,712.5L161.8,710.3L165.5,704.0L166.1,704.2L164.7,708.9L166.0,708.0L167.0,709.3L169.1,706.1L173.7,708.9L174.6,707.8L174.4,705.8L176.4,706.4L181.6,704.6L185.6,706.4L183.5,709.8L185.7,710.1L185.1,709.7L187.0,708.1L192.8,713.0L199.0,715.7L199.5,718.2L198.0,717.9L196.3,720.4L196.2,721.4L196.9,721.4L202.0,717.5L200.7,711.7L201.4,711.2L201.4,711.2L202.5,710.2L204.3,708.8L204.3,708.8L204.5,708.6L204.0,701.5L205.8,699.4L205.8,696.6L205.3,694.9L205.0,693.7L208.1,689.8L208.1,689.8L209.3,688.4L212.8,686.1L222.3,687.2L218.6,688.3L218.6,690.8L221.3,694.9L221.1,696.5L223.9,694.9L224.6,696.1L226.0,696.0L226.4,695.9L231.6,693.9L231.2,691.8L234.8,689.3L235.6,690.8L238.4,689.1L246.2,688.0L246.4,692.4L247.2,692.8L250.5,690.3L251.7,691.2L252.8,689.5L251.5,687.5L253.9,685.4L254.1,684.6L258.0,686.0L255.8,687.6L256.4,688.7L259.3,687.1L262.7,682.5L263.0,679.9L264.2,679.6L268.1,679.0L265.5,682.6L277.8,676.3L281.3,681.4L282.8,681.7L282.6,680.3L288.2,680.9L290.4,676.3L291.8,676.8L291.5,676.0L293.9,672.6L295.3,673.1L298.4,672.2L300.4,669.8L298.8,669.8L305.9,665.4L306.0,665.5L306.3,661.8L303.7,657.8L304.0,647.9L310.4,639.6L310.5,634.2L313.0,634.9L316.0,631.7L315.8,628.7L312.8,621.7L311.5,615.3L309.0,612.0L305.5,612.8L302.8,615.2L292.9,616.8L291.7,615.8L278.2,617.8L270.9,616.0L264.1,618.5L262.1,620.7L255.6,618.2L255.2,615.6L258.5,613.9L253.8,614.1L253.6,613.0L250.3,614.2L247.1,611.9L246.7,613.5L245.2,613.6L244.3,615.2L241.4,615.5L241.2,617.0L234.8,617.6L229.4,619.8L230.5,620.9L225.0,621.5L224.8,622.8L226.9,624.9L225.2,630.3L220.0,632.5L214.0,637.5L209.5,644.3L205.6,645.9L197.2,653.6L196.8,655.7L195.8,655.4L188.0,662.4L187.3,665.1L181.8,667.5L178.4,667.7L178.5,668.1L177.5,668.8L175.5,668.1L174.6,668.4L174.5,671.0L172.7,671.1L171.7,674.1L167.7,676.9L168.0,678.0L165.7,680.8L165.7,682.6L161.9,683.0L161.5,684.0L162.2,684.2L155.8,685.8L156.8,682.9ZM207.2,693.3L210.0,692.1L210.9,691.1L210.6,689.7L208.7,690.5ZM227.6,696.6L230.1,698.4L231.1,697.4L230.0,696.2ZM219.4,697.5L218.3,698.6L218.9,700.1L216.3,702.7L221.1,703.7L222.2,700.9L220.9,701.5L220.3,698.6L220.9,697.8L220.9,697.8L220.3,697.7ZM204.0,711.3L203.6,714.1L204.7,716.7L208.0,716.3L209.6,715.0L210.3,717.1L212.3,717.5L212.8,714.3L215.4,713.8L217.0,711.7L214.3,711.7L213.6,713.0L210.0,714.2L207.7,711.5ZM251.8,575.0L255.1,578.1L258.5,578.5L259.3,577.5L258.5,576.5L261.1,575.5L260.5,571.5L256.9,567.5L252.9,570.2ZM242.2,582.5L240.2,584.3L242.5,585.7ZM242.3,582.3L244.9,584.7L245.5,581.8L245.5,581.8L245.8,580.8L244.6,580.2ZM246.7,581.2L246.7,581.4L246.9,581.4ZM248.6,581.4L246.7,583.2L246.5,586.7L248.7,584.2L249.3,582.6ZM238.9,691.4L235.3,693.6L235.4,695.1L238.7,694.7ZM203.3,721.2L207.4,721.9L204.3,720.0ZM292.0,671.0L292.3,671.4L288.5,674.7L287.6,673.3L288.2,672.8ZM247.1,688.1L246.4,684.1L249.3,685.8L249.3,685.8L250.1,686.2L248.5,690.8L248.2,690.8L248.2,686.9Z"},{"id":"shikoku","d":"M194.7,747.1L198.0,745.5L200.5,746.2L202.9,743.6L209.1,740.1L212.7,740.0L214.6,741.3L213.5,742.1L214.0,743.0L213.1,744.1L214.1,747.7L212.5,748.8L214.6,749.7L219.7,749.1L217.7,751.4L218.8,752.5L219.2,752.5L220.8,754.4L219.1,755.2L217.7,757.9L216.5,755.8L213.3,755.8L213.5,756.8L214.7,756.0L216.4,757.6L215.4,757.9L215.6,759.5L218.0,760.0L216.0,761.1L216.9,762.3L216.4,765.0L214.0,763.8L212.7,766.8L214.5,764.9L217.1,765.6L218.5,768.4L217.6,769.8L218.1,771.1L217.1,772.0L218.6,774.5L220.3,774.3L219.3,773.4L219.6,772.2L221.9,772.6L221.3,771.8L225.2,773.5L228.6,773.4L224.4,780.0L224.6,782.9L228.7,780.6L232.6,783.6L235.8,781.8L236.9,782.9L238.6,781.3L240.6,782.5L241.9,784.8L244.1,784.8L243.5,782.5L240.5,779.1L240.8,776.2L242.8,775.8L242.4,771.1L243.6,766.6L245.3,765.6L247.5,766.6L247.4,765.1L250.7,759.8L251.9,758.2L253.6,758.5L253.2,756.7L255.8,752.9L254.9,750.3L255.8,747.2L257.9,745.5L258.4,746.9L260.4,744.7L264.0,743.9L265.3,740.7L272.2,737.1L278.6,735.7L287.6,738.4L289.7,741.9L292.5,743.1L296.5,749.1L296.4,750.3L298.1,750.5L299.8,753.8L303.1,740.4L305.6,736.2L306.5,735.4L306.4,733.6L308.4,733.1L310.1,730.6L309.5,729.9L310.9,728.7L318.9,723.8L319.4,722.1L327.7,717.9L324.7,718.3L326.1,717.1L322.6,716.8L325.4,713.6L325.3,711.8L322.2,707.4L320.3,708.6L320.6,701.4L322.4,697.2L321.6,697.1L322.6,693.6L319.9,695.8L320.7,692.9L318.5,694.7L312.7,695.5L310.5,693.0L307.9,693.0L303.8,690.3L304.4,688.6L301.8,686.7L299.3,688.5L298.2,684.5L295.2,687.1L288.2,685.5L276.8,694.1L275.4,694.6L269.8,692.4L274.1,698.0L273.8,703.2L271.4,706.6L267.5,710.1L258.4,708.6L248.9,712.0L246.5,710.4L244.3,704.8L241.0,700.8L241.0,700.8L239.9,699.5L239.2,700.8L237.7,700.6L239.1,701.3L238.8,703.9L236.0,704.6L231.5,708.2L230.8,713.4L228.7,713.7L227.7,719.2L228.0,722.6L227.0,725.1L223.4,728.4L218.5,730.5L214.2,735.9L207.0,740.2L202.5,741.3L201.7,741.8L202.2,742.8L198.7,743.5ZM243.5,700.9L244.9,700.9L247.2,697.5L244.3,696.6ZM241.6,695.8L241.6,695.8L245.2,694.7L244.2,690.3L241.2,692.8L242.3,694.1L240.5,696.1ZM299.1,679.2L303.1,680.2L303.1,682.9L305.4,681.0L308.1,682.2L309.4,677.2L309.1,674.7L301.1,677.3L299.7,676.8ZM293.0,679.2L295.3,680.4L296.3,678.6L294.7,678.1ZM225.0,710.1L225.3,707.2L223.1,709.1L222.8,710.6Z"},{"id":"kyushu","d":"M66.4,756.1L65.5,755.2L65.2,757.2L68.6,757.3L72.5,753.3L75.2,747.4L73.2,745.1L72.6,746.5L70.0,747.1L69.8,750.2L68.3,751.5L68.8,753.8L67.7,753.6ZM74.0,743.7L75.4,746.9L76.0,745.6L75.8,745.6L75.5,743.4ZM76.7,745.7L76.3,748.8L77.3,751.0L76.0,751.7L75.3,754.4L80.2,756.6L81.9,759.5L80.7,760.4L80.9,761.9L81.9,761.6L81.9,761.6L83.8,760.9L84.7,763.8L81.6,762.4L79.2,769.3L79.5,772.4L84.1,779.7L86.0,779.2L88.5,784.7L90.2,784.5L89.0,786.4L87.2,786.5L88.1,788.2L86.5,791.6L84.2,793.1L84.5,793.9L86.5,793.6L89.4,789.6L92.0,788.2L95.1,782.1L96.6,783.2L101.6,780.3L105.7,780.4L107.2,782.9L106.3,785.2L103.3,787.0L103.4,789.5L105.3,790.9L105.1,792.4L108.3,791.4L110.1,789.0L113.7,788.0L115.3,783.1L113.6,776.6L112.0,775.4L108.9,775.5L104.5,777.5L102.2,775.4L106.2,773.1L107.0,771.4L107.9,769.5L103.9,761.9L108.8,756.7L111.2,759.0L114.0,759.5L117.5,762.7L117.9,769.2L118.5,772.6L125.9,779.0L126.8,781.1L125.9,783.7L127.5,785.3L118.8,790.7L129.5,789.1L124.5,795.2L126.1,797.7L123.8,798.5L124.8,800.9L121.8,805.3L122.0,808.7L119.9,807.2L119.5,810.0L113.8,818.3L111.6,821.6L110.6,822.0L109.1,820.0L105.8,822.4L107.0,825.1L105.5,828.1L107.8,832.2L106.6,836.5L108.5,838.8L106.3,837.9L105.4,840.6L106.0,842.5L109.7,844.7L113.5,851.5L112.5,858.4L108.2,865.1L105.0,862.7L102.9,863.5L107.2,867.8L105.8,868.3L107.9,873.2L119.0,873.0L121.1,874.4L123.1,878.3L125.5,878.7L128.1,876.8L129.1,871.7L127.4,871.5L124.9,869.1L122.1,860.8L125.1,852.3L125.1,852.3L126.8,847.1L130.4,844.5L134.8,845.4L136.1,846.8L136.4,848.9L135.9,851.3L133.4,854.4L132.2,854.2L132.1,852.2L130.5,850.8L128.0,850.6L125.8,852.8L128.0,854.7L130.8,855.3L131.2,860.4L133.4,861.9L135.7,867.3L133.1,880.7L129.3,883.8L129.0,887.8L135.5,883.3L142.7,880.7L144.7,878.6L146.0,874.7L148.5,874.5L152.0,871.2L149.2,871.1L150.7,868.3L146.3,866.2L148.4,861.6L152.9,859.7L155.9,860.7L157.8,864.7L161.4,864.7L161.7,865.9L163.3,862.8L164.7,858.5L164.6,855.1L167.7,850.7L168.7,842.3L169.7,840.2L167.8,838.7L167.3,835.4L172.9,814.9L176.4,804.3L179.1,802.7L177.6,799.4L179.4,799.9L181.4,798.5L178.7,795.9L180.0,792.8L182.0,792.4L183.0,789.1L185.5,785.8L187.2,786.8L188.0,784.1L188.5,781.0L190.7,781.3L194.0,779.4L194.1,778.2L192.0,778.3L194.2,775.7L193.3,774.7L198.1,771.4L192.2,771.3L189.5,769.0L190.7,765.2L193.4,765.3L194.8,764.2L194.0,762.5L193.0,764.4L191.4,762.4L190.7,763.9L188.4,763.5L187.8,762.3L189.9,760.5L186.5,761.2L184.9,760.3L189.4,752.0L185.5,753.4L180.1,751.8L179.6,752.8L177.4,751.7L175.3,752.8L170.4,751.6L170.2,746.2L174.6,747.0L176.4,745.6L176.7,743.0L179.9,743.4L181.4,738.9L181.0,733.2L178.0,728.0L170.9,727.4L165.9,733.1L163.5,733.5L155.4,731.2L149.6,729.9L146.1,723.2L146.0,719.2L143.8,719.0L144.9,715.6L145.6,715.6L145.3,714.1L146.5,710.6L146.0,710.0L140.6,714.6L138.9,712.5L137.0,712.8L137.3,711.6L130.7,711.8L127.8,715.1L123.7,715.2L121.7,717.1L120.8,716.7L118.9,719.9L119.8,723.4L115.8,727.4L112.8,728.1L111.4,726.6L111.4,728.1L114.0,729.5L116.4,727.9L116.1,731.7L112.4,732.2L111.2,733.5L110.0,732.7L110.3,731.3L108.3,730.9L108.6,729.3L107.2,728.1L106.7,730.0L104.8,730.2L104.7,731.6L101.6,733.6L104.1,736.4L99.8,738.3L98.7,740.9L96.5,741.1L95.3,739.0L94.2,739.2L95.2,737.2L94.3,736.1L90.0,734.8L89.2,737.2L90.8,741.3L89.9,741.7L88.3,738.9L86.8,740.7L90.7,744.2L89.1,749.9L88.1,748.1L87.7,747.1L84.7,746.1L82.6,746.8L81.4,746.3L81.2,744.1L79.8,746.3ZM105.2,821.1L106.5,817.4L106.2,816.2L103.0,815.2L102.5,816.4L104.3,821.4ZM118.3,790.8L118.3,790.8L118.2,790.8L118.2,790.8L116.4,792.4L117.8,795.8L119.0,794.2L118.3,790.8ZM116.8,797.2L114.7,796.4L107.0,801.1L108.8,804.3L114.3,802.6L114.7,805.5L116.2,804.2L118.2,798.4L119.8,797.3L119.3,796.5L118.3,796.8L118.3,796.8L117.0,797.3L117.0,797.3L116.6,797.4ZM106.8,800.7L106.7,799.2L106.3,796.7L104.9,795.2L99.2,796.9L97.2,796.0L98.6,799.1L96.8,802.6L96.1,808.0L97.5,809.6L100.2,809.6L95.2,812.9L95.1,813.7L97.5,812.9L96.9,816.6L100.7,814.8L107.0,807.7L106.8,800.7ZM138.4,919.8L139.3,927.4L143.8,925.6L144.8,916.8L145.8,914.9L147.3,914.6L148.4,911.3L148.2,908.3L149.5,906.1L149.1,901.8L149.9,901.0L148.1,897.6L142.7,907.7L143.2,912.3L142.2,915.5L139.3,920.2ZM118.3,933.7L120.7,934.5L126.4,932.9L128.5,930.6L129.8,925.5L121.3,919.9L119.8,920.6L117.6,924.1L115.3,924.3ZM107.6,810.8L107.3,812.7L109.8,811.1L108.9,809.9ZM109.8,921.9L107.8,919.7L104.0,918.6L105.5,920.7L106.3,920.3L107.4,922.8ZM82.3,850.7L83.9,849.3L87.4,843.3L86.6,840.0L85.1,843.4L83.3,844.2L80.4,848.4L80.5,849.5ZM88.4,837.3L89.8,836.6L90.2,838.6L91.7,839.4L93.6,838.4L93.8,835.9L92.9,835.9L92.7,837.3L89.6,835.2ZM93.6,958.4L92.1,957.2L91.9,955.5L89.8,954.8L89.0,955.6L90.5,958.5L93.2,958.8ZM79.9,721.6L80.4,723.4L81.6,723.3L81.4,724.3L83.5,726.1L84.2,723.8L87.4,722.9L86.2,721.6L87.2,720.8L85.8,719.9L85.8,717.3L82.0,715.7L81.5,719.1L80.4,719.1L80.7,721.9ZM83.2,968.7L83.5,971.6L85.1,969.3L84.7,968.3ZM59.7,686.7L61.7,687.2L62.9,688.1L59.4,690.4L59.6,688.8L58.6,688.2L56.9,701.6L57.8,701.1L59.2,702.7L62.0,700.3L63.0,694.9L64.3,694.2L64.0,692.5L65.4,690.8L64.6,690.5L68.0,687.7L67.6,683.4L67.3,683.6L67.0,680.8L71.1,674.7L71.8,672.2L70.5,670.8L72.2,669.9L71.3,668.8L72.2,667.4L71.1,666.0L69.1,666.3L69.2,667.3L66.9,669.3L64.2,669.1L62.6,673.8L64.4,675.9L61.9,680.3L63.6,680.4L61.6,682.0L61.8,685.5ZM30.3,788.0L29.1,791.1L31.7,792.5L35.7,791.8L37.5,793.7L38.6,791.4L36.7,789.1L43.7,789.4L40.9,785.8L41.2,783.4L37.8,780.9L34.0,783.4L33.0,781.0L32.1,781.0L31.2,782.3L32.0,790.8L31.4,790.9ZM38.5,780.5L42.8,782.1L44.0,780.4L43.7,778.9L41.9,777.9L42.4,780.1L40.6,778.0L40.7,779.1ZM43.7,777.3L45.9,779.7L46.3,775.5L45.1,777.0L42.8,776.2ZM46.5,775.3L50.8,777.7L50.8,778.7L51.7,778.9L51.8,776.3L53.2,776.6L53.4,772.9L57.4,768.9L56.8,767.7L53.3,768.7L54.6,761.4L53.8,758.0L52.6,766.6L50.9,765.6L51.2,769.2L47.4,770.5L48.0,773.3L47.3,774.2L46.8,774.1L46.9,774.7ZM52.2,752.4L54.7,753.1L55.8,751.9L55.1,750.0ZM85.6,764.3L86.2,764.5L87.3,763.4L88.5,765.4L91.3,764.2L94.4,767.1L93.7,772.3L97.2,777.3L91.4,775.5L89.6,777.7L87.1,775.5L87.7,774.8L87.5,774.0L88.5,769.2L85.1,766.4Z"}];
+const gRegions = document.getElementById("regions");
+const regionLine = (d, parent) => { const p = document.createElementNS(NS, "path"); p.setAttribute("d", d); p.setAttribute("class", "region-line"); parent.appendChild(p); return p; };
+REGION_LINES.forEach(o => regionLine(o.d, gRegions));
+const okiLine = regionLine(OKI.d, gRegions), okiLineCopy = regionLine(OKI.di, insetG);
 const OKI_TOP = OKI.b[1];
 let insetShown = true;
 
@@ -431,7 +461,7 @@ function apply() {
   insetShown = view.w > 700 || view.y + view.h < OKI_TOP - 4;
   insetG.style.display = insetShown ? "" : "none";
   okiLabelCopy.style.display = insetShown ? "" : "none";
-  pathEl[47].style.visibility = labelEl[47].style.visibility = insetShown ? "hidden" : "";
+  pathEl[47].style.visibility = labelEl[47].style.visibility = okiLine.style.visibility = insetShown ? "hidden" : "";
   // 虫眼鏡は画面上で同じ大きさ。広く見ている時だけ出す
   const s = view.w / box().w;
   svg.classList.toggle("zooms-off", view.w < 330);
@@ -537,12 +567,14 @@ let tapHandlers = [];
 const JapanMap = {
   onPrefectureTap(cb){ tapHandlers.push(cb); },
   setPrefectureColor(code, color){ pathEl[code].style.fill = color; },
-  resetColors(){ Object.values(pathEl).forEach(p => { p.style.fill = ""; p.classList.remove("sel","ok","miss","flash-ok","flash-ng","blink","off"); }); },
-  highlightPrefecture(code){ const p = pathEl[code]; p.classList.remove("blink"); void p.getBBox(); p.classList.add("blink"); },
+  resetColors(){ Object.values(pathEl).forEach(p => { p.style.fill = ""; p.classList.remove("sel","ok","miss","flash-ok","flash-ng","reveal","off"); }); },
+  highlightPrefecture(code){ const p = pathEl[code]; p.classList.remove("reveal"); void p.getBBox(); p.classList.add("reveal"); toFront(code); },
   zoomToPrefecture(code){ fitBox(boxOf[code]); },
   getPrefecture(code){ return byCode(code); },
   prefectures: PREFS
 };
+// 太い枠が隣の県に隠れないよう、その県を最前面に描く
+function toFront(code) { const p = pathEl[code]; p.parentNode.appendChild(p); }
 window.JapanMap = JapanMap; window.QUIZ_TYPES = QUIZ_TYPES; window.COURSES = COURSES;
 
 function showTag(code, text) {
@@ -605,7 +637,7 @@ function autoAnswer() {
 // ホーム系の画面（モード選択・コース一覧・コース）に共通：地図をコレクションの色で見せ、県をさわると名前を出す
 function toHomeScreen(box = FULL) {
   cancelQuizTimers(); eyeOff();
-  mode = "home"; quiz = null; selected = null; clearTag(); combo.hidden = true;
+  mode = "home"; quiz = null; selected = null; clearTag(); combo.hidden = true; pbar.innerHTML = "";
   JapanMap.resetColors(); svg.classList.add("explore"); svg.classList.remove("region-quiz");
   Object.values(labelEl).forEach(t => t.classList.remove("off"));
   const lv = prefLevels();
@@ -698,7 +730,7 @@ function coursePage(c) {
 function showInfo(code) {
   const p = byCode(code);
   if (selected) pathEl[selected].classList.remove("sel");
-  selected = code; pathEl[code].classList.add("sel");
+  selected = code; pathEl[code].classList.add("sel"); toFront(code);
   const info = byId("info");
   if (info) info.innerHTML = `<span class="nm">${p.name}</span><span class="sub">${p.kana}・${p.region}・${capitalLabel(p)}</span>`;
 }
@@ -723,10 +755,12 @@ function startQuiz(course, area, codes, opts={}) {
   nextQ();
 }
 
-function progressBar(){
-  return `<div class="progress">${quiz.qs.map((q,i) => {
+// 進み具合：未回答＝薄い墨／いま＝黄（背が高い）／正解＝緑／ヒントあり正解＝緑の斜線／不正解＝赤
+const pbar = document.getElementById("pbar");
+function renderProgress(){
+  pbar.innerHTML = quiz ? quiz.qs.map((q,i) => {
     const l = quiz.log[i]; return `<i class="${l ? (l.ok ? (l.hint ? "hintd" : "ok") : "ng") : (i === quiz.i ? "now" : "")}"></i>`;
-  }).join("")}</div>`;
+  }).join("") : "";
 }
 
 // 下段に出す出題文（問題文＋よみ）
@@ -737,7 +771,9 @@ function nextQ() {
   if (quiz.i >= quiz.qs.length) return result();
   const q = quiz.q = quiz.qs[quiz.i]; q.hint = false; quiz.answered = false;
   // 出題文はどのコースも下段（シート）に置き、上のバーには進み具合だけを出す。4択は出題文のすぐ下に選択肢
-  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${quiz.course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}　${quiz.i+1} / ${quiz.qs.length}</span></div>${debugBtn()}<button class="iconbtn" id="quit" type="button">やめる</button>`;
+  // 上の帯：左端に✕（やめる）、小さい文字で「関東　3 / 7」、右に DBG とタイトルへ戻る家のボタン
+  top_.innerHTML = `<button class="iconbtn" id="quit" type="button" aria-label="やめる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><div class="ask"><span class="meta">${quiz.master ? "全国" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}　${quiz.i+1} / ${quiz.qs.length}</span></div>${debugBtn()}${titleBtn()}`;
+  renderProgress();
   bindBar(); byId("quit").onclick = home;
   if (debug) quizTimeout(autoAnswer, DEBUG_ANSWER_MS);
   if (quiz.type.kind === "choice") {
@@ -746,12 +782,12 @@ function nextQ() {
     pathEl[q.focus].classList.add("sel");
     if (quiz.area.wide) fitLater(unionBox(areaOfPref(q.focus).codes));
     q.order = shuffle(q.choices);
-    sheet.innerHTML = `${progressBar()}${askBlock()}<div class="choices">${q.order.map(([n, k], j) =>
+    sheet.innerHTML = `${askBlock()}<div class="choices">${q.order.map(([n, k], j) =>
       `<button class="choice" type="button" data-j="${j}">${n}<small>${k}</small></button>`).join("")}</div>`;
     const owner = quiz;
     sheet.querySelectorAll("[data-j]").forEach(b => b.onclick = () => { if (quiz === owner && mode === "quiz") answerChoice(+b.dataset.j); });
   } else {
-    sheet.innerHTML = `${progressBar()}${askBlock()}<p class="hint">地図の県をタップしてね。わからない時は目のボタン（押している間だけ県名）。</p>`;
+    sheet.innerHTML = `${askBlock()}<p class="hint">地図の県をタップしてね。わからない時は目のボタン（押している間だけ県名）。</p>`;
   }
 }
 
@@ -763,6 +799,9 @@ function logAnswer(ok) {
   else r.miss[q.key] = (r.miss[q.key] || 0) + 1;
   save();
 }
+
+// 正誤の記号の丸。キャラクターの顔アイコンに差し替えるときは、ここだけ変えればよい
+const face = state => `<div class="face" aria-hidden="true">${state === "ok" ? "◯" : "✕"}</div>`;
 
 function noteHtml(code) {
   const ns = GEO_NOTES[code] || [];
@@ -782,7 +821,7 @@ function afterAnswer(ok, html) {
     sndNg(); quiz.combo = 0; combo.hidden = true;
     sheet.insertAdjacentHTML("beforeend", `${html}<div class="row"><button class="btn primary" id="next" type="button">つぎへ</button></div>`);
     const owner = quiz;
-    byId("next").onclick = () => { if (quiz !== owner || mode !== "quiz") return; Object.values(pathEl).forEach(p => p.classList.remove("blink")); quiz.i++; nextQ(); };
+    byId("next").onclick = () => { if (quiz !== owner || mode !== "quiz") return; Object.values(pathEl).forEach(p => p.classList.remove("reveal", "flash-ng")); quiz.i++; nextQ(); };
   }
 }
 
@@ -795,11 +834,11 @@ function answerChoice(j) {
     const c = q.order[+b.dataset.j]; b.disabled = true;
     if (c[0] === q.correct) b.classList.add("right"); else if (+b.dataset.j === j) b.classList.add("wrong");
   });
-  sheet.querySelector(".progress").outerHTML = progressBar();
+  renderProgress();
   const ans = q.choices[0];
   afterAnswer(ok, ok
-    ? `<div class="fb ok"><div class="mark">◯</div><div class="txt"><b>せいかい！ ${ans[0]}</b><span>${q.hint ? "（ヒントを見て正解）" : ""}${q.explain}</span>${noteHtml(q.focus)}</div></div>`
-    : `<div class="fb ng"><div class="mark">✕</div><div class="txt"><b>正しくは ${ans[0]}</b><span>${q.explain}</span>${noteHtml(q.focus)}</div></div>`);
+    ? `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans[0]}</b><span>${q.hint ? "（ヒントを見て正解）" : ""}${q.explain}</span>${noteHtml(q.focus)}</div></div>`
+    : `<div class="fb ng">${face("ng")}<div class="txt"><b>ざんねん　正しくは ${ans[0]}</b><span>${q.explain}</span>${noteHtml(q.focus)}</div></div>`);
 }
 
 function handleTap(code) {
@@ -811,23 +850,24 @@ function handleTap(code) {
   const p = byCode(code), ans = byCode(q.answers[0]);
   logAnswer(ok);
   if (quiz.course.id === "prefName" && !ok) { store.miss[ans.code] = (store.miss[ans.code] || 0) + 1; save(); }
-  sheet.innerHTML = progressBar() + askBlock();   // 正誤を出しても出題文は残す
+  sheet.innerHTML = askBlock();   // 正誤を出しても出題文は残す
+  renderProgress();
   if (ok) {
     pathEl[code].classList.add("flash-ok");
     quizTimeout(() => { pathEl[code].classList.remove("flash-ok"); pathEl[code].classList.add("ok"); }, 450);
-    afterAnswer(true, `<div class="fb ok"><div class="mark">◯</div><div class="txt"><b>せいかい！ ${ans.name}</b><span>${q.hint ? "（ヒントを見て正解）" : ""}${q.explain}</span>${noteHtml(ans.code)}</div></div>`);
+    afterAnswer(true, `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans.name}</b><span>${q.hint ? "（ヒントを見て正解）" : ""}${q.explain}</span>${noteHtml(ans.code)}</div></div>`);
   } else {
     pathEl[code].classList.add("flash-ng"); showTag(code, p.short);
-    quizTimeout(() => pathEl[code].classList.remove("flash-ng"), 900);
     pathEl[ans.code].classList.add("miss");
     JapanMap.highlightPrefecture(ans.code);
-    afterAnswer(false, `<div class="fb ng"><div class="mark">✕</div><div class="txt"><b>そこは ${p.name}</b><span>${ans.name}は、光っているところ。${q.explain}</span>${noteHtml(ans.code)}</div></div>`);
+    afterAnswer(false, `<div class="fb ng">${face("ng")}<div class="txt"><b>ざんねん　そこは ${p.name}</b><span>${ans.name}は太い枠のところ。${q.explain}</span>${noteHtml(ans.code)}</div></div>`);
   }
 }
 
 function result() {
   cancelQuizTimers(); eyeOff();
-  Object.values(pathEl).forEach(p => p.classList.remove("flash-ok", "flash-ng", "blink"));
+  Object.values(pathEl).forEach(p => p.classList.remove("flash-ok", "flash-ng", "reveal"));
+  pbar.innerHTML = "";
   // 正解した県の色は、途中の遅延処理が取り消されても結果画面で付けそろえる
   if (quiz.type.kind === "tap") quiz.log.forEach(l => l.ok && pathEl[l.pref].classList.add("ok"));
   mode = "result"; combo.hidden = true; clearTag();
@@ -860,7 +900,7 @@ function result() {
   const msg = newMaster ? `${crown(course)}！` : newStage ? `👑${quiz.area.name}ステージ クリア！` : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしで👑マスター" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
   const nextStage = quiz.stage ? STAGES[STAGES.indexOf(quiz.area) + 1] : null;
   const label = l => course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
-  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}　けっか</span><span class="q">${msg}</span></div>${debugBtn()}${muteBtn()}`;
+  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}　けっか</span><span class="q shout">${msg}</span></div>${debugBtn()}${muteBtn()}`;
   bindBar();
   sheet.innerHTML = `
     <div class="score"><span class="big">${correct}<small style="font-size:1.2rem"> / ${total}</small></span><span class="msg">ヒントなし正解 ${clean}問・最高 ${quiz.maxCombo}れんぞく</span></div>
