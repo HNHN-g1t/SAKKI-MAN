@@ -376,6 +376,9 @@ eye.addEventListener("pointerdown", e => { eye.setPointerCapture(e.pointerId); e
 eye.addEventListener("contextmenu", e => e.preventDefault());
 eye.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") eyeOn(e); });
 eye.addEventListener("keyup", eyeOff);
+eye.addEventListener("blur", eyeOff);
+window.addEventListener("blur", eyeOff);
+document.addEventListener("visibilitychange", () => { if (document.hidden) eyeOff(); });
 
 /* ---------- 外から呼べる地図API（今後のクイズ用） ---------- */
 let tapHandlers = [];
@@ -407,10 +410,25 @@ const clearTag = () => gTag.innerHTML = "";
 const top_ = document.getElementById("top"), sheet = document.getElementById("sheet"), combo = document.getElementById("combo");
 let mode = "home", quiz = null, selected = null;
 
+// 前のクイズの遅延処理を、ホームや次のクイズへ持ち越さない。
+const quizTimers = new Set();
+function cancelQuizTimers() {
+  quizTimers.forEach(id => clearTimeout(id)); quizTimers.clear();
+}
+function quizTimeout(fn, delay) {
+  const owner = quiz;
+  const id = setTimeout(() => {
+    quizTimers.delete(id);
+    if (mode === "quiz" && quiz === owner) fn();
+  }, delay);
+  quizTimers.add(id);
+}
+
 function muteBtn(){ return `<button class="iconbtn" id="mute" type="button" aria-label="音のオンオフ">${store.mute ? "音OFF" : "音ON"}</button>`; }
 function bindMute(){ const m = document.getElementById("mute"); if (m) m.onclick = () => { store.mute = !store.mute; save(); m.textContent = store.mute ? "音OFF" : "音ON"; }; }
 
 function home() {
+  cancelQuizTimers(); eyeOff();
   mode = "home"; quiz = null; selected = null; clearTag(); combo.hidden = true;
   JapanMap.resetColors(); svg.classList.add("explore");
   Object.values(labelEl).forEach(t => t.classList.remove("off"));
@@ -441,6 +459,7 @@ function showInfo(code) {
 function shuffle(a){ a = a.slice(); for (let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; }
 
 function startQuiz(area, codes, typeId="prefName") {
+  cancelQuizTimers(); eyeOff();
   sheet.classList.remove("home");
   mode = "quiz"; selected = null; clearTag(); JapanMap.resetColors(); svg.classList.remove("explore");
   const inArea = new Set(area.codes);
@@ -458,7 +477,7 @@ function progressBar(){
 }
 
 function nextQ() {
-  clearTag();
+  eyeOff(); clearTag();
   if (quiz.i >= quiz.qs.length) return result();
   const q = quiz.q = quiz.qs[quiz.i]; q.hint = false; quiz.answered = false;
   top_.innerHTML = `<div class="ask"><span class="meta">${quiz.area.name}　${quiz.i+1} / ${quiz.qs.length}</span><span class="q">${q.text}</span><span class="kana">${q.sub || ""}</span></div><button class="iconbtn" id="quit" type="button">やめる</button>`;
@@ -477,17 +496,17 @@ function handleTap(code) {
   if (ok) {
     sndOk();
     pathEl[code].classList.add("flash-ok");
-    setTimeout(() => { pathEl[code].classList.remove("flash-ok"); pathEl[code].classList.add("ok"); }, 450);
+    quizTimeout(() => { pathEl[code].classList.remove("flash-ok"); pathEl[code].classList.add("ok"); }, 450);
     if (q.hint) quiz.combo = 0; else { quiz.combo++; quiz.maxCombo = Math.max(quiz.maxCombo, quiz.combo); }
     if (quiz.combo >= 2) { combo.textContent = `${quiz.combo}れんぞく！`; combo.hidden = false; combo.classList.remove("pop"); void combo.offsetWidth; combo.classList.add("pop"); }
     else combo.hidden = true;
     sheet.innerHTML = `${progressBar()}<div class="fb ok"><div class="mark">◯</div><div class="txt"><b>せいかい！ ${ans.name}</b><span>${q.hint ? "（ヒントを見て正解）" : ""}${q.explain}</span></div></div>`;
-    setTimeout(() => { quiz.i++; nextQ(); }, 1300);
+    quizTimeout(() => { quiz.i++; nextQ(); }, 1300);
   } else {
     sndNg(); quiz.combo = 0; combo.hidden = true;
     store.miss[ans.code] = (store.miss[ans.code] || 0) + 1; save();
     pathEl[code].classList.add("flash-ng"); showTag(code, p.short);
-    setTimeout(() => pathEl[code].classList.remove("flash-ng"), 900);
+    quizTimeout(() => pathEl[code].classList.remove("flash-ng"), 900);
     pathEl[ans.code].classList.add("miss");
     JapanMap.highlightPrefecture(ans.code);
     sheet.innerHTML = `${progressBar()}<div class="fb ng"><div class="mark">✕</div><div class="txt"><b>そこは ${p.name}</b><span>${ans.name}は、光っているところ。${q.explain}</span></div></div><div class="row"><button class="btn primary" id="next" type="button">つぎへ</button></div>`;
@@ -496,6 +515,8 @@ function handleTap(code) {
 }
 
 function result() {
+  cancelQuizTimers(); eyeOff();
+  Object.values(pathEl).forEach(p => p.classList.remove("flash-ok", "flash-ng", "blink"));
   mode = "result"; combo.hidden = true; clearTag();
   const total = quiz.qs.length, correct = quiz.log.filter(l => l.ok).length, clean = quiz.log.filter(l => l.ok && !l.hint).length;
   const missed = quiz.log.filter(l => !l.ok).map(l => l.code);
