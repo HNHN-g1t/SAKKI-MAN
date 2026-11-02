@@ -1,0 +1,6 @@
+{
+  "buildCommand": "python3 tools/build_site.py",
+  "outputDirectory": "_site",
+  "installCommand": "",
+  "framework": null
+}

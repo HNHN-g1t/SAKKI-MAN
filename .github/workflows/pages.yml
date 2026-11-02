@@ -24,17 +24,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: 地図クイズをビルド
-        run: python apps/japan-map-quiz/tools/build.py
+      - name: ビルドして公開用フォルダを組み立てる
+        run: python tools/build_site.py
 
       - name: ビルド忘れチェック（コミット済みの index.html と一致するか）
-        run: git diff --exit-code -- apps/japan-map-quiz/index.html
-
-      - name: 公開用フォルダを組み立てる
-        run: |
-          mkdir -p _site/japan-map-quiz
-          cp site/index.html _site/
-          cp apps/japan-map-quiz/index.html _site/japan-map-quiz/
+        run: git diff --exit-code -- apps/
 
       - uses: actions/upload-pages-artifact@v3
         with:
