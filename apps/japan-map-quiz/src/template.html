@@ -706,7 +706,10 @@ function nextQ() {
   eyeOff(); clearTag();
   if (quiz.i >= quiz.qs.length) return result();
   const q = quiz.q = quiz.qs[quiz.i]; q.hint = false; quiz.answered = false;
-  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${quiz.course.name}・${quiz.master ? "全国の挑戦" : quiz.area.name}　${quiz.i+1} / ${quiz.qs.length}</span><span class="q">${q.text}</span><span class="kana">${q.sub || ""}</span></div>${debugBtn()}<button class="iconbtn" id="quit" type="button">やめる</button>`;
+  // 4択は問いを選択肢のすぐ上（シート）に置き、上のバーには進み具合だけを出す
+  const choice = quiz.type.kind === "choice";
+  const askHtml = `<span class="q">${q.text}</span><span class="kana">${q.sub || ""}</span>`;
+  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${quiz.course.name}・${quiz.master ? "全国の挑戦" : quiz.area.name}　${quiz.i+1} / ${quiz.qs.length}</span>${choice ? "" : askHtml}</div>${debugBtn()}<button class="iconbtn" id="quit" type="button">やめる</button>`;
   bindBar(); byId("quit").onclick = home;
   if (debug) quizTimeout(autoAnswer, DEBUG_ANSWER_MS);
   if (quiz.type.kind === "choice") {
@@ -715,7 +718,7 @@ function nextQ() {
     pathEl[q.focus].classList.add("sel");
     if (quiz.area.wide) fitLater(unionBox(areaOfPref(q.focus).codes));
     q.order = shuffle(q.choices);
-    sheet.innerHTML = `${progressBar()}<div class="choices">${q.order.map(([n, k], j) =>
+    sheet.innerHTML = `${progressBar()}<div class="ask">${askHtml}</div><div class="choices">${q.order.map(([n, k], j) =>
       `<button class="choice" type="button" data-j="${j}">${n}<small>${k}</small></button>`).join("")}</div>`;
     const owner = quiz;
     sheet.querySelectorAll("[data-j]").forEach(b => b.onclick = () => { if (quiz === owner && mode === "quiz") answerChoice(+b.dataset.j); });
