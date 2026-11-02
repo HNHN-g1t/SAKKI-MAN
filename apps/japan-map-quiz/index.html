@@ -51,8 +51,12 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:5
 svg#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block;cursor:grab}
 svg#map:active{cursor:grabbing}
 .pref{fill:var(--land);stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;transition:fill .25s}
-.explore .pref[data-r="1"]{fill:var(--r1)} .explore .pref[data-r="2"]{fill:var(--r2)} .explore .pref[data-r="3"]{fill:var(--r3)}
-.explore .pref[data-r="4"]{fill:var(--r4)} .explore .pref[data-r="5"]{fill:var(--r5)} .explore .pref[data-r="6"]{fill:var(--r6)} .explore .pref[data-r="7"]{fill:var(--r7)}
+/* コレクション：⓪グレー → ①地方の色 → ②色・陰影がリッチに（data-lv＝その県で正解したコースの数） */
+.explore .pref{fill:var(--land-dim)}
+.explore .pref:not([data-lv="0"])[data-r="1"]{fill:var(--r1)} .explore .pref:not([data-lv="0"])[data-r="2"]{fill:var(--r2)} .explore .pref:not([data-lv="0"])[data-r="3"]{fill:var(--r3)}
+.explore .pref:not([data-lv="0"])[data-r="4"]{fill:var(--r4)} .explore .pref:not([data-lv="0"])[data-r="5"]{fill:var(--r5)} .explore .pref:not([data-lv="0"])[data-r="6"]{fill:var(--r6)} .explore .pref:not([data-lv="0"])[data-r="7"]{fill:var(--r7)}
+.explore .pref[data-lv="2"]{filter:saturate(1.8) brightness(.95)}
+.explore .pref[data-lv="3"]{filter:saturate(2.3) brightness(.9) drop-shadow(0 1px 1px rgba(0,0,0,.35))}
 .pref.off{fill:var(--land-dim);stroke-opacity:.35}
 .pref.sel{fill:var(--accent)!important}
 .pref.ok{fill:var(--ok-soft)!important}
@@ -92,6 +96,10 @@ svg#map:active{cursor:grabbing}
 .home .chip{min-height:40px;font-size:.8rem;letter-spacing:-.04em;padding:2px 3px;border-radius:11px;overflow:hidden}
 .home .chip small{font-size:.64rem}
 .home .chip.wide{grid-column:span 2}
+.home #master{grid-column:1/-1}
+.home .chips.modes{grid-template-columns:1fr 1fr}
+.home .chips.modes .chip{min-height:48px;font-size:.95rem;letter-spacing:0}
+.home .chips.modes .chip.now{background:var(--accent);color:var(--accent-ink)}
 .sheet h2{margin:0;font-size:.82rem;letter-spacing:.1em;color:var(--muted);font-weight:900}
 .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:7px}
 .chip{min-height:46px;border-radius:14px;border:2px solid var(--line);background:var(--land);color:var(--ink);font:900 .92rem var(--body);white-space:nowrap;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-shadow:0 3px 0 var(--line);padding:4px 6px}
@@ -121,6 +129,28 @@ svg#map:active{cursor:grabbing}
 .score .msg{font-weight:900;font-size:1.05rem}
 .misslist{display:flex;gap:6px;flex-wrap:wrap}
 .misslist span{background:var(--ng-soft);border-radius:8px;padding:3px 8px;font-weight:900;font-size:.9rem}
+/* モード・コース */
+.modebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:3px 12px;font-weight:900;font-size:.85rem}
+.linkbtn{border:0;background:none;color:var(--ink);font:700 .85rem var(--body);text-decoration:underline;cursor:pointer;min-height:36px;padding:0 4px}
+.courses{display:grid;gap:6px}
+.course{display:flex;align-items:center;gap:10px;text-align:left;min-height:50px;border-radius:14px;border:2px solid var(--line);background:var(--land);color:var(--ink);font:900 .95rem var(--body);cursor:pointer;box-shadow:0 3px 0 var(--line);padding:6px 12px}
+.course .no{flex:none;width:28px;height:28px;border-radius:50%;background:var(--sheet-line);display:grid;place-items:center;font-family:var(--display);font-weight:400;font-size:.9rem}
+.course span{flex:1;min-width:0}
+.course small{display:block;color:var(--muted);font-weight:700;font-size:.74rem}
+.course.done{border-color:var(--ok)} .course.done .no{background:var(--ok);color:#fff}
+.course:disabled{opacity:.5;cursor:default;box-shadow:none}
+.rules{margin:0;padding-left:1.2em;font-size:.78rem;color:var(--muted);font-weight:700;line-height:1.5}
+.medal{display:inline-block;background:var(--ok);color:#fff;border-radius:999px;padding:2px 10px;font-weight:900;font-size:.8rem}
+.medal.hinted{background:var(--sheet-line);color:var(--ink)}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.choice{min-height:62px;border-radius:14px;border:2px solid var(--line);background:var(--land);color:var(--ink);font:900 1.1rem var(--body);cursor:pointer;box-shadow:0 3px 0 var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px 6px;line-height:1.2}
+.choice small{font-size:.74rem;color:var(--muted);font-weight:700}
+.choice:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
+.choice:disabled{cursor:default}
+.choice.right{background:var(--ok);border-color:var(--ok);color:#fff} .choice.right small{color:#fff}
+.choice.wrong{background:var(--ng);border-color:var(--ng);color:#fff} .choice.wrong small{color:#fff}
+.choice:focus-visible,.course:focus-visible,.linkbtn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -152,28 +182,36 @@ const PATHS = [{"c":1,"d":"M767.6,97.9L775.5,99.1L773.8,99.7ZM857.3,145.2L865.2,
 /* ---------- 都道府県データ（項目は後から追加できる：facts に特産品など） ---------- */
 const REGION_NAMES = ["", "北海道地方","東北地方","関東地方","中部地方","近畿地方","中国地方","四国地方","九州地方"];
 const RAW = [
- [1,"北海道","ほっかいどう","札幌市",1],[2,"青森県","あおもりけん","青森市",2],[3,"岩手県","いわてけん","盛岡市",2],
- [4,"宮城県","みやぎけん","仙台市",2],[5,"秋田県","あきたけん","秋田市",2],[6,"山形県","やまがたけん","山形市",2],
- [7,"福島県","ふくしまけん","福島市",2],[8,"茨城県","いばらきけん","水戸市",3],[9,"栃木県","とちぎけん","宇都宮市",3],
- [10,"群馬県","ぐんまけん","前橋市",3],[11,"埼玉県","さいたまけん","さいたま市",3],[12,"千葉県","ちばけん","千葉市",3],
- [13,"東京都","とうきょうと","東京（都庁は新宿区）",3],[14,"神奈川県","かながわけん","横浜市",3],[15,"新潟県","にいがたけん","新潟市",4],
- [16,"富山県","とやまけん","富山市",4],[17,"石川県","いしかわけん","金沢市",4],[18,"福井県","ふくいけん","福井市",4],
- [19,"山梨県","やまなしけん","甲府市",4],[20,"長野県","ながのけん","長野市",4],[21,"岐阜県","ぎふけん","岐阜市",4],
- [22,"静岡県","しずおかけん","静岡市",4],[23,"愛知県","あいちけん","名古屋市",4],[24,"三重県","みえけん","津市",5],
- [25,"滋賀県","しがけん","大津市",5],[26,"京都府","きょうとふ","京都市",5],[27,"大阪府","おおさかふ","大阪市",5],
- [28,"兵庫県","ひょうごけん","神戸市",5],[29,"奈良県","ならけん","奈良市",5],[30,"和歌山県","わかやまけん","和歌山市",5],
- [31,"鳥取県","とっとりけん","鳥取市",6],[32,"島根県","しまねけん","松江市",6],[33,"岡山県","おかやまけん","岡山市",6],
- [34,"広島県","ひろしまけん","広島市",6],[35,"山口県","やまぐちけん","山口市",6],[36,"徳島県","とくしまけん","徳島市",7],
- [37,"香川県","かがわけん","高松市",7],[38,"愛媛県","えひめけん","松山市",7],[39,"高知県","こうちけん","高知市",7],
- [40,"福岡県","ふくおかけん","福岡市",8],[41,"佐賀県","さがけん","佐賀市",8],[42,"長崎県","ながさきけん","長崎市",8],
- [43,"熊本県","くまもとけん","熊本市",8],[44,"大分県","おおいたけん","大分市",8],[45,"宮崎県","みやざきけん","宮崎市",8],
- [46,"鹿児島県","かごしまけん","鹿児島市",8],[47,"沖縄県","おきなわけん","那覇市",8]
+ [1,"北海道","ほっかいどう",1],[2,"青森県","あおもりけん",2],[3,"岩手県","いわてけん",2],
+ [4,"宮城県","みやぎけん",2],[5,"秋田県","あきたけん",2],[6,"山形県","やまがたけん",2],
+ [7,"福島県","ふくしまけん",2],[8,"茨城県","いばらきけん",3],[9,"栃木県","とちぎけん",3],
+ [10,"群馬県","ぐんまけん",3],[11,"埼玉県","さいたまけん",3],[12,"千葉県","ちばけん",3],
+ [13,"東京都","とうきょうと",3],[14,"神奈川県","かながわけん",3],[15,"新潟県","にいがたけん",4],
+ [16,"富山県","とやまけん",4],[17,"石川県","いしかわけん",4],[18,"福井県","ふくいけん",4],
+ [19,"山梨県","やまなしけん",4],[20,"長野県","ながのけん",4],[21,"岐阜県","ぎふけん",4],
+ [22,"静岡県","しずおかけん",4],[23,"愛知県","あいちけん",4],[24,"三重県","みえけん",5],
+ [25,"滋賀県","しがけん",5],[26,"京都府","きょうとふ",5],[27,"大阪府","おおさかふ",5],
+ [28,"兵庫県","ひょうごけん",5],[29,"奈良県","ならけん",5],[30,"和歌山県","わかやまけん",5],
+ [31,"鳥取県","とっとりけん",6],[32,"島根県","しまねけん",6],[33,"岡山県","おかやまけん",6],
+ [34,"広島県","ひろしまけん",6],[35,"山口県","やまぐちけん",6],[36,"徳島県","とくしまけん",7],
+ [37,"香川県","かがわけん",7],[38,"愛媛県","えひめけん",7],[39,"高知県","こうちけん",7],
+ [40,"福岡県","ふくおかけん",8],[41,"佐賀県","さがけん",8],[42,"長崎県","ながさきけん",8],
+ [43,"熊本県","くまもとけん",8],[44,"大分県","おおいたけん",8],[45,"宮崎県","みやざきけん",8],
+ [46,"鹿児島県","かごしまけん",8],[47,"沖縄県","おきなわけん",8]
 ];
-const PREFS = RAW.map(([code,name,kana,capital,r]) => ({
-  code, name, kana, capital, region: REGION_NAMES[r],
+/* 県庁所在地・4択の選択肢・政令指定都市（data/cities.json。tools/build_cities.py で総務省の一覧と照合済み）
+   capitals[県コード] = [[正解, よみ], [同じ都道府県の別の市区町村, よみ] x3]。東京都は都庁のある区（新宿区）を正解にする */
+const CITIES = {"capitals":{"1":[["札幌市","さっぽろし"],["函館市","はこだてし"],["旭川市","あさひかわし"],["釧路市","くしろし"]],"2":[["青森市","あおもりし"],["弘前市","ひろさきし"],["八戸市","はちのへし"],["十和田市","とわだし"]],"3":[["盛岡市","もりおかし"],["花巻市","はなまきし"],["一関市","いちのせきし"],["宮古市","みやこし"]],"4":[["仙台市","せんだいし"],["石巻市","いしのまきし"],["気仙沼市","けせんぬまし"],["名取市","なとりし"]],"5":[["秋田市","あきたし"],["横手市","よこてし"],["大館市","おおだてし"],["能代市","のしろし"]],"6":[["山形市","やまがたし"],["米沢市","よねざわし"],["鶴岡市","つるおかし"],["酒田市","さかたし"]],"7":[["福島市","ふくしまし"],["郡山市","こおりやまし"],["いわき市","いわきし"],["会津若松市","あいづわかまつし"]],"8":[["水戸市","みとし"],["日立市","ひたちし"],["つくば市","つくばし"],["土浦市","つちうらし"]],"9":[["宇都宮市","うつのみやし"],["日光市","にっこうし"],["小山市","おやまし"],["足利市","あしかがし"]],"10":[["前橋市","まえばしし"],["高崎市","たかさきし"],["桐生市","きりゅうし"],["伊勢崎市","いせさきし"]],"11":[["さいたま市","さいたまし"],["川越市","かわごえし"],["所沢市","ところざわし"],["川口市","かわぐちし"]],"12":[["千葉市","ちばし"],["船橋市","ふなばしし"],["成田市","なりたし"],["銚子市","ちょうしし"]],"13":[["新宿区","しんじゅくく"],["千代田区","ちよだく"],["港区","みなとく"],["渋谷区","しぶやく"]],"14":[["横浜市","よこはまし"],["川崎市","かわさきし"],["横須賀市","よこすかし"],["相模原市","さがみはらし"]],"15":[["新潟市","にいがたし"],["長岡市","ながおかし"],["上越市","じょうえつし"],["佐渡市","さどし"]],"16":[["富山市","とやまし"],["高岡市","たかおかし"],["黒部市","くろべし"],["魚津市","うおづし"]],"17":[["金沢市","かなざわし"],["小松市","こまつし"],["加賀市","かがし"],["輪島市","わじまし"]],"18":[["福井市","ふくいし"],["敦賀市","つるがし"],["鯖江市","さばえし"],["小浜市","おばまし"]],"19":[["甲府市","こうふし"],["富士吉田市","ふじよしだし"],["甲斐市","かいし"],["笛吹市","ふえふきし"]],"20":[["長野市","ながのし"],["松本市","まつもとし"],["上田市","うえだし"],["諏訪市","すわし"]],"21":[["岐阜市","ぎふし"],["大垣市","おおがきし"],["高山市","たかやまし"],["多治見市","たじみし"]],"22":[["静岡市","しずおかし"],["浜松市","はままつし"],["沼津市","ぬまづし"],["富士市","ふじし"]],"23":[["名古屋市","なごやし"],["豊田市","とよたし"],["岡崎市","おかざきし"],["豊橋市","とよはしし"]],"24":[["津市","つし"],["四日市市","よっかいちし"],["伊勢市","いせし"],["鈴鹿市","すずかし"]],"25":[["大津市","おおつし"],["彦根市","ひこねし"],["草津市","くさつし"],["長浜市","ながはまし"]],"26":[["京都市","きょうとし"],["舞鶴市","まいづるし"],["宇治市","うじし"],["福知山市","ふくちやまし"]],"27":[["大阪市","おおさかし"],["堺市","さかいし"],["東大阪市","ひがしおおさかし"],["豊中市","とよなかし"]],"28":[["神戸市","こうべし"],["姫路市","ひめじし"],["西宮市","にしのみやし"],["尼崎市","あまがさきし"]],"29":[["奈良市","ならし"],["橿原市","かしはらし"],["天理市","てんりし"],["生駒市","いこまし"]],"30":[["和歌山市","わかやまし"],["田辺市","たなべし"],["新宮市","しんぐうし"],["海南市","かいなんし"]],"31":[["鳥取市","とっとりし"],["米子市","よなごし"],["倉吉市","くらよしし"],["境港市","さかいみなとし"]],"32":[["松江市","まつえし"],["出雲市","いずもし"],["浜田市","はまだし"],["益田市","ますだし"]],"33":[["岡山市","おかやまし"],["倉敷市","くらしきし"],["津山市","つやまし"],["玉野市","たまのし"]],"34":[["広島市","ひろしまし"],["福山市","ふくやまし"],["呉市","くれし"],["尾道市","おのみちし"]],"35":[["山口市","やまぐちし"],["下関市","しものせきし"],["宇部市","うべし"],["岩国市","いわくにし"]],"36":[["徳島市","とくしまし"],["鳴門市","なるとし"],["阿南市","あなんし"],["小松島市","こまつしまし"]],"37":[["高松市","たかまつし"],["丸亀市","まるがめし"],["坂出市","さかいでし"],["観音寺市","かんおんじし"]],"38":[["松山市","まつやまし"],["今治市","いまばりし"],["新居浜市","にいはまし"],["宇和島市","うわじまし"]],"39":[["高知市","こうちし"],["南国市","なんこくし"],["四万十市","しまんとし"],["室戸市","むろとし"]],"40":[["福岡市","ふくおかし"],["北九州市","きたきゅうしゅうし"],["久留米市","くるめし"],["大牟田市","おおむたし"]],"41":[["佐賀市","さがし"],["唐津市","からつし"],["鳥栖市","とすし"],["伊万里市","いまりし"]],"42":[["長崎市","ながさきし"],["佐世保市","させぼし"],["諫早市","いさはやし"],["島原市","しまばらし"]],"43":[["熊本市","くまもとし"],["八代市","やつしろし"],["天草市","あまくさし"],["人吉市","ひとよしし"]],"44":[["大分市","おおいたし"],["別府市","べっぷし"],["中津市","なかつし"],["日田市","ひたし"]],"45":[["宮崎市","みやざきし"],["都城市","みやこのじょうし"],["延岡市","のべおかし"],["日南市","にちなんし"]],"46":[["鹿児島市","かごしまし"],["霧島市","きりしまし"],["薩摩川内市","さつませんだいし"],["鹿屋市","かのやし"]],"47":[["那覇市","なはし"],["沖縄市","おきなわし"],["名護市","なごし"],["浦添市","うらそえし"]]},"designated":[["大阪市","おおさかし",27],["名古屋市","なごやし",23],["京都市","きょうとし",26],["横浜市","よこはまし",14],["神戸市","こうべし",28],["北九州市","きたきゅうしゅうし",40],["札幌市","さっぽろし",1],["川崎市","かわさきし",14],["福岡市","ふくおかし",40],["広島市","ひろしまし",34],["仙台市","せんだいし",4],["千葉市","ちばし",12],["さいたま市","さいたまし",11],["静岡市","しずおかし",22],["堺市","さかいし",27],["新潟市","にいがたし",15],["浜松市","はままつし",22],["岡山市","おかやまし",33],["相模原市","さがみはらし",14],["熊本市","くまもとし",43]]};
+// 「県庁」の呼び方：北海道は道庁、京都・大阪は府庁、東京は都庁
+const officeOf = name => name === "北海道" ? "道庁" : name === "東京都" ? "都庁" : /府$/.test(name) ? "府庁" : "県庁";
+const PREFS = RAW.map(([code,name,kana,r]) => ({
+  code, name, kana, region: REGION_NAMES[r], office: officeOf(name),
+  capital: CITIES.capitals[code][0][0], capitalKana: CITIES.capitals[code][0][1],
   short: name === "北海道" ? "北海道" : name.replace(/[都府県]$/, ""),
   facts: {}   // 例：facts.apple = 1（りんご生産1位）などを後で追加
 }));
+// 東京都は「都庁がある区」として示し、教材の所在地表記「東京」とまぜない
+const capitalLabel = p => p.code === 13 ? `都庁がある区 ${p.capital}` : `${p.office}所在地 ${p.capital}`;
 const byCode = c => PREFS[c - 1];
 const range = (a,b) => Array.from({length:b-a+1}, (_,i)=>a+i);
 
@@ -186,29 +224,122 @@ const AREAS = [
   {id:"chugoku", name:"中国", codes:range(31,35), tint:5},
   {id:"shikoku", name:"四国", codes:range(36,39), tint:6},
   {id:"kyushu", name:"九州・沖縄", codes:range(40,47), tint:7},
-  {id:"zenkoku", name:"全国（応用編）", codes:range(1,47), wide:true}
+  {id:"zenkoku", name:"全国", codes:range(1,47), wide:true}
 ];
 const tintOf = c => AREAS.find(a => !a.wide && a.codes.includes(c)).tint;
+const areaOfPref = c => AREAS.find(a => !a.wide && a.codes.includes(c));
+
+/* ---------- 学年モード ----------
+   範囲は「4年生 ⊆ 5年生 ⊆ 6年生 ⊆ 中学受験」の累積。上のモードでは下のモードのコースも学べる。
+   どのコースを何年生から出すかは COURSES の from（仮の設定。学校の正式な学習範囲ではない）。 */
+const MODES = [
+  {id:"g4", name:"4年生モード", rank:1},
+  {id:"g5", name:"5年生モード", rank:2},
+  {id:"g6", name:"6年生モード", rank:3},
+  {id:"exam", name:"中学受験モード", rank:4}
+];
+const modeOf = id => MODES.find(m => m.id === id);
 
 /* ---------- 問題の種類（ここに追加していけば分野別に発展できる） ----------
-   make(codes) は {text, sub, answers:[正解の県コード…], explain} の配列を返す。
-   例：りんご生産なら {text:"りんごの生産量 1位は？", answers:[2], explain:"青森県が全国の約6割"} */
+   make(codes) は codes（県コード）にかかわる問題の配列を返す。共通の項目：
+     key（記録用。県コードや都市番号）, prefs:[かかわる県コード], text, sub（よみ）, explain
+   kind:"tap"    … answers:[正解の県コード]。地図をタップして答える
+   kind:"choice" … choices:[[名前, よみ] x4], correct（正解の名前）, focus（地図で示す県） */
 const QUIZ_TYPES = {
   prefName: {
-    title: "県名あて",
+    title: "県名タップ", kind: "tap",
     make: codes => codes.map(c => {
       const p = byCode(c);
-      return { text: `<em>${p.name}</em>はどこ？`, sub: p.kana, answers: [c],
-               explain: `県庁所在地は ${p.capital}` };
+      return { key: c, prefs: [c], text: `<em>${p.name}</em>はどこ？`, sub: p.kana, answers: [c], explain: capitalLabel(p) };
     })
+  },
+  capital: {
+    title: "県庁所在地 4択", kind: "choice",
+    make: codes => codes.map(c => {
+      const p = byCode(c), [ans] = CITIES.capitals[c];
+      return { key: c, prefs: [c], focus: c, sub: p.kana, choices: CITIES.capitals[c], correct: ans[0],
+        text: c === 13 ? `<em>東京都庁</em>がある区は？` : `<em>${p.name}</em>の${p.office}所在地は？`,
+        explain: c === 13 ? `東京都庁は ${ans[0]}（${ans[1]}）にあります` : `${p.name}の${p.office}所在地は ${ans[0]}（${ans[1]}）` };
+    })
+  },
+  designated: {
+    title: "政令指定都市", kind: "tap",
+    make: codes => CITIES.designated.map((d, i) => [d, i]).filter(([d]) => codes.includes(d[2])).map(([[name, kana, c], i]) => (
+      { key: i, prefs: [c], text: `<em>${name}</em>がある都道府県は？`, sub: kana, answers: [c],
+        explain: `${name}（${kana}）は ${byCode(c).name}の政令指定都市` }))
   }
 };
 
-/* ---------- 保存（この端末だけ。使えなくても動く） ---------- */
+/* ---------- コース（地理）。出題数・完了・マスターの条件はここで管理 ----------
+   from：このコースを出す最初のモード（仮設定）／unlock：前のコースで何を満たせば開くか
+     need:"master"   … 全国の挑戦で全問正解
+     need:"complete" … 全国の挑戦を最後まで解いた（正誤は問わない）
+   ready:false は準備中（問題を足すときは QUIZ_TYPES に make を書いて ready:true にする）
+   地方ごとの練習・まちがえた問題だけの再挑戦は、完了にもマスターにも数えない */
+const COURSES = [
+  {id:"prefName", name:"県名タップ", master:"県名マスター", from:"g4", ready:true,
+   rules:["全国の挑戦：47都道府県を1回ずつ、順番はランダム", "完了：全国47問を最後まで解く",
+          "マスター：全国47問すべて正解で「県名マスター」→ 県庁所在地コースが開く"]},
+  {id:"capital", name:"県庁所在地 4択", master:"県庁所在地マスター", from:"g4", ready:true, unlock:{course:"prefName", need:"master"},
+   rules:["全国の挑戦：47都道府県を1回ずつ。選択肢の並びは毎回ランダム", "完了：全国47問を最後まで解く（→ 政令指定都市コースが開く）",
+          "マスター：全国47問すべて正解", "東京都は「都庁がある区」を答える"]},
+  {id:"designated", name:"政令指定都市", master:"政令指定都市マスター", from:"g5", ready:true, unlock:{course:"capital", need:"complete"},
+   rules:[`全国の挑戦：政令指定都市${CITIES.designated.length}市を1回ずつ。同じ県に複数あっても都市ごとに出す`,
+          `完了：全国${CITIES.designated.length}問を最後まで解く`, `マスター：全国${CITIES.designated.length}問すべて正解（ある都道府県をタップ）`,
+          "都市そのものの位置を答える問題は準備中（記録は別に分けて持つ）"]},
+  {id:"terrain", name:"山・河川・平野", from:"g5", ready:false},
+  {id:"industry", name:"農林水産業・工業などの産業", from:"g5", ready:false}
+];
+const courseOf = id => COURSES.find(c => c.id === id);
+// 歴史は地理とは別コースで設計する（今回は準備中の表示のみ）
+const TRACKS = [{id:"geo", name:"地理コース"}, {id:"history", name:"歴史コース", note:"地理とは別のコースとして準備中"}];
+/* 地理の補足として扱う地域の歴史的背景（必須の進行には入れない）。
+   GEO_NOTES[県コード] = [{theme:"river", text:"…"}] を足すと、その県の問題の正誤のあとに表示する */
+const GEO_THEMES = { river: "川・水害とくらし", town: "城下町・港町・街道", industry: "農業・工業の発達" };
+const GEO_NOTES = {};
+
+/* ---------- コレクション（獲得した県から地図が彩られる） ----------
+   県のレベル＝その県で正解したことのあるコースの数（正解は失われない）
+   ⓪0：グレー ①1：地方の色 ②2以上：色・陰影がリッチ
+   ③ごほうび（新しいタップゲーム）の中身と ④最終達成の条件は未定。決まったら REWARDS / FINAL に書く。
+   「県名マスター」は次のコースへの節目で、④の総合マスターとは別 */
+const REWARDS = [];
+const FINAL = null;
+
+/* ---------- 保存（この端末だけ。使えなくても動く） ----------
+   best・miss は v4（モード導入前）からの記録。消さずに残し、best は地方の練習の参考表示だけに使う（マスター判定には使わない）
+   rec[モードid][コースid] = { best:{地方id:ヒントなし正解数}, got:{key:1}（正解したことがある）, clean:{key:1}（ヒントなしで正解）,
+                              miss:{key:回数}, complete:bool, master:null|{at, clean} }
+   designated の got は「ある都道府県を答えた」達成。都市の位置を答えた達成は gotPos に分けて持つ予定 */
 const STORE_KEY = "jmq-v1";
-let store = { best:{}, miss:{} , mute:false };
+let store = { best:{}, miss:{}, mute:false, mode:null, rec:{} };
 try { const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); if (s) store = Object.assign(store, s); } catch(e){}
 const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch(e){} };
+function rec(modeId, courseId) {
+  const m = store.rec[modeId] = store.rec[modeId] || {};
+  return m[courseId] = Object.assign({best:{}, got:{}, clean:{}, miss:{}, complete:false, master:null}, m[courseId] || {});
+}
+const curMode = () => modeOf(store.mode) || MODES[MODES.length - 1];
+const lowerModes = () => MODES.filter(m => m.rank <= curMode().rank);
+const recsOf = courseId => lowerModes().map(m => (store.rec[m.id] || {})[courseId]).filter(Boolean);
+const inMode = c => modeOf(c.from).rank <= curMode().rank;
+function achieved(courseId, need) {
+  return recsOf(courseId).some(r => need === "master" ? !!r.master : (r.complete || !!r.master));
+}
+const unlocked = c => !c.unlock || achieved(c.unlock.course, c.unlock.need);
+// ヒントなしのマスターを優先して返す
+const masterOf = courseId => recsOf(courseId).map(r => r.master).filter(Boolean).sort((a,b) => b.clean - a.clean)[0] || null;
+const prefOfKey = (courseId, key) => courseId === "designated" ? CITIES.designated[key][2] : +key;
+const fullCount = courseId => QUIZ_TYPES[courseId].make(range(1,47)).length;
+function prefLevels() {
+  const lv = {}; PREFS.forEach(p => lv[p.code] = 0);
+  COURSES.filter(c => c.ready).forEach(c => {
+    const got = new Set();
+    recsOf(c.id).forEach(r => Object.keys(r.got).forEach(k => got.add(prefOfKey(c.id, k))));
+    got.forEach(code => lv[code]++);
+  });
+  return lv;
+}
 
 /* ---------- 効果音（タップ後に鳴る） ---------- */
 let ac = null;
@@ -292,6 +423,7 @@ function setView(x, y, w) {
   const b = box(); w = Math.max(70, Math.min(1400, w));
   view = {x, y, w, h: w * b.h / b.w}; apply();
 }
+let fitToken = 0;
 function fitBox(bb, animate=true) {
   // 右下の目ボタンにかからないよう、下を少しあけて合わせる
   const b = box(), R = Math.min(40, b.h * 0.1), ar = b.w / (b.h - R), pad = 0.06;
@@ -300,9 +432,11 @@ function fitBox(bb, animate=true) {
   if (w / h < ar) w = h * ar;
   const cx = (bb[0]+bb[2])/2, cy = (bb[1]+bb[3])/2, Hfree = w / ar;
   const target = {x: cx - w/2, y: cy - Hfree/2, w};
+  const token = ++fitToken;   // 新しい移動が始まったら、前の移動アニメは止める
   if (!animate || matchMedia("(prefers-reduced-motion: reduce)").matches) return setView(target.x, target.y, target.w);
   const from = {...view}, t0 = performance.now(), D = 420;
   (function step(now){
+    if (token !== fitToken) return;
     const k = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1-k, 3);
     setView(from.x + (target.x-from.x)*e, from.y + (target.y-from.y)*e, from.w + (target.w-from.w)*e);
     if (k < 1) requestAnimationFrame(step);
@@ -391,7 +525,7 @@ const JapanMap = {
   getPrefecture(code){ return byCode(code); },
   prefectures: PREFS
 };
-window.JapanMap = JapanMap; window.QUIZ_TYPES = QUIZ_TYPES;
+window.JapanMap = JapanMap; window.QUIZ_TYPES = QUIZ_TYPES; window.COURSES = COURSES;
 
 function showTag(code, text) {
   gTag.innerHTML = "";
@@ -426,47 +560,115 @@ function quizTimeout(fn, delay) {
 
 function muteBtn(){ return `<button class="iconbtn" id="mute" type="button" aria-label="音のオンオフ">${store.mute ? "音OFF" : "音ON"}</button>`; }
 function bindMute(){ const m = document.getElementById("mute"); if (m) m.onclick = () => { store.mute = !store.mute; save(); m.textContent = store.mute ? "音OFF" : "音ON"; }; }
+const byId = id => document.getElementById(id);
 
-function home() {
+// ホーム系の画面（モード選択・コース一覧・コース）に共通：地図をコレクションの色で見せ、県をさわると名前を出す
+function toHomeScreen(box = FULL) {
   cancelQuizTimers(); eyeOff();
   mode = "home"; quiz = null; selected = null; clearTag(); combo.hidden = true;
-  JapanMap.resetColors(); svg.classList.add("explore");
+  JapanMap.resetColors(); svg.classList.add("explore"); svg.classList.remove("region-quiz");
   Object.values(labelEl).forEach(t => t.classList.remove("off"));
-  homeBox = FULL; fitLater(FULL); svg.classList.remove("region-quiz");
-  top_.innerHTML = `<div class="brand">日本地図タップクイズ<small>中学受験 社会・地理</small></div>${muteBtn()}`;
-  bindMute();
+  const lv = prefLevels();
+  PREFS.forEach(p => pathEl[p.code].dataset.lv = lv[p.code]);
+  okiCopy.dataset.lv = lv[47];
+  homeBox = box; fitLater(box);
   sheet.classList.add("home");
+  return lv;
+}
+
+/* OP：モード選択 */
+function modeSelect() {
+  toHomeScreen();
+  top_.innerHTML = `<div class="brand">日本地図タップクイズ<small>サッ記マン・中学受験 社会</small></div>${muteBtn()}`;
+  bindMute();
   sheet.innerHTML = `
-    <div class="info" id="info"><span class="hint">県をさわると名前が出るよ。虫めがねでその地方へズーム。</span></div>
-    <h2>地方をえらんでスタート</h2>
-    <div class="chips">${AREAS.map(a => {
-      const b = store.best[a.id];
-      return `<button class="chip${a.wide ? " wide" : ""}" type="button" data-area="${a.id}">${a.name}<small>${b != null ? `ベスト ${b}/${a.codes.length}` : `${a.codes.length}問`}</small></button>`;
-    }).join("")}</div>`;
-  sheet.querySelectorAll("[data-area]").forEach(btn => btn.onclick = () => {
-    const a = AREAS.find(x => x.id === btn.dataset.area); startQuiz(a, a.codes);
-  });
+    <h2>モードをえらんでね</h2>
+    <div class="chips modes">${MODES.map(m => `<button class="chip${m.id === store.mode ? " now" : ""}" type="button" data-mode="${m.id}">${m.name}</button>`).join("")}</div>
+    <p class="hint">上のモードほど学べるコースがふえるよ（下のモードの内容もぜんぶ入っている）。学年ごとの範囲は仮の設定です。</p>`;
+  sheet.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { store.mode = b.dataset.mode; save(); home(); });
+}
+
+function courseStatus(c) {
+  if (!c.ready) return {text: "準備中", off: true};
+  if (!inMode(c)) return {text: `${modeOf(c.from).name}から`, off: true};
+  if (!unlocked(c)) {
+    const pre = courseOf(c.unlock.course);
+    return {text: c.unlock.need === "master" ? `${pre.master}で開く` : `${pre.name}の全国の挑戦を終えると開く`, off: true};
+  }
+  const m = masterOf(c.id);
+  if (m) return {text: m.clean ? `${c.master}（ヒントなし）` : `${c.master}（ヒントあり）`, done: true};
+  const got = new Set(); recsOf(c.id).forEach(r => Object.keys(r.got).forEach(k => got.add(k)));
+  return {text: `正解した問題 ${got.size} / ${fullCount(c.id)}`};
+}
+
+/* コース一覧（モードごと） */
+function home() {
+  if (!modeOf(store.mode)) return modeSelect();
+  const lv = toHomeScreen();
+  const colored = Object.values(lv).filter(n => n > 0).length;
+  top_.innerHTML = `<div class="brand">日本地図タップクイズ<small>${curMode().name}</small></div>${muteBtn()}`;
+  bindMute();
+  sheet.innerHTML = `
+    <div class="modebar"><span class="badge">${curMode().name}</span><button class="linkbtn" id="chgMode" type="button">モードをかえる</button></div>
+    <div class="info" id="info"><span class="hint">色がついた県 ${colored} / 47。正解した県から地図に色がつくよ。</span></div>
+    <h2>${TRACKS[0].name}</h2>
+    <div class="courses">${COURSES.map((c, i) => {
+      const s = courseStatus(c);
+      return `<button class="course${s.done ? " done" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${c.name}<small>${s.text}</small></span></button>`;
+    }).join("")}</div>
+    <h2>${TRACKS[1].name}</h2><p class="hint">${TRACKS[1].note}</p>
+    <h2>ごほうび</h2><p class="hint">新しいタップゲーム：準備中</p>`;
+  byId("chgMode").onclick = modeSelect;
+  sheet.querySelectorAll("[data-course]").forEach(b => b.onclick = () => coursePage(courseOf(b.dataset.course)));
+}
+
+/* コース：全国の挑戦（マスター判定あり）と、地方ごとの練習 */
+function coursePage(c) {
+  toHomeScreen();
+  const type = QUIZ_TYPES[c.id], total = fullCount(c.id), m = masterOf(c.id), zen = AREAS.find(a => a.wide);
+  const best = Object.assign({}, ...recsOf(c.id).map(r => r.best));
+  top_.innerHTML = `<div class="brand">${c.name}<small>${curMode().name}</small></div><button class="iconbtn" id="back" type="button">もどる</button>`;
+  byId("back").onclick = home;
+  const regions = AREAS.filter(a => !a.wide).map(a => ({a, n: type.make(a.codes).length})).filter(x => x.n > 0);
+  sheet.innerHTML = `
+    <div class="modebar">${m ? `<span class="medal${m.clean ? "" : " hinted"}">${c.master}${m.clean ? "（ヒントなし）" : "（ヒントあり）"}</span>` : ""}</div>
+    <div class="chips"><button class="chip wide" type="button" id="master">全国の挑戦<small>${total}問${best.zenkoku != null ? `・ベスト ${best.zenkoku}/${total}` : ""}</small></button></div>
+    <h2>地方ごとの練習</h2>
+    <div class="chips">${regions.map(({a, n}) => {
+      // 県名タップは v4 の地方ベスト（store.best）も参考に出す
+      const b = Math.max(best[a.id] ?? -1, c.id === "prefName" ? (store.best[a.id] ?? -1) : -1);
+      return `<button class="chip" type="button" data-area="${a.id}">${a.name}<small>${b >= 0 ? `ベスト ${b}/${n}` : `${n}問`}</small></button>`;
+    }).join("")}</div>
+    <h2>このコースのきまり</h2>
+    <ul class="rules">${c.rules.map(r => `<li>${r}</li>`).join("")}<li>目のボタン（ヒント）を使った問題は記録し、ヒントなしの達成と分けて残す</li></ul>`;
+  byId("master").onclick = () => startQuiz(c, zen, zen.codes, {master: true});
+  sheet.querySelectorAll("[data-area]").forEach(b => b.onclick = () => { const a = AREAS.find(x => x.id === b.dataset.area); startQuiz(c, a, a.codes); });
 }
 
 function showInfo(code) {
   const p = byCode(code);
   if (selected) pathEl[selected].classList.remove("sel");
   selected = code; pathEl[code].classList.add("sel");
-  const info = document.getElementById("info");
-  if (info) info.innerHTML = `<span class="nm">${p.name}</span><span class="sub">${p.kana}・${p.region}・県庁所在地 ${p.capital}</span>`;
+  const info = byId("info");
+  if (info) info.innerHTML = `<span class="nm">${p.name}</span><span class="sub">${p.kana}・${p.region}・${capitalLabel(p)}</span>`;
 }
 
 function shuffle(a){ a = a.slice(); for (let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; }
 
-function startQuiz(area, codes, typeId="prefName") {
+// opts.master：全国の挑戦（完了・マスター判定の対象）／opts.keys：まちがえた問題だけ（判定の対象外）
+function startQuiz(course, area, codes, opts={}) {
   cancelQuizTimers(); eyeOff();
+  const type = QUIZ_TYPES[course.id];
   sheet.classList.remove("home");
   mode = "quiz"; selected = null; clearTag(); JapanMap.resetColors(); svg.classList.remove("explore");
   const inArea = new Set(area.codes);
   PREFS.forEach(p => { pathEl[p.code].classList.toggle("off", !inArea.has(p.code)); labelEl[p.code].classList.toggle("off", !inArea.has(p.code)); });
   homeBox = area.wide ? FULL : unionBox(area.codes); fitLater(homeBox);
   svg.classList.toggle("region-quiz", !area.wide);
-  quiz = { area, type: typeId, qs: shuffle(QUIZ_TYPES[typeId].make(codes)), i: 0, combo: 0, maxCombo: 0, log: [], inArea };
+  let qs = type.make(codes);
+  if (opts.keys) qs = qs.filter(q => opts.keys.includes(q.key));
+  const master = !!opts.master && !opts.keys && area.wide && qs.length === fullCount(course.id);
+  quiz = { course, type, area, opts, master, modeId: curMode().id, qs: shuffle(qs), i: 0, combo: 0, maxCombo: 0, log: [], inArea };
   nextQ();
 }
 
@@ -480,37 +682,90 @@ function nextQ() {
   eyeOff(); clearTag();
   if (quiz.i >= quiz.qs.length) return result();
   const q = quiz.q = quiz.qs[quiz.i]; q.hint = false; quiz.answered = false;
-  top_.innerHTML = `<div class="ask"><span class="meta">${quiz.area.name}　${quiz.i+1} / ${quiz.qs.length}</span><span class="q">${q.text}</span><span class="kana">${q.sub || ""}</span></div><button class="iconbtn" id="quit" type="button">やめる</button>`;
-  document.getElementById("quit").onclick = home;
-  sheet.innerHTML = `${progressBar()}<p class="hint">地図の県をタップしてね。わからない時は目のボタン（押している間だけ県名）。</p>`;
+  top_.innerHTML = `<div class="ask"><span class="meta">${quiz.course.name}・${quiz.master ? "全国の挑戦" : quiz.area.name}　${quiz.i+1} / ${quiz.qs.length}</span><span class="q">${q.text}</span><span class="kana">${q.sub || ""}</span></div><button class="iconbtn" id="quit" type="button">やめる</button>`;
+  byId("quit").onclick = home;
+  if (quiz.type.kind === "choice") {
+    // 対象の都道府県を地図で示し、選択肢の並びは毎回まぜる
+    Object.values(pathEl).forEach(p => p.classList.remove("sel", "ok", "miss"));
+    pathEl[q.focus].classList.add("sel");
+    if (quiz.area.wide) fitLater(unionBox(areaOfPref(q.focus).codes));
+    q.order = shuffle(q.choices);
+    sheet.innerHTML = `${progressBar()}<div class="choices">${q.order.map(([n, k], j) =>
+      `<button class="choice" type="button" data-j="${j}">${n}<small>${k}</small></button>`).join("")}</div>`;
+    const owner = quiz;
+    sheet.querySelectorAll("[data-j]").forEach(b => b.onclick = () => { if (quiz === owner && mode === "quiz") answerChoice(+b.dataset.j); });
+  } else {
+    sheet.innerHTML = `${progressBar()}<p class="hint">地図の県をタップしてね。わからない時は目のボタン（押している間だけ県名）。</p>`;
+  }
+}
+
+// 1問の正誤を記録する。正解は got に積むだけで、まちがえても消えない
+function logAnswer(ok) {
+  const q = quiz.q, r = rec(quiz.modeId, quiz.course.id);
+  quiz.log[quiz.i] = {ok, hint: q.hint, key: q.key, pref: q.prefs[0]};
+  if (ok) { r.got[q.key] = 1; if (!q.hint) r.clean[q.key] = 1; }
+  else r.miss[q.key] = (r.miss[q.key] || 0) + 1;
+  save();
+}
+
+function noteHtml(code) {
+  const ns = GEO_NOTES[code] || [];
+  return ns.map(n => `<span>【${GEO_THEMES[n.theme] || ""}】${n.text}</span>`).join("");
+}
+
+function afterAnswer(ok, html) {
+  const q = quiz.q;
+  if (ok) {
+    sndOk();
+    if (q.hint) quiz.combo = 0; else { quiz.combo++; quiz.maxCombo = Math.max(quiz.maxCombo, quiz.combo); }
+    if (quiz.combo >= 2) { combo.textContent = `${quiz.combo}れんぞく！`; combo.hidden = false; combo.classList.remove("pop"); void combo.offsetWidth; combo.classList.add("pop"); }
+    else combo.hidden = true;
+    sheet.insertAdjacentHTML("beforeend", html);
+    quizTimeout(() => { quiz.i++; nextQ(); }, 1300);
+  } else {
+    sndNg(); quiz.combo = 0; combo.hidden = true;
+    sheet.insertAdjacentHTML("beforeend", `${html}<div class="row"><button class="btn primary" id="next" type="button">つぎへ</button></div>`);
+    const owner = quiz;
+    byId("next").onclick = () => { if (quiz !== owner || mode !== "quiz") return; Object.values(pathEl).forEach(p => p.classList.remove("blink")); quiz.i++; nextQ(); };
+  }
+}
+
+function answerChoice(j) {
+  if (quiz.answered) return;
+  const q = quiz.q, pick = q.order[j], ok = pick[0] === q.correct;
+  quiz.answered = true; eyeOff();
+  logAnswer(ok);
+  sheet.querySelectorAll("[data-j]").forEach(b => {
+    const c = q.order[+b.dataset.j]; b.disabled = true;
+    if (c[0] === q.correct) b.classList.add("right"); else if (+b.dataset.j === j) b.classList.add("wrong");
+  });
+  sheet.querySelector(".progress").outerHTML = progressBar();
+  const ans = q.choices[0];
+  afterAnswer(ok, ok
+    ? `<div class="fb ok"><div class="mark">◯</div><div class="txt"><b>せいかい！ ${ans[0]}</b><span>${q.hint ? "（ヒントを見て正解）" : ""}${q.explain}</span>${noteHtml(q.focus)}</div></div>`
+    : `<div class="fb ng"><div class="mark">✕</div><div class="txt"><b>正しくは ${ans[0]}</b><span>${q.explain}</span>${noteHtml(q.focus)}</div></div>`);
 }
 
 function handleTap(code) {
   tapHandlers.forEach(cb => { try { cb(code); } catch(e){} });
   if (mode === "home") return showInfo(code);
-  if (mode !== "quiz" || quiz.answered || !quiz.inArea.has(code)) return;
+  if (mode !== "quiz" || quiz.type.kind !== "tap" || quiz.answered || !quiz.inArea.has(code)) return;
   const q = quiz.q, ok = q.answers.includes(code);
   quiz.answered = true; eyeOff();
   const p = byCode(code), ans = byCode(q.answers[0]);
-  quiz.log[quiz.i] = {ok, hint:q.hint, code:q.answers[0]};
+  logAnswer(ok);
+  if (quiz.course.id === "prefName" && !ok) { store.miss[ans.code] = (store.miss[ans.code] || 0) + 1; save(); }
+  sheet.innerHTML = progressBar();
   if (ok) {
-    sndOk();
     pathEl[code].classList.add("flash-ok");
     quizTimeout(() => { pathEl[code].classList.remove("flash-ok"); pathEl[code].classList.add("ok"); }, 450);
-    if (q.hint) quiz.combo = 0; else { quiz.combo++; quiz.maxCombo = Math.max(quiz.maxCombo, quiz.combo); }
-    if (quiz.combo >= 2) { combo.textContent = `${quiz.combo}れんぞく！`; combo.hidden = false; combo.classList.remove("pop"); void combo.offsetWidth; combo.classList.add("pop"); }
-    else combo.hidden = true;
-    sheet.innerHTML = `${progressBar()}<div class="fb ok"><div class="mark">◯</div><div class="txt"><b>せいかい！ ${ans.name}</b><span>${q.hint ? "（ヒントを見て正解）" : ""}${q.explain}</span></div></div>`;
-    quizTimeout(() => { quiz.i++; nextQ(); }, 1300);
+    afterAnswer(true, `<div class="fb ok"><div class="mark">◯</div><div class="txt"><b>せいかい！ ${ans.name}</b><span>${q.hint ? "（ヒントを見て正解）" : ""}${q.explain}</span>${noteHtml(ans.code)}</div></div>`);
   } else {
-    sndNg(); quiz.combo = 0; combo.hidden = true;
-    store.miss[ans.code] = (store.miss[ans.code] || 0) + 1; save();
     pathEl[code].classList.add("flash-ng"); showTag(code, p.short);
     quizTimeout(() => pathEl[code].classList.remove("flash-ng"), 900);
     pathEl[ans.code].classList.add("miss");
     JapanMap.highlightPrefecture(ans.code);
-    sheet.innerHTML = `${progressBar()}<div class="fb ng"><div class="mark">✕</div><div class="txt"><b>そこは ${p.name}</b><span>${ans.name}は、光っているところ。${q.explain}</span></div></div><div class="row"><button class="btn primary" id="next" type="button">つぎへ</button></div>`;
-    document.getElementById("next").onclick = () => { pathEl[ans.code].classList.remove("blink"); quiz.i++; nextQ(); };
+    afterAnswer(false, `<div class="fb ng"><div class="mark">✕</div><div class="txt"><b>そこは ${p.name}</b><span>${ans.name}は、光っているところ。${q.explain}</span>${noteHtml(ans.code)}</div></div>`);
   }
 }
 
@@ -518,24 +773,43 @@ function result() {
   cancelQuizTimers(); eyeOff();
   Object.values(pathEl).forEach(p => p.classList.remove("flash-ok", "flash-ng", "blink"));
   mode = "result"; combo.hidden = true; clearTag();
-  const total = quiz.qs.length, correct = quiz.log.filter(l => l.ok).length, clean = quiz.log.filter(l => l.ok && !l.hint).length;
-  const missed = quiz.log.filter(l => !l.ok).map(l => l.code);
-  if (quiz.qs.length === quiz.area.codes.length) { store.best[quiz.area.id] = Math.max(store.best[quiz.area.id] || 0, clean); save(); }
-  const msg = clean === total ? "パーフェクト！ 地図マスター！" : correct === total ? "全問正解！ 次はヒントなしで！" : missed.length <= 2 ? "あと少し！ まちがえた県をもう一回" : "まちがえた県だけ、くりかえそう";
-  top_.innerHTML = `<div class="ask"><span class="meta">${quiz.area.name}　けっか</span><span class="q">${msg}</span></div>${muteBtn()}`;
+  const course = quiz.course, total = quiz.qs.length, correct = quiz.log.filter(l => l.ok).length, clean = quiz.log.filter(l => l.ok && !l.hint).length;
+  const missed = quiz.log.filter(l => !l.ok);
+  const r = rec(quiz.modeId, course.id);
+  const before = COURSES.filter(c => c.ready && inMode(c) && !unlocked(c)).map(c => c.id);
+  let newMaster = null;
+  if (quiz.master) {
+    // 全国の挑戦を最後まで解いた。47（または全都市）を重複なく全問正解したときだけマスター
+    r.complete = true;
+    r.best.zenkoku = Math.max(r.best.zenkoku ?? 0, clean);
+    const keys = new Set(quiz.log.map(l => l.key));
+    if (correct === total && keys.size === total && total === fullCount(course.id)) {
+      const isClean = clean === total;
+      if (!r.master || (isClean && !r.master.clean)) { newMaster = {at: Date.now(), clean: isClean}; r.master = newMaster; }
+    }
+  } else if (!quiz.opts.keys && !quiz.area.wide) {
+    r.best[quiz.area.id] = Math.max(r.best[quiz.area.id] ?? 0, clean);
+  }
+  save();
+  const opened = COURSES.filter(c => before.includes(c.id) && unlocked(c));
+  const msg = newMaster ? `${course.master}！` : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ 次はヒントなしで！" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
+  const label = l => course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
+  top_.innerHTML = `<div class="ask"><span class="meta">${course.name}・${quiz.master ? "全国の挑戦" : quiz.area.name}　けっか</span><span class="q">${msg}</span></div>${muteBtn()}`;
   bindMute();
   sheet.innerHTML = `
     <div class="score"><span class="big">${correct}<small style="font-size:1.2rem"> / ${total}</small></span><span class="msg">ヒントなし正解 ${clean}問・最高 ${quiz.maxCombo}れんぞく</span></div>
-    ${missed.length ? `<h2>まちがえた県</h2><div class="misslist">${missed.map(c => `<span>${byCode(c).name}</span>`).join("")}</div>` : ""}
+    ${newMaster ? `<div class="modebar"><span class="medal${newMaster.clean ? "" : " hinted"}">${course.master}${newMaster.clean ? "（ヒントなし）" : "（ヒントあり）"}</span></div>` : ""}
+    ${opened.map(c => `<p class="hint"><b>「${c.name}」コースが開いたよ！</b></p>`).join("")}
+    ${missed.length ? `<h2>まちがえた問題</h2><div class="misslist">${missed.map(l => `<span>${label(l)}</span>`).join("")}</div>` : ""}
     <div class="row">
-      ${missed.length ? `<button class="btn primary" id="retryMiss" type="button">まちがえた県だけ もう一回</button>` : ""}
+      ${missed.length ? `<button class="btn primary" id="retryMiss" type="button">まちがえた問題だけ もう一回</button>` : ""}
       <button class="btn${missed.length ? "" : " primary"}" id="retry" type="button">もう一回</button>
-      <button class="btn" id="back" type="button">地方をえらぶ</button>
+      <button class="btn" id="back" type="button">コースにもどる</button>
     </div>`;
-  const area = quiz.area;
-  if (missed.length) document.getElementById("retryMiss").onclick = () => startQuiz(area, missed);
-  document.getElementById("retry").onclick = () => startQuiz(area, area.codes);
-  document.getElementById("back").onclick = home;
+  const area = quiz.area, opts = quiz.opts, missKeys = missed.map(l => l.key);
+  if (missed.length) byId("retryMiss").onclick = () => startQuiz(course, area, area.codes, {keys: missKeys});
+  byId("retry").onclick = () => startQuiz(course, area, area.codes, opts);
+  byId("back").onclick = () => coursePage(course);
 }
 
 window.addEventListener("load", home);

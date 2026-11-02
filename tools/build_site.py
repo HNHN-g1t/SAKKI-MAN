@@ -19,9 +19,9 @@ APPS = {
 subprocess.run([sys.executable, str(ROOT / "apps/japan-map-quiz/tools/build.py")], check=True)
 
 shutil.rmtree(OUT, ignore_errors=True)
-OUT.mkdir()
+OUT.mkdir(exist_ok=True)   # Windows では rmtree 直後に作り直せないことがあるため
 shutil.copy(ROOT / "site/index.html", OUT / "index.html")
 for name, src in APPS.items():
-    (OUT / name).mkdir()
+    (OUT / name).mkdir(exist_ok=True)
     shutil.copy(ROOT / src / "index.html", OUT / name / "index.html")
 print(f"wrote {OUT}")
