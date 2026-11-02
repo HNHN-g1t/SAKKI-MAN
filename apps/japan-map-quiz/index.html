@@ -29,6 +29,7 @@
   --s4:4px; --s8:8px; --s12:12px; --s16:16px; --s24:24px; --s32:32px;
   --r-btn:14px; --r-sheet:20px; --r-pill:999px; --bw:2.5px; --tap:48px;
   --marker:.45em;   /* 県名マーカーの太さ（ダークは文字に重ならない細い下線にする） */
+  --scrim:#282727B3;   /* 暗証番号の入力のうしろを暗くする幕 */
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --ink:#FEF3E6; --paper:#232222; --cream:#3A3632; --sea:#26313A; --bg:#141313;
@@ -76,6 +77,16 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .iconbtn{flex:none;min-width:var(--tap);height:var(--tap);padding:0 var(--s12);white-space:nowrap;font-size:var(--fs14);display:grid;place-items:center}
 .iconbtn svg{width:24px;height:24px}
 .iconbtn.dbg-on{background:var(--brand);color:var(--on-brand)}
+.dbgbox{display:contents}
+/* 暗証番号の入力 */
+.pin{position:fixed;inset:0;z-index:10;background:var(--scrim);display:grid;place-items:center;padding:var(--s16)}
+.pin-box{background:var(--paper);color:var(--ink);border:var(--bw) solid var(--ink);border-radius:var(--r-sheet);padding:var(--s24);width:min(320px,100%);box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:var(--s12)}
+.pin-box b{font-family:var(--display);font-weight:400;font-size:var(--fs20)}
+.pin-dots{display:flex;gap:var(--s12)}
+.pin-dots i{width:16px;height:16px;border-radius:50%;border:var(--bw) solid var(--ink)}
+.pin-dots i.on{background:var(--ink)}
+.pin-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s8);width:100%}
+.pin-keys .btn{font-size:var(--fs20);min-height:56px}
 .btn:focus-visible,.iconbtn:focus-visible,.chip:focus-visible,.course:focus-visible,.choice:focus-visible,.zoomreset:focus-visible,.linkbtn:focus-visible,.eye:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
 
 /* 地図（問題中は海と陸を落ち着かせ、黄色は選択・正解表示の時だけ） */
@@ -352,13 +363,16 @@ const STORE_KEY = "jmq-v1";
 let store = { best:{}, miss:{}, mute:false, mode:null, rec:{} };
 try { const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); if (s) store = Object.assign(store, s); } catch(e){}
 const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch(e){} };
+// DBG ON の間は、本当の記録（store.rec）ではなくお試し用の記録（dbgRec。保存しない）を読み書きする
+let debug = false, dbgRec = null;
+const recRoot = () => debug ? dbgRec : store.rec;
 function rec(modeId, courseId) {
-  const m = store.rec[modeId] = store.rec[modeId] || {};
+  const root = recRoot(), m = root[modeId] = root[modeId] || {};
   return m[courseId] = Object.assign({best:{}, got:{}, clean:{}, miss:{}, stage:{}, complete:false, master:null}, m[courseId] || {});
 }
 const curMode = () => modeOf(store.mode) || MODES[MODES.length - 1];
 const lowerModes = () => MODES.filter(m => m.rank <= curMode().rank);
-const recsOf = courseId => lowerModes().map(m => (store.rec[m.id] || {})[courseId]).filter(Boolean);
+const recsOf = courseId => lowerModes().map(m => (recRoot()[m.id] || {})[courseId]).filter(Boolean);
 const inMode = c => modeOf(c.from).rank <= curMode().rank;
 function achieved(courseId, need) {
   return recsOf(courseId).some(r => need === "master" ? isMaster(r) : (r.complete || !!r.master));
@@ -612,26 +626,79 @@ function muteBtn(){ return `<button class="iconbtn" id="mute" type="button" aria
 function bindMute(){ const m = document.getElementById("mute"); if (m) m.onclick = () => { store.mute = !store.mute; save(); m.textContent = store.mute ? "音OFF" : "音ON"; }; }
 const byId = id => document.getElementById(id);
 
-/* デバッグ：ONの間はクイズを高速で自動正解する（画面遷移の確認用。記録・マスターにもそのまま残る。保存はせず再読み込みでOFF） */
-let debug = false;
-const DEBUG_ANSWER_MS = 120, DEBUG_NEXT_MS = 150;
+/* デバッグ（DBG）：暗証番号を入れると ON。ON の間は全コース・全ステージが👑マスター済みのお試し記録になり、
+   「テスト」で今いる画面の単位を初めての状態に戻して遊べる。本当の記録には書かない。OFF は1タップ。保存はせず再読み込みで OFF */
+const DEBUG_PIN = "8282";
+let screenNow = {kind: "title"};   // 今いるホーム系の画面（テスト・切り替え後の描き直しに使う）
 function titleBtn(){ return `<button class="iconbtn" id="toTitle" type="button" aria-label="タイトル画面へ戻る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg></button>`; }
-function debugBtn(){ return `<button class="iconbtn${debug ? " dbg-on" : ""}" id="dbg" type="button" aria-pressed="${debug}" aria-label="デバッグモード">DBG</button>`; }
+function debugBtn(){
+  return `<span class="dbgbox" id="dbgbox"><button class="iconbtn${debug ? " dbg-on" : ""}" id="dbg" type="button" aria-pressed="${debug}" aria-label="デバッグモード">DBG</button>${debug ? `<button class="iconbtn" id="dbgTest" type="button" aria-label="この画面を初めての状態にする">テスト</button>` : ""}</span>`;
+}
+// お試し記録：全モード・全コースで、全問正解・全ステージ👑・👑マスター・完了
+function fullRecs() {
+  const R = {};
+  MODES.forEach(m => { R[m.id] = {}; COURSES.filter(c => c.ready).forEach(c => {
+    const type = QUIZ_TYPES[c.id], all = Object.fromEntries(type.make(range(1,47)).map(q => [q.key, 1]));
+    R[m.id][c.id] = { got: {...all}, clean: {...all}, miss: {}, complete: true, master: {at: 0, clean: true},
+      best: Object.fromEntries([...STAGES.map(a => [a.id, type.make(a.codes).length]), ["zenkoku", Object.keys(all).length]]),
+      stage: Object.fromEntries(STAGES.map(a => [a.id, {complete: true, master: {at: 0}}])) };
+  }); });
+  return R;
+}
+// 切り替え・テストのあとに今の画面を描き直す。クイズ中と結果はボタンだけ差し替える
+function rerender() {
+  if (mode === "quiz" || mode === "result") { byId("dbgbox").outerHTML = debugBtn(); return bindDbg(); }
+  if (screenNow.kind === "course") coursePage(screenNow.c); else if (screenNow.kind === "home") home(); else modeSelect();
+}
+// テスト：今いる画面の単位を初めての状態に戻す（クイズ中・結果ならその区切りを1問目からやり直す）
+function testSection() {
+  if (mode === "quiz" || mode === "result") {
+    const c = quiz.course, a = quiz.area, o = Object.assign({}, quiz.opts); o.keys = undefined;
+    MODES.forEach(m => { const r = (dbgRec[m.id] || {})[c.id]; if (!r) return;
+      if (quiz.stage) { r.stage[a.id] = undefined; r.master = null; r.complete = false; } else dbgRec[m.id][c.id] = undefined; });
+    return startQuiz(c, a, a.codes, o);
+  }
+  if (screenNow.kind === "course") MODES.forEach(m => { if (dbgRec[m.id]) dbgRec[m.id][screenNow.c.id] = undefined; });
+  else dbgRec = {};
+  rerender();
+}
+function bindDbg() {
+  const d = byId("dbg");
+  if (d) d.onclick = () => {
+    if (debug) { debug = false; dbgRec = null; return rerender(); }
+    askPin(() => { debug = true; dbgRec = fullRecs(); rerender(); });
+  };
+  const tb = byId("dbgTest"); if (tb) tb.onclick = testSection;
+}
+// 暗証番号の入力（4けた）。ブラウザのダイアログは使わない
+function askPin(onOk) {
+  const ov = document.createElement("div");
+  ov.className = "pin";
+  ov.innerHTML = `<div class="pin-box" role="dialog" aria-modal="true" aria-label="デバッグの暗証番号">
+    <b>暗証番号</b><div class="pin-dots">${"<i></i>".repeat(4)}</div><p class="hint" id="pinMsg">4けたの数字を入れてね</p>
+    <div class="pin-keys">${["1","2","3","4","5","6","7","8","9","","0","back"].map(k => k ? `<button class="btn" type="button" data-k="${k}"${k === "back" ? ` aria-label="1文字けす"` : ""}>${k === "back" ? "←" : k}</button>` : "<span></span>").join("")}</div>
+    <button class="linkbtn" type="button" id="pinCancel">やめる</button></div>`;
+  document.body.appendChild(ov);
+  let v = "";
+  const dots = ov.querySelectorAll(".pin-dots i"), msg = ov.querySelector("#pinMsg");
+  const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); };
+  const press = k => {
+    v = k === "back" ? v.slice(0, -1) : (v + k).slice(0, 4);
+    dots.forEach((d, i) => d.classList.toggle("on", i < v.length));
+    if (v.length < 4) return;
+    if (v === DEBUG_PIN) { close(); onOk(); }
+    else { msg.textContent = "ちがうよ。もう一回"; v = ""; dots.forEach(d => d.classList.remove("on")); }
+  };
+  const onKey = e => { if (/^[0-9]$/.test(e.key)) press(e.key); else if (e.key === "Backspace") press("back"); else if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  ov.querySelectorAll("[data-k]").forEach(b => b.onclick = () => press(b.dataset.k));
+  ov.querySelector("#pinCancel").onclick = close;
+}
 // 上部バーの共通ボタン（タイトルへ・デバッグ・音）をつなぐ
 function bindBar() {
   bindMute();
   const t = byId("toTitle"); if (t) t.onclick = modeSelect;
-  const d = byId("dbg");
-  if (d) d.onclick = () => {
-    debug = !debug; d.classList.toggle("dbg-on", debug); d.setAttribute("aria-pressed", debug);
-    if (debug && mode === "quiz" && !quiz.answered) quizTimeout(autoAnswer, DEBUG_ANSWER_MS);
-  };
-}
-function autoAnswer() {
-  if (!debug || quiz.answered) return;
-  const q = quiz.q;
-  if (quiz.type.kind === "choice") answerChoice(q.order.findIndex(o => o[0] === q.correct));
-  else handleTap(q.answers[0]);
+  bindDbg();
 }
 
 // ホーム系の画面（モード選択・コース一覧・コース）に共通：地図をコレクションの色で見せ、県をさわると名前を出す
@@ -650,7 +717,7 @@ function toHomeScreen(box = FULL) {
 
 /* OP：モード選択 */
 function modeSelect() {
-  toHomeScreen();
+  toHomeScreen(); screenNow = {kind: "title"};
   top_.innerHTML = `<div class="brand">日本地図タップクイズ<small>サッ記マン・中学受験 社会</small></div>${debugBtn()}${muteBtn()}`;
   bindBar();
   sheet.innerHTML = `
@@ -677,7 +744,7 @@ function courseStatus(c) {
 /* コース一覧（モードごと） */
 function home() {
   if (!modeOf(store.mode)) return modeSelect();
-  const lv = toHomeScreen();
+  const lv = toHomeScreen(); screenNow = {kind: "home"};
   const colored = Object.values(lv).filter(n => n > 0).length;
   top_.innerHTML = `${titleBtn()}<div class="brand">日本地図タップクイズ<small>${curMode().name}</small></div>${debugBtn()}${muteBtn()}`;
   bindBar();
@@ -705,7 +772,7 @@ function home() {
 
 /* コース：全国の挑戦（マスター判定あり）と、地方ごとの練習 */
 function coursePage(c) {
-  toHomeScreen();
+  toHomeScreen(); screenNow = {kind: "course", c};
   const type = QUIZ_TYPES[c.id], total = fullCount(c.id), m = masterOf(c.id), zen = AREAS.find(a => a.wide);
   const best = Object.assign({}, ...recsOf(c.id).map(r => r.best));
   top_.innerHTML = `${titleBtn()}<div class="brand">${c.name}<small>${curMode().name}</small></div>${debugBtn()}<button class="iconbtn" id="back" type="button">もどる</button>`;
@@ -775,7 +842,6 @@ function nextQ() {
   top_.innerHTML = `<button class="iconbtn" id="quit" type="button" aria-label="やめる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><div class="ask"><span class="meta">${quiz.master ? "全国" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}　${quiz.i+1} / ${quiz.qs.length}</span></div>${debugBtn()}${titleBtn()}`;
   renderProgress();
   bindBar(); byId("quit").onclick = home;
-  if (debug) quizTimeout(autoAnswer, DEBUG_ANSWER_MS);
   if (quiz.type.kind === "choice") {
     // 対象の都道府県を地図で示し、選択肢の並びは毎回まぜる
     Object.values(pathEl).forEach(p => p.classList.remove("sel", "ok", "miss"));
@@ -816,7 +882,7 @@ function afterAnswer(ok, html) {
     if (quiz.combo >= 2) { combo.textContent = `${quiz.combo}れんぞく！`; combo.hidden = false; combo.classList.remove("pop"); void combo.offsetWidth; combo.classList.add("pop"); }
     else combo.hidden = true;
     sheet.insertAdjacentHTML("beforeend", html);
-    quizTimeout(() => { quiz.i++; nextQ(); }, debug ? DEBUG_NEXT_MS : 1300);
+    quizTimeout(() => { quiz.i++; nextQ(); }, 1300);
   } else {
     sndNg(); quiz.combo = 0; combo.hidden = true;
     sheet.insertAdjacentHTML("beforeend", `${html}<div class="row"><button class="btn primary" id="next" type="button">つぎへ</button></div>`);
