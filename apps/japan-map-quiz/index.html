@@ -56,6 +56,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .ask{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--s4)}
 .ask .meta{font-size:var(--fs14);color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
 .ask .q{font-family:var(--body);font-weight:700;font-size:var(--fs28);line-height:1.25;text-wrap:balance}
+.ask .q.long{font-size:var(--fs20)}
 .ask .q.shout{font-family:var(--display);font-weight:400;font-size:var(--fs20)}
 /* 県名だけ黄色のマーカー線（下半分） */
 .ask .q em{font-style:normal;box-shadow:inset 0 calc(-1 * var(--marker)) 0 var(--brand)}
@@ -149,7 +150,7 @@ svg:not(.explore) .region-line{display:none}
 /* けっか画面の大きな一言：地図の真ん中に札で出す。地図は触れるように素通し */
 .clearmsg{position:absolute;inset:0 0 var(--r-sheet);display:grid;place-items:center;padding:var(--s16);pointer-events:none}
 .clearmsg[hidden]{display:none}
-.clearmsg span{max-width:min(90%,420px);text-align:center;font-family:var(--display);font-size:var(--fs28);line-height:1.35;white-space:pre-line;word-break:keep-all;overflow-wrap:anywhere;color:var(--on-brand);background:var(--brand);border:var(--bw) solid var(--on-brand);border-radius:var(--r-sheet);padding:var(--s16) var(--s24);box-shadow:0 6px 0 var(--on-brand);animation:clearpop .4s ease-out 1}
+.clearmsg span{max-width:min(90%,420px);text-align:center;font-family:var(--display);font-size:clamp(var(--fs20),6vw,var(--fs28));line-height:1.35;white-space:pre-line;word-break:keep-all;overflow-wrap:anywhere;color:var(--on-brand);background:var(--brand);border:var(--bw) solid var(--on-brand);border-radius:var(--r-sheet);padding:var(--s16) var(--s24);box-shadow:0 6px 0 var(--on-brand);animation:clearpop .4s ease-out 1}
 @keyframes clearpop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
 
 /* 下のシート */
@@ -331,6 +332,12 @@ const QUIZ_TYPES = {
         text: `この<em>${TERRAIN_CATS[f.cat]}</em>の名前は？`, explain: `${f.name}（${f.kana}）` };
     })
   },
+  industry: {
+    title: "農林水産業・工業", kind: "tap",
+    // area.cat（farm／fruit／sea／maker／craft）の問題。地図で答えの都道府県をタップ
+    make: (codes, area) => INDUSTRY.filter(f => (!area || !area.cat || f.cat === area.cat) && codes.includes(f.pref)).map(f => (
+      { key: f.id, prefs: [f.pref], text: INDUSTRY_CATS[f.cat].ask(f.word), sub: f.kana, answers: [f.pref], explain: f.note }))
+  },
   designated: {
     title: "政令指定都市", kind: "tap",
     make: codes => CITIES.designated.map((d, i) => [d, i]).filter(([d]) => codes.includes(d[2])).map(([[name, kana, c], i]) => (
@@ -338,6 +345,70 @@ const QUIZ_TYPES = {
         explain: `${name}（${kana}）は ${byCode(c).name}の政令指定都市` }))
   }
 };
+
+/* ---------- 農林水産業・工業（産業）。地図の都道府県をタップして答える ----------
+   [id, ステージ, 問題のことば, よみ, 答えの県コード, 解説]。答えが1つに決まり、順位が毎年ほぼ入れかわらないものだけ入れる
+   （僅差で入れかわる茶・キャベツ・日本なし・さつまいも・ほたて・真珠などは入れない） */
+const INDUSTRY_CATS = {
+  farm:  {name:"農業（米・野菜・花）", ask: w => `<em>${w}</em>の生産量が全国一の都道府県は？`},
+  fruit: {name:"くだもの", ask: w => `<em>${w}</em>の生産量が全国一の都道府県は？`},
+  sea:   {name:"畜産・林業・水産業", ask: w => w},
+  maker: {name:"工業地帯・地場産業", ask: w => w},
+  craft: {name:"伝統工芸品", ask: w => `<em>${w}</em>がつくられている都道府県は？`},
+};
+const INDUSTRY = [
+  ["rice","farm","米","こめ",15,"新潟県。信濃川・阿賀野川の流れる越後平野が大きな米どころ"],
+  ["potato","farm","じゃがいも","",1,"北海道。すずしい気候と広い畑を生かす（十勝平野など）"],
+  ["onion","farm","たまねぎ","",1,"北海道。2位は佐賀県"],
+  ["lettuce","farm","レタス","",20,"長野県。夏もすずしい高原で育てる高原野菜（抑制栽培）"],
+  ["pepper","farm","ピーマン","",8,"茨城県。大都市の近くで野菜をつくる近郊農業。2位は宮崎県（促成栽培）"],
+  ["strawberry","farm","いちご","",9,"栃木県。「とちおとめ」などの品種で知られる"],
+  ["peanut","farm","落花生","らっかせい",12,"千葉県。全国の8割ほどをつくる"],
+  ["konjac","farm","こんにゃくいも","",10,"群馬県。全国の9割以上をつくる"],
+  ["sugarcane","farm","さとうきび","",47,"沖縄県。暑い気候と台風に強い作物。鹿児島県の南の島々でもつくる"],
+  ["chrysanthemum","farm","菊","きく",23,"愛知県。渥美半島で、夜に電灯をあてて開花をおくらせる電照菊"],
+  ["apple","fruit","りんご","",2,"青森県。すずしい気候に合う。2位は長野県"],
+  ["mikan","fruit","みかん","",30,"和歌山県。あたたかい地方の山の斜面でつくる。愛媛県・静岡県も多い"],
+  ["grape","fruit","ぶどう","",19,"山梨県。水はけのよい甲府盆地の扇状地でつくる"],
+  ["peach","fruit","もも","",19,"山梨県。2位は福島県"],
+  ["cherry","fruit","さくらんぼ","",6,"山形県。全国の7割ほどをつくる"],
+  ["pear","fruit","西洋なし","せいようなし",6,"山形県。「ラ・フランス」で知られる"],
+  ["ume","fruit","うめ","",30,"和歌山県。「南高梅」で知られる"],
+  ["melon","fruit","メロン","",8,"茨城県。2位は熊本県、3位は北海道"],
+  ["pineapple","fruit","パイナップル","",47,"沖縄県。国内でつくっているのはほぼ沖縄県だけ"],
+  ["dairy","sea","<em>乳牛</em>（乳用牛）の飼育頭数が全国一の都道府県は？","にゅうぎゅう",1,"北海道。根釧台地などで酪農がさかん"],
+  ["pig","sea","<em>豚</em>の飼育頭数が全国一の都道府県は？","ぶた",46,"鹿児島県。2位は宮崎県。シラス台地で畜産がさかん"],
+  ["kiso","sea","<em>木曽ひのき</em>（天然の三大美林）がある都道府県は？","きそひのき",20,"長野県。ほかの天然の三大美林は秋田すぎ（秋田県）・青森ひば（青森県）"],
+  ["akita","sea","<em>秋田すぎ</em>（天然の三大美林）がある都道府県は？","あきたすぎ",5,"秋田県。米代川の流域に広がる"],
+  ["yoshino","sea","<em>吉野すぎ</em>（人工の三大美林）がある都道府県は？","よしのすぎ",29,"奈良県。ほかの人工の三大美林は天竜すぎ（静岡県）・尾鷲ひのき（三重県）"],
+  ["choshi","sea","水あげ量が日本一の漁港、<em>銚子港</em>がある都道府県は？","ちょうしこう",12,"千葉県。沖で暖流の黒潮と寒流の親潮がぶつかり、よい漁場になる"],
+  ["yaizu","sea","まぐろ・かつおの水あげで有名な<em>焼津港</em>がある都道府県は？","やいづこう",22,"静岡県。遠洋漁業の基地"],
+  ["hachinohe","sea","<em>八戸港</em>（いか・さばの水あげが多い）がある都道府県は？","はちのへこう",2,"青森県。太平洋側の漁港"],
+  ["sakaiminato","sea","日本海側の大きな漁港、<em>境港</em>がある都道府県は？","さかいみなとこう",31,"鳥取県。かにの水あげで知られる"],
+  ["oyster","sea","<em>かき</em>の養殖が全国一の都道府県は？","",34,"広島県。おだやかな瀬戸内海の広島湾でいかだを使って育てる"],
+  ["nori","sea","<em>のり</em>の養殖が全国一の都道府県は？","",41,"佐賀県。有明海の遠浅の海で育てる"],
+  ["output","maker","<em>製造品出荷額</em>が全国一の都道府県は？","せいぞうひんしゅっかがく",23,"愛知県。豊田市の自動車工業を中心とする中京工業地帯"],
+  ["keiyo","maker","<em>京葉工業地域</em>の中心の都道府県は？","けいようこうぎょうちいき",12,"千葉県。東京湾の東岸の埋め立て地に化学・鉄鋼の工場が並ぶ"],
+  ["tokai","maker","<em>東海工業地域</em>の中心の都道府県は？","とうかいこうぎょうちいき",22,"静岡県。浜松市の楽器・オートバイ、富士市の製紙"],
+  ["kitakyu","maker","<em>北九州工業地帯（地域）</em>の中心の都道府県は？","きたきゅうしゅう",40,"福岡県。官営の八幡製鉄所（1901年）から始まった"],
+  ["kashima","maker","<em>鹿島臨海工業地域</em>がある都道府県は？","かしまりんかいこうぎょうちいき",8,"茨城県。砂浜をほりこんでつくった港に鉄鋼・石油化学の工場"],
+  ["mizushima","maker","<em>水島</em>（倉敷市）の石油化学コンビナートがある都道府県は？","みずしま",33,"岡山県。瀬戸内工業地域の中心のひとつ"],
+  ["sabae","maker","めがねフレームの産地、<em>鯖江市</em>がある都道府県は？","さばえし",18,"福井県。国産めがねフレームの9割ほどをつくる"],
+  ["imabari","maker","タオルの産地、<em>今治市</em>がある都道府県は？","いまばりし",38,"愛媛県。今治タオルで知られる"],
+  ["tsubame","maker","金属洋食器の産地、<em>燕市</em>がある都道府県は？","つばめし",15,"新潟県。スプーン・フォークなど。となりの三条市は刃物"],
+  ["nanbu","craft","南部鉄器","なんぶてっき",3,"岩手県（盛岡市・奥州市）の鉄びんなど"],
+  ["tendo","craft","将棋の駒（天童）","てんどう",6,"山形県天童市。全国の将棋の駒のほとんどをつくる"],
+  ["aizu","craft","会津塗","あいづぬり",7,"福島県（会津若松市）の漆器"],
+  ["mashiko","craft","益子焼","ましこやき",9,"栃木県益子町の焼き物"],
+  ["wajima","craft","輪島塗","わじまぬり",17,"石川県輪島市の漆器。石川県は九谷焼も有名"],
+  ["shigaraki","craft","信楽焼","しがらきやき",25,"滋賀県甲賀市。たぬきの置物で知られる"],
+  ["nishijin","craft","西陣織","にしじんおり",26,"京都府（京都市）の織物。京都府は清水焼・京友禅も"],
+  ["bizen","craft","備前焼","びぜんやき",33,"岡山県備前市の焼き物。釉薬（うわぐすり）を使わない"],
+  ["arita","craft","有田焼","ありたやき",41,"佐賀県有田町の焼き物（伊万里焼）"],
+  ["hakata","craft","博多人形","はかたにんぎょう",40,"福岡県（福岡市）の人形"],
+].map(([id, cat, word, kana, pref, note]) => ({id, cat, word, kana, pref, note}));
+const industryOf = id => INDUSTRY.find(f => f.id === id);
+const industryName = f => (f.word.match(/<em>(.*?)<\/em>/) || [0, f.word])[1];   // 結果の一覧に出す短い名前
 
 const TERRAIN_CATS = { mount: "山地・山脈・山", river: "川", plain: "平野" };
 /* ---------- コース（地理）。出題数・完了・マスターの条件はここで管理 ----------
@@ -366,7 +437,11 @@ const COURSES = [
    rules:["山地・山脈（11）・川（10）・平野（10）の3ステージ。地図に出た図形の名前を4択で答える", "ステージ👑：そのステージをヒントなしで全問正解",
           "👑地形マスター：3ステージすべて👑", "完了：3ステージすべてを最後まで解く",
           "図形は教材の略地図程度のおおまかな形（石狩川・最上川・利根川は Natural Earth の線）"]},
-  {id:"industry", name:"農林水産業・工業などの産業", from:"g5", ready:false}
+  {id:"industry", name:"農林水産業・工業", master:"産業マスター", from:"g5", ready:true, stages:true, unlock:{course:"terrain", need:"complete"},
+   stageList:Object.entries(INDUSTRY_CATS).map(([id, c]) => ({id, cat:id, name:c.name, codes:range(1,47)})),
+   rules:[`5ステージ（全${INDUSTRY.length}問）。生産量が全国一の都道府県や、工業地域・伝統工芸品の場所を地図でタップ`, "ステージ👑：そのステージをヒントなしで全問正解",
+          "👑産業マスター：5ステージすべて👑", "完了：5ステージすべてを最後まで解く",
+          "順位は2020年代前半の統計で、毎年ほぼ入れかわらないものだけを出題"]}
 ];
 const courseOf = id => COURSES.find(c => c.id === id);
 // 歴史は地理とは別コースで設計する（今回は準備中の表示のみ）
@@ -417,7 +492,7 @@ const STAGES = AREAS.filter(a => !a.wide);
 const stagesOf = c => c.stageList || STAGES;
 const stageDone = (courseId, areaId, need) => recsOf(courseId).some(r => { const s = (r.stage || {})[areaId]; return s && (need === "master" ? !!s.master : s.complete); });
 const stageCrowns = courseId => stagesOf(courseOf(courseId)).filter(a => stageDone(courseId, a.id, "master")).length;
-const prefOfKey = (courseId, key) => courseId === "designated" ? CITIES.designated[key][2] : courseId === "terrain" ? (TERRAIN.find(f => f.id === key) || {}).pref : +key;
+const prefOfKey = (courseId, key) => courseId === "designated" ? CITIES.designated[key][2] : courseId === "terrain" ? (TERRAIN.find(f => f.id === key) || {}).pref : courseId === "industry" ? (industryOf(key) || {}).pref : +key;
 const fullCount = courseId => QUIZ_TYPES[courseId].make(range(1,47)).length;
 function prefLevels() {
   const lv = {}; PREFS.forEach(p => lv[p.code] = 0);
@@ -963,7 +1038,7 @@ function renderProgress(){
 }
 
 // 下段に出す出題文（問題文＋よみ）
-const askBlock = () => `<div class="ask"><span class="q">${quiz.q.text}</span><span class="kana">${quiz.q.sub || ""}</span></div>`;
+const askBlock = () => `<div class="ask"><span class="q${quiz.q.text.replace(/<[^>]+>/g, "").length > 18 ? " long" : ""}">${quiz.q.text}</span><span class="kana">${quiz.q.sub || ""}</span></div>`;
 
 function nextQ() {
   eyeOff(); clearTag();
@@ -1103,7 +1178,7 @@ function result() {
   const opened = COURSES.filter(c => before.includes(c.id) && unlocked(c));
   const msg = newMaster ? `${crown(course)}！` : newStage ? `👑${quiz.area.name}ステージ クリア！` : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしで👑マスター" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
   const nextStage = quiz.stage ? stagesOf(course)[stagesOf(course).indexOf(quiz.area) + 1] : null;
-  const label = l => course.id === "terrain" ? TERRAIN.find(f => f.id === l.key).name : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
+  const label = l => course.id === "terrain" ? TERRAIN.find(f => f.id === l.key).name : course.id === "industry" ? `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）` : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
   top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}　けっか</span></div>${debugBtn()}${muteBtn()}`;
   bindBar();
   clearmsg.firstChild.textContent = msg.replace(" ", "\n"); clearmsg.hidden = false;
