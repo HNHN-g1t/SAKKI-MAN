@@ -9,7 +9,7 @@
 <style>
 /* 白地図（受験用の白い地図）を机に広げたイメージ：海の青＋白い陸＋黒い県境。上に問題、下に答えのシート */
 :root{
-  --bg:#dcedf5; --sea:#bcdcec; --land:#fdfcf7; --land-dim:#e4ebee; --line:#2c3d4a;
+  --bg:#e3e5e7; --sea:#bcdcec; --land:#fdfcf7; --land-dim:#e4ebee; --land-none:#c9cdd1; --line:#2c3d4a;
   --ink:#1d2b35; --muted:#5a6d7a; --sheet:#ffffff; --sheet-line:#c9dbe4;
   --accent:#f2a516; --accent-ink:#4a3000; --ok:#2e9a58; --ok-soft:#bfe6cc; --ng:#d9472f; --ng-soft:#f7c9bd;
   --r1:#cfe3f7; --r2:#f6d7d9; --r3:#d9efcf; --r4:#f7e6bf; --r5:#e3d9f3; --r6:#cdeee9; --r7:#f6dcc6;
@@ -18,13 +18,13 @@
   --shadow:0 -6px 24px rgba(30,60,80,.12);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0b1d2a; --sea:#12304a; --land:#2b3c49; --land-dim:#1b2b37; --line:#a9c0cf;
+  --bg:#1c1f22; --sea:#12304a; --land:#2b3c49; --land-dim:#1b2b37; --land-none:#454a50; --line:#a9c0cf;
   --ink:#e9f1f6; --muted:#9bb0be; --sheet:#152836; --sheet-line:#2b4558;
   --accent:#f5b53a; --accent-ink:#2a1a00; --ok:#4cc27b; --ok-soft:#24543a; --ng:#f06a52; --ng-soft:#5b2a22;
   --r1:#2c4a66; --r2:#5a3540; --r3:#355239; --r4:#5a4a26; --r5:#433a5e; --r6:#265250; --r7:#5a3f2d;
   --shadow:0 -6px 24px rgba(0,0,0,.4); color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0b1d2a; --sea:#12304a; --land:#2b3c49; --land-dim:#1b2b37; --line:#a9c0cf;
+  --bg:#1c1f22; --sea:#12304a; --land:#2b3c49; --land-dim:#1b2b37; --land-none:#454a50; --line:#a9c0cf;
   --ink:#e9f1f6; --muted:#9bb0be; --sheet:#152836; --sheet-line:#2b4558;
   --accent:#f5b53a; --accent-ink:#2a1a00; --ok:#4cc27b; --ok-soft:#24543a; --ng:#f06a52; --ng-soft:#5b2a22;
   --r1:#2c4a66; --r2:#5a3540; --r3:#355239; --r4:#5a4a26; --r5:#433a5e; --r6:#265250; --r7:#5a3f2d;
@@ -54,7 +54,7 @@ svg#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;displ
 svg#map:active{cursor:grabbing}
 .pref{fill:var(--land);stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;transition:fill .25s}
 /* コレクション：⓪グレー → ①地方の色 → ②色・陰影がリッチに（data-lv＝その県で正解したコースの数） */
-.explore .pref{fill:var(--land-dim)}
+.explore .pref{fill:var(--land-none)}
 .explore .pref:not([data-lv="0"])[data-r="1"]{fill:var(--r1)} .explore .pref:not([data-lv="0"])[data-r="2"]{fill:var(--r2)} .explore .pref:not([data-lv="0"])[data-r="3"]{fill:var(--r3)}
 .explore .pref:not([data-lv="0"])[data-r="4"]{fill:var(--r4)} .explore .pref:not([data-lv="0"])[data-r="5"]{fill:var(--r5)} .explore .pref:not([data-lv="0"])[data-r="6"]{fill:var(--r6)} .explore .pref:not([data-lv="0"])[data-r="7"]{fill:var(--r7)}
 .explore .pref[data-lv="2"]{filter:saturate(1.8) brightness(.95)}
@@ -274,20 +274,21 @@ const QUIZ_TYPES = {
 
 /* ---------- コース（地理）。出題数・完了・マスターの条件はここで管理 ----------
    from：このコースを出す最初のモード（仮設定）／unlock：前のコースで何を満たせば開くか
-     need:"master"   … 全国の挑戦で全問正解
+     need:"master"   … 全国の挑戦でヒントを使わず全問正解（👑マスター）
      need:"complete" … 全国の挑戦を最後まで解いた（正誤は問わない）
    ready:false は準備中（問題を足すときは QUIZ_TYPES に make を書いて ready:true にする）
-   地方ごとの練習・まちがえた問題だけの再挑戦は、完了にもマスターにも数えない */
+   地方ごとの練習・まちがえた問題だけの再挑戦は、完了にもマスターにも数えない
+   👑マスターはヒント（目ボタン）を1回も使わずに全国の挑戦を全問正解したときだけ。ヒントありの全問正解はマスターにしない */
 const COURSES = [
   {id:"prefName", name:"県名タップ", master:"県名マスター", from:"g4", ready:true,
    rules:["全国の挑戦：47都道府県を1回ずつ、順番はランダム", "完了：全国47問を最後まで解く",
-          "マスター：全国47問すべて正解で「県名マスター」→ 県庁所在地コースが開く"]},
+          "👑マスター：ヒントなしで全国47問すべて正解 → 県庁所在地コースが開く"]},
   {id:"capital", name:"県庁所在地 4択", master:"県庁所在地マスター", from:"g4", ready:true, unlock:{course:"prefName", need:"master"},
    rules:["全国の挑戦：47都道府県を1回ずつ。選択肢の並びは毎回ランダム", "完了：全国47問を最後まで解く（→ 政令指定都市コースが開く）",
-          "マスター：全国47問すべて正解", "東京都は「都庁がある区」を答える"]},
+          "👑マスター：ヒントなしで全国47問すべて正解", "東京都は「都庁がある区」を答える"]},
   {id:"designated", name:"政令指定都市", master:"政令指定都市マスター", from:"g5", ready:true, unlock:{course:"capital", need:"complete"},
    rules:[`全国の挑戦：政令指定都市${CITIES.designated.length}市を1回ずつ。同じ県に複数あっても都市ごとに出す`,
-          `完了：全国${CITIES.designated.length}問を最後まで解く`, `マスター：全国${CITIES.designated.length}問すべて正解（ある都道府県をタップ）`,
+          `完了：全国${CITIES.designated.length}問を最後まで解く`, `👑マスター：ヒントなしで全国${CITIES.designated.length}問すべて正解（ある都道府県をタップ）`,
           "都市そのものの位置を答える問題は準備中（記録は別に分けて持つ）"]},
   {id:"terrain", name:"山・河川・平野", from:"g5", ready:false},
   {id:"industry", name:"農林水産業・工業などの産業", from:"g5", ready:false}
@@ -312,6 +313,7 @@ const FINAL = null;
    best・miss は v4（モード導入前）からの記録。消さずに残し、best は地方の練習の参考表示だけに使う（マスター判定には使わない）
    rec[モードid][コースid] = { best:{地方id:ヒントなし正解数}, got:{key:1}（正解したことがある）, clean:{key:1}（ヒントなしで正解）,
                               miss:{key:回数}, complete:bool, master:null|{at, clean} }
+   master は clean:true（ヒントなし）のものだけをマスターとして扱う（以前の clean:false の記録は無視）
    designated の got は「ある都道府県を答えた」達成。都市の位置を答えた達成は gotPos に分けて持つ予定 */
 const STORE_KEY = "jmq-v1";
 let store = { best:{}, miss:{}, mute:false, mode:null, rec:{} };
@@ -326,11 +328,12 @@ const lowerModes = () => MODES.filter(m => m.rank <= curMode().rank);
 const recsOf = courseId => lowerModes().map(m => (store.rec[m.id] || {})[courseId]).filter(Boolean);
 const inMode = c => modeOf(c.from).rank <= curMode().rank;
 function achieved(courseId, need) {
-  return recsOf(courseId).some(r => need === "master" ? !!r.master : (r.complete || !!r.master));
+  return recsOf(courseId).some(r => need === "master" ? isMaster(r) : (r.complete || !!r.master));
 }
 const unlocked = c => !c.unlock || achieved(c.unlock.course, c.unlock.need);
-// ヒントなしのマスターを優先して返す
-const masterOf = courseId => recsOf(courseId).map(r => r.master).filter(Boolean).sort((a,b) => b.clean - a.clean)[0] || null;
+const isMaster = r => !!(r && r.master && r.master.clean);
+const masterOf = courseId => (recsOf(courseId).find(isMaster) || {}).master || null;
+const crown = c => `👑${c.master}`;
 const prefOfKey = (courseId, key) => courseId === "designated" ? CITIES.designated[key][2] : +key;
 const fullCount = courseId => QUIZ_TYPES[courseId].make(range(1,47)).length;
 function prefLevels() {
@@ -617,10 +620,10 @@ function courseStatus(c) {
   if (!inMode(c)) return {text: `${modeOf(c.from).name}から`, off: true};
   if (!unlocked(c)) {
     const pre = courseOf(c.unlock.course);
-    return {text: c.unlock.need === "master" ? `${pre.master}で開く` : `${pre.name}の全国の挑戦を終えると開く`, off: true};
+    return {text: c.unlock.need === "master" ? `${crown(pre)}で開く` : `${pre.name}の全国の挑戦を終えると開く`, off: true};
   }
   const m = masterOf(c.id);
-  if (m) return {text: m.clean ? `${c.master}（ヒントなし）` : `${c.master}（ヒントあり）`, done: true};
+  if (m) return {text: crown(c), done: true};
   const got = new Set(); recsOf(c.id).forEach(r => Object.keys(r.got).forEach(k => got.add(k)));
   return {text: `正解した問題 ${got.size} / ${fullCount(c.id)}`};
 }
@@ -638,11 +641,19 @@ function home() {
     <h2>${TRACKS[0].name}</h2>
     <div class="courses">${COURSES.map((c, i) => {
       const s = courseStatus(c);
-      return `<button class="course${s.done ? " done" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${c.name}<small>${s.text}</small></span></button>`;
+      return `<button class="course${s.done ? " done" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${s.done ? "👑" : i+1}</b><span>${c.name}<small>${s.text}</small></span></button>`;
     }).join("")}</div>
     <h2>${TRACKS[1].name}</h2><p class="hint">${TRACKS[1].note}</p>
-    <h2>ごほうび</h2><p class="hint">新しいタップゲーム：準備中</p>`;
+    <h2>ごほうび</h2><p class="hint">新しいタップゲーム：準備中</p>
+    <h2>リセット</h2><div class="row" id="resetRow"><button class="btn" id="reset" type="button">進捗をぜんぶ消す</button></div>`;
   byId("chgMode").onclick = modeSelect;
+  // 進捗の全初期化（すべてのモードの記録・👑・地図の色、v4 の記録も消す）。モードと音の設定は残す。押しまちがい防止に2段階
+  byId("reset").onclick = () => {
+    byId("resetRow").innerHTML = `<p class="hint" style="flex-basis:100%">すべてのモードの記録・👑マスター・地図の色が消えて、最初の状態にもどります。</p>
+      <button class="btn primary" id="resetYes" type="button">消す</button><button class="btn" id="resetNo" type="button">やめる</button>`;
+    byId("resetYes").onclick = () => { store.rec = {}; store.best = {}; store.miss = {}; save(); home(); };
+    byId("resetNo").onclick = home;
+  };
   sheet.querySelectorAll("[data-course]").forEach(b => b.onclick = () => coursePage(courseOf(b.dataset.course)));
 }
 
@@ -655,7 +666,7 @@ function coursePage(c) {
   bindBar(); byId("back").onclick = home;
   const regions = AREAS.filter(a => !a.wide).map(a => ({a, n: type.make(a.codes).length})).filter(x => x.n > 0);
   sheet.innerHTML = `
-    <div class="modebar">${m ? `<span class="medal${m.clean ? "" : " hinted"}">${c.master}${m.clean ? "（ヒントなし）" : "（ヒントあり）"}</span>` : ""}</div>
+    <div class="modebar">${m ? `<span class="medal">${crown(c)}</span>` : ""}</div>
     <div class="chips"><button class="chip wide" type="button" id="master">全国の挑戦<small>${total}問${best.zenkoku != null ? `・ベスト ${best.zenkoku}/${total}` : ""}</small></button></div>
     <h2>地方ごとの練習</h2>
     <div class="chips">${regions.map(({a, n}) => {
@@ -664,7 +675,7 @@ function coursePage(c) {
       return `<button class="chip" type="button" data-area="${a.id}">${a.name}<small>${b >= 0 ? `ベスト ${b}/${n}` : `${n}問`}</small></button>`;
     }).join("")}</div>
     <h2>このコースのきまり</h2>
-    <ul class="rules">${c.rules.map(r => `<li>${r}</li>`).join("")}<li>目のボタン（ヒント）を使った問題は記録し、ヒントなしの達成と分けて残す</li></ul>`;
+    <ul class="rules">${c.rules.map(r => `<li>${r}</li>`).join("")}<li>目のボタン（ヒント）を1回でも使うと👑マスターにはならない（正解は記録に残り、地図の色もつく）</li></ul>`;
   byId("master").onclick = () => startQuiz(c, zen, zen.codes, {master: true});
   sheet.querySelectorAll("[data-area]").forEach(b => b.onclick = () => { const a = AREAS.find(x => x.id === b.dataset.area); startQuiz(c, a, a.codes); });
 }
@@ -809,26 +820,25 @@ function result() {
   const before = COURSES.filter(c => c.ready && inMode(c) && !unlocked(c)).map(c => c.id);
   let newMaster = null;
   if (quiz.master) {
-    // 全国の挑戦を最後まで解いた。47（または全都市）を重複なく全問正解したときだけマスター
+    // 全国の挑戦を最後まで解いた。47（または全都市）を重複なく、ヒントなしで全問正解したときだけ👑マスター
     r.complete = true;
     r.best.zenkoku = Math.max(r.best.zenkoku ?? 0, clean);
     const keys = new Set(quiz.log.map(l => l.key));
-    if (correct === total && keys.size === total && total === fullCount(course.id)) {
-      const isClean = clean === total;
-      if (!r.master || (isClean && !r.master.clean)) { newMaster = {at: Date.now(), clean: isClean}; r.master = newMaster; }
+    if (clean === total && keys.size === total && total === fullCount(course.id) && !isMaster(r)) {
+      newMaster = {at: Date.now(), clean: true}; r.master = newMaster;
     }
   } else if (!quiz.opts.keys && !quiz.area.wide) {
     r.best[quiz.area.id] = Math.max(r.best[quiz.area.id] ?? 0, clean);
   }
   save();
   const opened = COURSES.filter(c => before.includes(c.id) && unlocked(c));
-  const msg = newMaster ? `${course.master}！` : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ 次はヒントなしで！" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
+  const msg = newMaster ? `${crown(course)}！` : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしで👑マスター" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
   const label = l => course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
   top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${course.name}・${quiz.master ? "全国の挑戦" : quiz.area.name}　けっか</span><span class="q">${msg}</span></div>${debugBtn()}${muteBtn()}`;
   bindBar();
   sheet.innerHTML = `
     <div class="score"><span class="big">${correct}<small style="font-size:1.2rem"> / ${total}</small></span><span class="msg">ヒントなし正解 ${clean}問・最高 ${quiz.maxCombo}れんぞく</span></div>
-    ${newMaster ? `<div class="modebar"><span class="medal${newMaster.clean ? "" : " hinted"}">${course.master}${newMaster.clean ? "（ヒントなし）" : "（ヒントあり）"}</span></div>` : ""}
+    ${newMaster ? `<div class="modebar"><span class="medal">${crown(course)}</span></div>` : ""}
     ${opened.map(c => `<p class="hint"><b>「${c.name}」コースが開いたよ！</b></p>`).join("")}
     ${missed.length ? `<h2>まちがえた問題</h2><div class="misslist">${missed.map(l => `<span>${label(l)}</span>`).join("")}</div>` : ""}
     <div class="row">
