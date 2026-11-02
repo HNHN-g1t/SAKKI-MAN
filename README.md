@@ -4,7 +4,7 @@
 
 ## アプリ（スマホで開く）
 
-- [日本地図タップクイズ](https://hnhn-g1t.github.io/SAKKI-MAN/japan-map-quiz/) … 出された県を地図でタップ（[仕様](apps/japan-map-quiz/HANDOFF.md)）
+- [日本地図タップクイズ](https://sakki-man.vercel.app/japan-map-quiz/) … 出された県を地図でタップ（[仕様](apps/japan-map-quiz/HANDOFF.md)）
 
 ## ドキュメント
 
@@ -23,6 +23,7 @@
 
 ## 最近の変更
 
+- 2026-11-02 Claude：Vercel と連携。https://sakki-man.vercel.app/ で公開（main に push で自動反映）
 - 2026-11-02 Claude：日本地図タップクイズ（v4）を apps/ に追加。main に push すると GitHub Pages へ自動公開
 - 2026-11-02 Claude：キャラクター「サッ記マン」の設定を追加。動画の台本の型をボソボソタイム入りに
 - 2026-11-02 Claude：リポジトリ作成。アプリ案・ショート動画案・未決事項の初版

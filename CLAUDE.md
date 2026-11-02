@@ -4,10 +4,14 @@
 
 ## 公開URL（スマホで確認する場所）
 
-- 入口: https://hnhn-g1t.github.io/SAKKI-MAN/
-- 日本地図タップクイズ: https://hnhn-g1t.github.io/SAKKI-MAN/japan-map-quiz/
+メインは Vercel（ユーザーがスマホで見るのはこちら）:
 
-main に push すると `.github/workflows/pages.yml` がビルドして公開する（1〜2分）。
+- 入口: https://sakki-man.vercel.app/
+- 日本地図タップクイズ: https://sakki-man.vercel.app/japan-map-quiz/
+
+予備に GitHub Pages（https://hnhn-g1t.github.io/SAKKI-MAN/）。
+
+main に push すると、Vercel（`vercel.json`）と GitHub Actions（`.github/workflows/pages.yml`）の両方が `tools/build_site.py` でビルドして公開する（1〜2分）。
 
 ## 作業ルール
 
@@ -32,4 +36,4 @@ main に push すると `.github/workflows/pages.yml` がビルドして公開�
 
 ## アプリを増やすとき
 
-`apps/<名前>/` に置き、`pages.yml` の「公開用フォルダを組み立てる」と `site/index.html` のリンクに1行ずつ足す。
+`apps/<名前>/` に置き、`tools/build_site.py` の `APPS` と `site/index.html` のリンクに1行ずつ足す。
