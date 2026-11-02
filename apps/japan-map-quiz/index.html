@@ -146,6 +146,11 @@ svg:not(.explore) .region-line{display:none}
 .combo{position:absolute;left:50%;top:var(--s16);transform:translateX(-50%);font-family:var(--display);font-size:var(--fs20);color:var(--on-brand);background:var(--brand);border:var(--bw) solid var(--on-brand);padding:var(--s4) var(--s16);border-radius:var(--r-pill);pointer-events:none}
 .combo.pop{animation:pop .3s ease-out 1}
 @keyframes pop{50%{transform:translateX(-50%) scale(1.2)}}
+/* けっか画面の大きな一言：地図の真ん中に札で出す。地図は触れるように素通し */
+.clearmsg{position:absolute;inset:0 0 var(--r-sheet);display:grid;place-items:center;padding:var(--s16);pointer-events:none}
+.clearmsg[hidden]{display:none}
+.clearmsg span{max-width:min(90%,420px);text-align:center;font-family:var(--display);font-size:var(--fs28);line-height:1.35;white-space:pre-line;word-break:keep-all;overflow-wrap:anywhere;color:var(--on-brand);background:var(--brand);border:var(--bw) solid var(--on-brand);border-radius:var(--r-sheet);padding:var(--s16) var(--s24);box-shadow:0 6px 0 var(--on-brand);animation:clearpop .4s ease-out 1}
+@keyframes clearpop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
 
 /* 下のシート */
 .sheet{position:relative;z-index:1;margin-top:calc(-1 * var(--r-sheet));background:var(--paper);border-radius:var(--r-sheet) var(--r-sheet) 0 0;border-top:var(--bw) solid var(--ink);padding-block:var(--s16) calc(var(--s16) + env(safe-area-inset-bottom,0px));padding-left:max(var(--s16),env(safe-area-inset-left,0px));padding-right:max(var(--s16),env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:var(--s12);max-height:44vh;overflow-y:auto}
@@ -219,6 +224,7 @@ svg:not(.explore) .region-line{display:none}
       <g class="tag" id="tag"></g>
     </svg>
     <div class="combo" id="combo" hidden></div>
+    <div class="clearmsg" id="clearmsg" hidden><span></span></div>
     <button class="zoomreset" id="zoomreset" type="button">ぜんこく</button>
     <button class="eye" id="eye" type="button" aria-label="押している間だけ県名を表示">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
@@ -643,7 +649,7 @@ function showTag(code, text) {
 const clearTag = () => gTag.innerHTML = "";
 
 /* ---------- 画面 ---------- */
-const top_ = document.getElementById("top"), sheet = document.getElementById("sheet"), combo = document.getElementById("combo");
+const top_ = document.getElementById("top"), sheet = document.getElementById("sheet"), combo = document.getElementById("combo"), clearmsg = document.getElementById("clearmsg");
 let mode = "home", quiz = null, selected = null;
 
 // 前のクイズの遅延処理を、ホームや次のクイズへ持ち越さない。
@@ -742,7 +748,7 @@ function bindBar() {
 // ホーム系の画面（モード選択・コース一覧・コース）に共通：地図をコレクションの色で見せ、県をさわると名前を出す
 function toHomeScreen(box = FULL) {
   cancelQuizTimers(); eyeOff();
-  mode = "home"; quiz = null; selected = null; clearTag(); combo.hidden = true; pbar.innerHTML = ""; showFeature(null);
+  mode = "home"; quiz = null; selected = null; clearTag(); combo.hidden = true; clearmsg.hidden = true; pbar.innerHTML = ""; showFeature(null);
   JapanMap.resetColors(); svg.classList.add("explore"); svg.classList.remove("region-quiz");
   Object.values(labelEl).forEach(t => t.classList.remove("off"));
   const lv = prefLevels();
@@ -847,7 +853,7 @@ function startQuiz(course, area, codes, opts={}) {
   cancelQuizTimers(); eyeOff();
   const type = QUIZ_TYPES[course.id];
   sheet.classList.remove("home"); showFeature(null);
-  mode = "quiz"; selected = null; clearTag(); JapanMap.resetColors(); svg.classList.remove("explore");
+  mode = "quiz"; selected = null; clearTag(); clearmsg.hidden = true; JapanMap.resetColors(); svg.classList.remove("explore");
   const inArea = new Set(area.codes);
   PREFS.forEach(p => { pathEl[p.code].classList.toggle("off", !inArea.has(p.code)); labelEl[p.code].classList.toggle("off", !inArea.has(p.code)); });
   homeBox = area.wide ? FULL : unionBox(area.codes); fitLater(homeBox);
@@ -1010,8 +1016,9 @@ function result() {
   const msg = newMaster ? `${crown(course)}！` : newStage ? `👑${quiz.area.name}ステージ クリア！` : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしで👑マスター" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
   const nextStage = quiz.stage ? stagesOf(course)[stagesOf(course).indexOf(quiz.area) + 1] : null;
   const label = l => course.id === "terrain" ? TERRAIN.find(f => f.id === l.key).name : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
-  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}　けっか</span><span class="q shout">${msg}</span></div>${debugBtn()}${muteBtn()}`;
+  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}　けっか</span></div>${debugBtn()}${muteBtn()}`;
   bindBar();
+  clearmsg.firstChild.textContent = msg.replace(" ", "\n"); clearmsg.hidden = false;
   sheet.innerHTML = `
     <div class="score"><span class="big">${correct}<small style="font-size:1.2rem"> / ${total}</small></span><span class="msg">ヒントなし正解 ${clean}問・最高 ${quiz.maxCombo}れんぞく</span></div>
     ${newStage || newMaster ? `<div class="modebar">${newStage ? `<span class="medal">👑${quiz.area.name}ステージ</span>` : ""}${newMaster ? `<span class="medal">${crown(course)}</span>` : ""}</div>` : ""}
