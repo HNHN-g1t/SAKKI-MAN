@@ -37,6 +37,7 @@ main に push すると、Vercel（`vercel.json`）と GitHub Actions（`.github
 ## ファビコン
 
 元画像は `site/favicon-source.webp`。差し替えたら `py -3 tools/build_icons.py`（Pillow が必要）で `site/` に各サイズを作り直す。`site/` のファイルは公開サイトの直下に置かれる（元画像は除く）。アプリのページからは `../favicon.ico` などで参照する。
+スマホはアイコンを強く覚え込むので、画像を差し替えたら `site/index.html`・`src/template.html`・`site/manifest.webmanifest` の `?v=` の数字を上げる。
 
 ## アプリを増やすとき
 
