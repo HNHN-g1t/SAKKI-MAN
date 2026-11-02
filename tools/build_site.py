@@ -20,7 +20,10 @@ subprocess.run([sys.executable, str(ROOT / "apps/japan-map-quiz/tools/build.py")
 
 shutil.rmtree(OUT, ignore_errors=True)
 OUT.mkdir(exist_ok=True)   # Windows では rmtree 直後に作り直せないことがあるため
-shutil.copy(ROOT / "site/index.html", OUT / "index.html")
+# 入口ページとファビコン（元画像 favicon-source.webp は公開しない）
+for f in (ROOT / "site").iterdir():
+    if f.is_file() and f.name != "favicon-source.webp":
+        shutil.copy(f, OUT / f.name)
 for name, src in APPS.items():
     (OUT / name).mkdir(exist_ok=True)
     shutil.copy(ROOT / src / "index.html", OUT / name / "index.html")

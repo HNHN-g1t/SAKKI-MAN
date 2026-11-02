@@ -34,6 +34,10 @@ main に push すると、Vercel（`vercel.json`）と GitHub Actions（`.github
 - ビルドした `index.html` も必ずコミットする。忘れると Actions の「ビルド忘れチェック」で公開が止まる
 - 検証: ビルド → ブラウザで index.html を開き、HANDOFF.md「動作確認」の観点（県48要素・375px幅・沖縄の切り替え・目ボタン・コンソールエラーなし）を見る
 
+## ファビコン
+
+元画像は `site/favicon-source.webp`。差し替えたら `py -3 tools/build_icons.py`（Pillow が必要）で `site/` に各サイズを作り直す。`site/` のファイルは公開サイトの直下に置かれる（元画像は除く）。アプリのページからは `../favicon.ico` などで参照する。
+
 ## アプリを増やすとき
 
 `apps/<名前>/` に置き、`tools/build_site.py` の `APPS` と `site/index.html` のリンクに1行ずつ足す。
