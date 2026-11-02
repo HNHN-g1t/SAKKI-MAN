@@ -76,6 +76,10 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .btn.primary,.chip.wide{background:var(--brand);color:var(--on-brand);box-shadow:0 4px 0 var(--ink)}
 .btn.primary:active,.chip.wide:active{transform:translateY(4px);box-shadow:none}
 .linkbtn{border:0;background:none;color:var(--ink);font:700 var(--fs14) var(--body);text-decoration:underline;cursor:pointer;min-height:var(--tap);padding:0 var(--s4)}
+#toTitle{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:0;padding:0 var(--s8);line-height:1}
+#toTitle svg{width:20px;height:20px}
+#toTitle span{font-size:var(--fs12);font-weight:700}
+.btn.restart{flex:none;align-self:stretch;margin-top:var(--s4)}
 .iconbtn{flex:none;min-width:var(--tap);height:var(--tap);padding:0 var(--s12);white-space:nowrap;font-size:var(--fs14);display:grid;place-items:center}
 .iconbtn svg{width:24px;height:24px}
 .iconbtn.dbg-on{background:var(--brand);color:var(--on-brand)}
@@ -837,7 +841,7 @@ const byId = id => document.getElementById(id);
    「テスト」で今いる画面の単位を初めての状態に戻して遊べる。本当の記録には書かない。OFF は1タップ。保存はせず再読み込みで OFF */
 const DEBUG_PIN = "8282";
 let screenNow = {kind: "title"};   // 今いるホーム系の画面（テスト・切り替え後の描き直しに使う）
-function titleBtn(){ return `<button class="iconbtn" id="toTitle" type="button" aria-label="タイトル画面へ戻る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg></button>`; }
+function titleBtn(){ return `<button class="iconbtn" id="toTitle" type="button" aria-label="タイトル画面へ戻る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg><span>タイトル</span></button>`; }
 function debugBtn(){
   return `<span class="dbgbox" id="dbgbox"><button class="iconbtn${debug ? " dbg-on" : ""}" id="dbg" type="button" aria-pressed="${debug}" aria-label="デバッグモード">DBG</button>${debug ? `<button class="iconbtn" id="dbgTest" type="button" aria-label="この画面を初めての状態にする">テスト</button>` : ""}</span>`;
 }
@@ -930,7 +934,10 @@ function modeSelect() {
   sheet.innerHTML = `
     <h2>モードをえらんでね</h2>
     <div class="chips modes">${MODES.map(m => `<button class="chip${m.id === store.mode ? " now" : ""}" type="button" data-mode="${m.id}">${m.name}</button>`).join("")}</div>
-    <p class="hint">上のモードほど学べるコースがふえるよ（下のモードの内容もぜんぶ入っている）。学年ごとの範囲は仮の設定です。</p>`;
+    <p class="hint">上のモードほど学べるコースがふえるよ（下のモードの内容もぜんぶ入っている）。学年ごとの範囲は仮の設定です。</p>
+    <button class="btn restart" id="restart" type="button">↻ アプリを再起動</button>`;
+  // 再起動：ページを読みこみ直す。記録はこの端末に保存してあるので消えない
+  byId("restart").onclick = () => { bgmStop(); location.reload(); };
   sheet.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { store.mode = b.dataset.mode; save(); home(); });
 }
 
