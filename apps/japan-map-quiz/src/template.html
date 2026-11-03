@@ -166,6 +166,16 @@ svg:not(.explore) .region-line{display:none}
 .zoomreset{position:absolute;left:calc(var(--s8) + env(safe-area-inset-left,0px));top:var(--s4);padding:0 var(--s8);font-size:var(--fs16);border:0;background:none;box-shadow:none;color:#fff;text-shadow:0 0 2px #282727,0 0 2px #282727,0 1px 3px rgba(0,0,0,.6)}
 .combo{position:absolute;left:50%;top:var(--s16);transform:translateX(-50%);font-family:var(--display);font-size:var(--fs20);color:var(--on-brand);background:var(--brand);border:var(--bw) solid var(--on-brand);padding:var(--s4) var(--s16);border-radius:var(--r-pill);pointer-events:none}
 .combo.pop{animation:pop .3s ease-out 1}
+/* 雨温図の札：地図の上（「ぜんこく」の下）に出す。棒＝降水量（川の青）、折れ線＝平均気温（赤） */
+.chart{position:absolute;left:50%;top:60px;transform:translateX(-50%);width:min(340px,calc(100% - var(--s32)));box-sizing:border-box;background:var(--paper);color:var(--ink);border:var(--bw) solid var(--ink);border-radius:var(--r-btn);padding:var(--s8) var(--s8) var(--s4);pointer-events:none;z-index:1}
+.chart[hidden]{display:none}
+.chart svg{display:block;width:100%;height:auto}
+.chart p{margin:0;text-align:center;font-size:var(--fs12);font-weight:700;color:var(--muted)}
+.chart .cg{stroke:var(--line-soft);stroke-width:1}
+.chart .cl{fill:var(--muted);font-size:10px;font-family:var(--body)}
+.chart .cb{fill:var(--river)}
+.chart .ct{fill:none;stroke:var(--ng);stroke-width:2.5;stroke-linejoin:round}
+.chart .cd{fill:var(--ng)}
 @keyframes pop{50%{transform:translateX(-50%) scale(1.2)}}
 /* けっか画面の大きな一言：地図の真ん中に札で出す。地図は触れるように素通し */
 .clearmsg{position:absolute;inset:0 0 var(--r-sheet);display:grid;place-items:center;padding:var(--s16);pointer-events:none}
@@ -283,6 +293,7 @@ svg:not(.explore) .region-line{display:none}
       <g id="zooms"></g>
       <g class="tag" id="tag"></g>
     </svg>
+    <div class="chart" id="chart" hidden></div>
     <div class="combo" id="combo" hidden></div>
     <div class="clearmsg" id="clearmsg" hidden><span></span></div>
     <div class="toast" id="toast" role="status" hidden></div>
@@ -398,6 +409,35 @@ const QUIZ_TYPES = {
     // 出題停止（status:"stop"）の問題は出さない。出題数・完了・👑の判定もこの数で行う
     make: (codes, area) => industryLive().filter(f => (!area || !area.cat || f.cat === area.cat) && codes.includes(f.pref)).map(f => (
       { key: f.id, prefs: [f.pref], text: f.q || INDUSTRY_CATS[f.cat].ask(f.word), sub: f.kana, answers: [f.pref], explain: f.note }))
+  },
+  climate: {
+    title: "気候", kind: "choice",
+    // area.cat：zone＝地図で色をつけた地域の気候区分を答える／chart＝雨温図を見てどの都市かを答える
+    make: (codes, area) => {
+      const cat = area && area.cat;
+      const zones = (!cat || cat === "zone") ? CLIMATE_ZONES.map(z => ({ key: "zone:" + z.id, prefs: [z.codes[0]], zone: z.codes, sub: "",
+        choices: [[z.name, z.kana], ...shuffle(CLIMATE_ZONES.filter(o => o !== z)).slice(0, 3).map(o => [o.name, o.kana])], correct: z.name,
+        text: "色をつけた地域の<em>気候</em>は？", explain: `${z.name}：${z.note}` })) : [];
+      const charts = (!cat || cat === "chart") ? CLIMATE_CITIES.map(c => ({ key: "city:" + c.id, prefs: [c.pref], chart: c.id, sub: "",
+        choices: [[c.name, c.kana], ...shuffle(CLIMATE_CITIES.filter(o => o !== c)).slice(0, 3).map(o => [o.name, o.kana])], correct: c.name,
+        text: "この<em>雨温図</em>はどの都市？", explain: `${c.name}は${zoneOf(c.zone).name}。${zoneOf(c.zone).note}` })) : [];
+      return [...zones, ...charts];
+    }
+  },
+  general: {
+    title: "総合問題", kind: "choice",
+    // 地方ごとに、県庁所在地（4択）・河川など地形（4択）・農林水産業（タップ）・工業と伝統工芸（タップ）をまぜて出す。
+    // 毎回その地方の中からえらび直す。key は "cap:県コード" "ter:地形id" "ind:産業id"
+    make: (codes, area) => {
+      const pick = (arr, k) => shuffle(arr).slice(0, k);
+      const cap = pick(codes, 3).flatMap(c => QUIZ_TYPES.capital.make([c])).map(q => Object.assign(q, {key: "cap:" + q.key, kind: "choice"}));
+      const ters = QUIZ_TYPES.terrain.make(codes, null).filter(q => codes.includes(q.prefs[0]));
+      const ter = [...pick(ters.filter(q => TERRAIN.find(f => f.id === q.key).cat === "river"), 2), ...pick(ters.filter(q => TERRAIN.find(f => f.id === q.key).cat !== "river"), 2)].slice(0, 2)
+        .map(q => Object.assign(q, {key: "ter:" + q.key, kind: "choice"}));
+      const inds = QUIZ_TYPES.industry.make(codes, null).map(q => Object.assign(q, {cat: industryOf(q.key).cat, key: "ind:" + q.key, kind: "tap"}));
+      const agri = pick(inds.filter(q => ["farm", "fruit", "sea"].includes(q.cat)), 2), make = pick(inds.filter(q => ["maker", "craft"].includes(q.cat)), 2);
+      return [...cap, ...ter, ...agri, ...make];
+    }
   },
   designated: {
     title: "政令指定都市", kind: "tap",
@@ -557,6 +597,48 @@ const industryLive = () => INDUSTRY.filter(f => f.status !== "stop");   // 出�
 const industryName = f => (f.word.match(/<em>(.*?)<\/em>/) || [0, f.word])[1];   // 結果の一覧に出す短い名前
 
 const TERRAIN_CATS = { mount: "山地・山脈・山", river: "川", plain: "平野" };
+
+/* ---------- 気候（気候区分・雨温図） ----------
+   CLIMATE_ZONES：日本の6つの気候区分。codes は地図で色をつける「その気候の代表的な都道府県」（県の一部だけがあてはまる県は入れない）
+   CLIMATE_CITIES：雨温図に使う都市。気象庁「過去の気象データ 平年値（年・月ごとの値）」の 1991〜2020年の平年値
+     rain＝月ごとの降水量（mm）、temp＝月ごとの平均気温（℃）、year＝年の値 [降水量, 平均気温]（tools/check_climate.py で月の値と照合） */
+const CLIMATE_SRC = "気象庁「過去の気象データ検索 平年値（1991〜2020年）」";
+const CLIMATE_ZONES = [
+  {id:"hokkaido", name:"北海道の気候", kana:"ほっかいどうのきこう", codes:[1], note:"冬の寒さがきびしく、梅雨がほとんどない"},
+  {id:"japansea", name:"日本海側の気候", kana:"にほんかいがわのきこう", codes:[5, 6, 15, 16, 17, 18, 31, 32], note:"冬に北西の季節風の影響で雪や雨が多い"},
+  {id:"pacific", name:"太平洋側の気候", kana:"たいへいようがわのきこう", codes:[12, 13, 14, 22, 23, 24, 30, 39, 45], note:"夏に南東の季節風の影響で雨が多く、冬は晴れて乾燥する"},
+  {id:"inland", name:"中央高地の気候", kana:"ちゅうおうこうちのきこう", codes:[19, 20], note:"1年を通して雨が少なく、夏と冬の気温差が大きい"},
+  {id:"setouchi", name:"瀬戸内の気候", kana:"せとうちのきこう", codes:[33, 34, 37], note:"1年を通して雨が少なく、温暖"},
+  {id:"nansei", name:"南西諸島の気候", kana:"なんせいしょとうのきこう", codes:[47], note:"1年中あたたかく、雨が多い。台風の影響も大きい"},
+];
+const CLIMATE_CITIES = [
+  {id:"sapporo", name:"札幌", kana:"さっぽろ", pref:1, zone:"hokkaido", station:"47412",
+   rain:[108.4, 91.9, 77.6, 54.6, 55.5, 60.4, 90.7, 126.8, 142.2, 109.9, 113.8, 114.5], temp:[-3.2, -2.7, 1.1, 7.3, 13.0, 17.0, 21.1, 22.3, 18.6, 12.1, 5.2, -0.9], year:[1146.1, 9.2]},
+  {id:"niigata", name:"新潟", kana:"にいがた", pref:15, zone:"japansea", station:"47604",
+   rain:[180.9, 115.8, 112.0, 97.2, 94.4, 121.1, 222.3, 163.4, 151.9, 157.7, 203.5, 225.9], temp:[2.5, 3.1, 6.2, 11.3, 16.7, 20.9, 24.9, 26.5, 22.5, 16.7, 10.5, 5.3], year:[1845.9, 13.9]},
+  {id:"tokyo", name:"東京", kana:"とうきょう", pref:13, zone:"pacific", station:"47662",
+   rain:[59.7, 56.5, 116.0, 133.7, 139.7, 167.8, 156.2, 154.7, 224.9, 234.8, 96.3, 57.9], temp:[5.4, 6.1, 9.4, 14.3, 18.8, 21.9, 25.7, 26.9, 23.3, 18.0, 12.5, 7.7], year:[1598.2, 15.8]},
+  {id:"matsumoto", name:"松本", kana:"まつもと", pref:20, zone:"inland", station:"47618",
+   rain:[39.8, 38.5, 78.0, 81.1, 94.5, 114.9, 131.3, 101.6, 148.0, 128.3, 56.3, 32.7], temp:[-0.3, 0.6, 4.6, 10.8, 16.5, 20.2, 24.2, 25.1, 20.4, 13.9, 7.8, 2.5], year:[1045.1, 12.2]},
+  {id:"takamatsu", name:"高松", kana:"たかまつ", pref:37, zone:"setouchi", station:"47891",
+   rain:[39.4, 45.8, 81.4, 74.6, 100.9, 153.1, 159.8, 106.0, 167.4, 120.1, 55.0, 46.7], temp:[5.9, 6.3, 9.4, 14.7, 19.8, 23.3, 27.5, 28.6, 24.7, 19.0, 13.2, 8.1], year:[1150.1, 16.7]},
+  {id:"naha", name:"那覇", kana:"なは", pref:47, zone:"nansei", station:"47936",
+   rain:[101.6, 114.5, 142.8, 161.0, 245.3, 284.4, 188.1, 240.0, 275.2, 179.2, 119.1, 110.0], temp:[17.3, 17.5, 19.1, 21.5, 24.2, 27.2, 29.1, 29.0, 27.9, 25.5, 22.5, 19.0], year:[2161.0, 23.3]},
+];
+const zoneOf = id => CLIMATE_ZONES.find(z => z.id === id);
+// 雨温図（棒＝降水量 0〜500mm、折れ線＝平均気温 -10〜30℃。教材と同じ向き）
+function climateChart(c) {
+  const W = 320, H = 190, L = 36, R = 40, T = 22, B = 24, w = W - L - R, h = H - T - B, bw = w / 12;
+  const yT = v => T + h * (30 - v) / 40, yR = v => T + h * (500 - Math.min(v, 500)) / 500;
+  const grid = [-10, 0, 10, 20, 30].map(v => `<line x1="${L}" x2="${L + w}" y1="${yT(v)}" y2="${yT(v)}" class="cg"/><text x="${L - 4}" y="${yT(v) + 4}" class="cl" text-anchor="end">${v}</text>`).join("");
+  const right = [0, 100, 200, 300, 400, 500].map(v => `<text x="${L + w + 4}" y="${yR(v) + 4}" class="cl">${v}</text>`).join("");
+  const bars = c.rain.map((v, i) => `<rect x="${L + i * bw + bw * 0.18}" y="${yR(v)}" width="${bw * 0.64}" height="${T + h - yR(v)}" class="cb"/>`).join("");
+  const pts = c.temp.map((v, i) => `${L + i * bw + bw / 2},${yT(v)}`).join(" ");
+  const months = c.temp.map((_, i) => `<text x="${L + i * bw + bw / 2}" y="${H - 8}" class="cl" text-anchor="middle">${i + 1}</text>`).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="雨温図"><text x="${L - 4}" y="12" class="cl" text-anchor="end">℃</text><text x="${L + w + 4}" y="12" class="cl">mm</text>
+    ${grid}${right}${bars}<polyline points="${pts}" class="ct"/>${c.temp.map((v, i) => `<circle cx="${L + i * bw + bw / 2}" cy="${yT(v)}" r="2.6" class="cd"/>`).join("")}${months}</svg>
+    <p>年平均気温 ${c.year[1]}℃・年降水量 ${Math.round(c.year[0])}mm</p>`;
+}
 /* ---------- コース（地理）。出題数・完了・マスターの条件はここで管理 ----------
    from：このコースを出す最初のモード（仮設定）／unlock：前のコースで何を満たせば開くか
      need:"master"   … 全国の挑戦でヒントを使わず全問正解（👑マスター）
@@ -584,11 +666,20 @@ const COURSES = [
    rules:["山地・山脈（11）・川（10）・平野（10）の3ステージ。地図に出た図形の名前を4択で答える", "ステージ👑：そのステージをヒントなしで全問正解",
           "👑地形マスター：3ステージすべて👑", "完了：3ステージすべてを最後まで解く",
           "図形は教材の略地図程度のおおまかな形（石狩川・最上川・利根川は Natural Earth の線）"]},
+  {id:"climate", name:"気候", master:"気候マスター", from:"g5", ready:true, stages:true, unlock:{course:"terrain", need:"complete"},
+   stageList:[{id:"zone", cat:"zone", name:"気候区分", codes:range(1,47)}, {id:"chart", cat:"chart", name:"雨温図", codes:range(1,47)}],
+   rules:["気候区分（6問）・雨温図（6問）の2ステージ。地図や雨温図を見て4択で答える", "ステージ👑：そのステージをヒントなしで全問正解",
+          "👑気候マスター：2ステージすべて👑", "完了：2ステージすべてを最後まで解く",
+          "雨温図は気象庁の平年値（1991〜2020年）。気候区分の地図は、その気候の代表的な都道府県に色をつけたもの"]},
   {id:"industry", name:"農林水産業・工業", master:"産業マスター", from:"g5", ready:true, stages:true, unlock:{course:"terrain", need:"complete"},
    stageList:Object.entries(INDUSTRY_CATS).map(([id, c]) => ({id, cat:id, name:c.name, codes:range(1,47)})),
    rules:[`5ステージ（全${industryLive().length}問）。収穫量などが全国一の都道府県や、工業地域・伝統工芸品の場所を地図でタップ`, "ステージ👑：そのステージをヒントなしで全問正解",
           "👑産業マスター：5ステージすべて👑", "完了：5ステージすべてを最後まで解く",
-          "順位は国や県の統計で確認したもの。解説に統計の年を書いている"]}
+          "順位は国や県の統計で確認したもの。解説に統計の年を書いている"]},
+  {id:"general", name:"総合問題", master:"総合マスター", from:"g5", ready:true, stages:true, unlock:{course:"industry", need:"complete"},
+   rules:["地方ごとの7ステージ。県庁所在地・河川など地形・農林水産業・工業と伝統工芸を、その地方の中からまぜて出す（毎回えらび直す）",
+          "ステージ👑：そのステージをヒントなしで全問正解", "👑総合マスター：7ステージすべて👑", "完了：7ステージすべてを最後まで解く",
+          "問題は県庁所在地・山・河川・平野・農林水産業・工業の各コースと同じもの"]}
 ];
 const courseOf = id => COURSES.find(c => c.id === id);
 // 歴史は地理とは別コースで設計する（今回は準備中の表示のみ）
@@ -649,7 +740,9 @@ const STAGES = AREAS.filter(a => !a.wide);
 const stagesOf = c => c.stageList || STAGES;
 const stageDone = (courseId, areaId, need) => recsOf(courseId).some(r => { const s = (r.stage || {})[areaId]; return s && (need === "master" ? !!s.master : s.complete); });
 const stageCrowns = courseId => stagesOf(courseOf(courseId)).filter(a => stageDone(courseId, a.id, "master")).length;
-const prefOfKey = (courseId, key) => courseId === "designated" ? CITIES.designated[key][2] : courseId === "terrain" ? (TERRAIN.find(f => f.id === key) || {}).pref : courseId === "industry" ? (industryOf(key) || {}).pref : +key;
+const prefOfKey = (courseId, key) => courseId === "general" ? prefOfKey({cap: "capital", ter: "terrain", ind: "industry"}[String(key).split(":")[0]], String(key).split(":")[1])
+  : courseId === "climate" ? (String(key).startsWith("zone:") ? zoneOf(key.slice(5)).codes[0] : (CLIMATE_CITIES.find(c => "city:" + c.id === key) || {}).pref)
+  : courseId === "designated" ? CITIES.designated[key][2] : courseId === "terrain" ? (TERRAIN.find(f => f.id === key) || {}).pref : courseId === "industry" ? (industryOf(key) || {}).pref : +key;
 const fullCount = courseId => QUIZ_TYPES[courseId].make(range(1,47)).length;
 function prefLevels() {
   const lv = {}; PREFS.forEach(p => lv[p.code] = 0);
@@ -831,6 +924,8 @@ TERRAIN.forEach(f => {
   els.push(`feat ${f.kind}`);
   featEls[f.id] = els.map(cls => { const p = document.createElementNS(NS, "path"); p.setAttribute("d", f.d); p.setAttribute("class", cls); gTerrain.appendChild(p); return p; });
 });
+const chartEl = document.getElementById("chart");
+const showChart = id => { const c = id && CLIMATE_CITIES.find(x => x.id === id); chartEl.hidden = !c; chartEl.innerHTML = c ? climateChart(c) : ""; };
 const showFeature = id => Object.entries(featEls).forEach(([k, els]) => els.forEach(p => p.classList.toggle("show", k === id)));
 let insetShown = true;
 
@@ -1140,7 +1235,7 @@ function bindBar() {
 // ホーム系の画面（モード選択・コース一覧・コース）に共通：地図をコレクションの色で見せ、県をさわると名前を出す
 function toHomeScreen(box = FULL) {
   cancelQuizTimers(); eyeOff();
-  mode = "home"; bgmStop(); quiz = null; selected = null; clearTag(); combo.hidden = true; clearmsg.hidden = true; pbar.innerHTML = ""; showFeature(null);
+  mode = "home"; bgmStop(); quiz = null; selected = null; clearTag(); combo.hidden = true; clearmsg.hidden = true; pbar.innerHTML = ""; showFeature(null); showChart(null);
   JapanMap.resetColors(); svg.classList.add("explore"); svg.classList.remove("region-quiz");
   Object.values(labelEl).forEach(t => t.classList.remove("off"));
   const lv = prefLevels();
@@ -1264,6 +1359,7 @@ function startQuiz(course, area, codes, opts={}) {
 
 // 進み具合：未回答＝薄い墨／いま＝黄（背が高い）／正解＝緑／ヒントあり正解＝緑の斜線／不正解＝赤
 const pbar = document.getElementById("pbar");
+const kindOf = q => q.kind || quiz.type.kind;
 function renderProgress(){
   pbar.innerHTML = quiz ? quiz.qs.map((q,i) => {
     const l = quiz.log[i]; return `<i class="${l ? (l.ok ? (l.hint ? "hintd" : "ok") : "ng") : (i === quiz.i ? "now" : "")}"></i>`;
@@ -1290,10 +1386,19 @@ function nextQ() {
   // 問題中に ✕・タイトルを押したら、すぐには出ずに確認する（続けるならそのまま）
   byId("quit").onclick = () => confirmQuit(home);
   const tt = byId("toTitle"); if (tt) tt.onclick = () => confirmQuit(modeSelect);
-  if (quiz.type.kind === "choice") {
+  showChart(null);
+  // 前の問題で黄色にした県は消す（総合問題では4択のあとにタップの問題が来る）
+  Object.values(pathEl).forEach(p => p.classList.remove("sel"));
+  if (kindOf(q) === "choice") {
     // 対象の都道府県を地図で示し、選択肢の並びは毎回まぜる
-    Object.values(pathEl).forEach(p => p.classList.remove("sel", "ok", "miss"));
-    if (q.feature) {
+    Object.values(pathEl).forEach(p => p.classList.remove("sel", "ok", "miss", "flash-ok"));
+    if (q.chart) {
+      // 雨温図の問題：答えの都市が分からないよう地図は全国のまま、雨温図を地図の上に出す
+      showChart(q.chart); fitLater(FULL);
+    } else if (q.zone) {
+      q.zone.forEach(c => pathEl[c].classList.add("sel"));
+      fitLater(unionBox(q.zone));
+    } else if (q.feature) {
       showFeature(q.feature);
       const b = TERRAIN.find(f => f.id === q.feature).b, cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2, h = Math.max(b[2] - b[0], b[3] - b[1], 160) / 2;
       fitLater([cx - h, cy - h, cx + h, cy + h]);
@@ -1314,7 +1419,7 @@ function nextQ() {
 // 1問の正誤を記録する。正解は got に積むだけで、まちがえても消えない
 function logAnswer(ok) {
   const q = quiz.q, r = rec(quiz.modeId, quiz.course.id);
-  quiz.log[quiz.i] = {ok, hint: q.hint, key: q.key, pref: q.prefs[0]};
+  quiz.log[quiz.i] = {ok, hint: q.hint, key: q.key, pref: q.prefs[0], tap: kindOf(q) === "tap"};
   if (ok) { r.got[q.key] = 1; if (!q.hint) r.clean[q.key] = 1; }
   else r.miss[q.key] = (r.miss[q.key] || 0) + 1;
   save();
@@ -1403,6 +1508,8 @@ function answerChoice(j) {
     if (c[0] === q.correct) b.classList.add("right"); else if (+b.dataset.j === j) b.classList.add("wrong");
   });
   renderProgress();
+  // 雨温図の問題は、答えたら雨温図を閉じて、その都市の県を黄色にして地方へ寄せる（札に隠れないように）
+  if (q.chart) { showChart(null); pathEl[q.prefs[0]].classList.add("sel"); toFront(q.prefs[0]); fitLater(unionBox(areaOfPref(q.prefs[0]).codes)); }
   // 4択の解説は答えの名前とよみのくり返しなので、右の枠には出さない（県の補足 GEO_NOTES だけ出す）
   const ans = q.choices[0];
   afterAnswer(ok, ok
@@ -1414,7 +1521,7 @@ function answerChoice(j) {
 function handleTap(code) {
   tapHandlers.forEach(cb => { try { cb(code); } catch(e){} });
   if (mode === "home") return showInfo(code);
-  if (mode !== "quiz" || quiz.type.kind !== "tap" || quiz.answered || !quiz.inArea.has(code)) return;
+  if (mode !== "quiz" || kindOf(quiz.q) !== "tap" || quiz.answered || !quiz.inArea.has(code)) return;
   const q = quiz.q, ok = q.answers.includes(code);
   quiz.answered = true; eyeOff();
   const p = byCode(code), ans = byCode(q.answers[0]);
@@ -1434,12 +1541,20 @@ function handleTap(code) {
   }
 }
 
+// 総合問題のまちがえた一覧：もとのコースの書き方にそろえる
+function generalLabel(l) {
+  const [k, id] = String(l.key).split(":");
+  if (k === "cap") return `${byCode(+id).name}（${CITIES.capitals[+id][0][0]}）`;
+  if (k === "ter") return TERRAIN.find(f => f.id === id).name;
+  return `${industryName(industryOf(id))}（${byCode(l.pref).name}）`;
+}
+
 function result() {
   cancelQuizTimers(); eyeOff();
   Object.values(pathEl).forEach(p => p.classList.remove("flash-ok", "flash-ng", "reveal"));
-  pbar.innerHTML = ""; showFeature(null);
+  pbar.innerHTML = ""; showFeature(null); showChart(null);
   // 正解した県の色は、途中の遅延処理が取り消されても結果画面で付けそろえる
-  if (quiz.type.kind === "tap") quiz.log.forEach(l => l.ok && pathEl[l.pref].classList.add("ok"));
+  quiz.log.forEach(l => l.ok && l.tap && pathEl[l.pref].classList.add("ok"));
   mode = "result"; bgmStop(); combo.hidden = true; clearTag();
   const course = quiz.course, total = quiz.qs.length, correct = quiz.log.filter(l => l.ok).length, clean = quiz.log.filter(l => l.ok && !l.hint).length;
   const missed = quiz.log.filter(l => !l.ok);
@@ -1469,7 +1584,7 @@ function result() {
   const opened = COURSES.filter(c => before.includes(c.id) && unlocked(c));
   const msg = newMaster ? `${crown(course)}！` : newStage ? `👑${quiz.area.name}ステージ クリア！` : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしで👑マスター" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
   const nextStage = quiz.stage ? stagesOf(course)[stagesOf(course).indexOf(quiz.area) + 1] : null;
-  const label = l => course.id === "terrain" ? TERRAIN.find(f => f.id === l.key).name : course.id === "industry" ? `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）` : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
+  const label = l => course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? TERRAIN.find(f => f.id === l.key).name : course.id === "industry" ? `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）` : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
   top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta"><span class="nm">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">けっか</span></span></div>${debugBtn()}${muteBtn()}`;
   bindBar();
   clearmsg.firstChild.textContent = msg.replace(" ", "\n"); clearmsg.hidden = false;
