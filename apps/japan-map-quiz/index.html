@@ -1178,7 +1178,7 @@ function coursePage(c) {
       return `<button class="chip" type="button" data-area="${a.id}">${a.name}<small>${cr}${b >= 0 ? `ベスト ${b}/${n}` : `${n}問`}</small></button>`;
     }).join("")}</div>
     <h2>このコースのきまり</h2>
-    <ul class="rules">${c.rules.map(r => `<li>${r}</li>`).join("")}<li>目のボタン（ヒント）を1回でも使うと👑マスターにはならない（正解は記録に残り、地図の色もつく）</li></ul>`;
+    <p class="hint">県名なしでノーミスクリアをめざそう！</p>`;   // くわしい条件は COURSES[].rules（画面には出さない）
   byId("back").onclick = home;
   if (!c.stages) byId("master").onclick = () => startQuiz(c, zen, zen.codes, {master: true});
   sheet.querySelectorAll("[data-area]").forEach(b => b.onclick = () => { const a = (c.stages ? stagesOf(c) : AREAS).find(x => x.id === b.dataset.area); startQuiz(c, a, a.codes, {stage: !!c.stages}); });
