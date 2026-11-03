@@ -47,15 +47,21 @@
 
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:400;font-size:var(--fs16);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-.app{height:100%;display:grid;grid-template-rows:auto auto 1fr auto;max-width:900px;margin:0 auto;background:var(--paper)}
+.app{height:100%;display:grid;grid-template-rows:auto auto 1fr auto;grid-template-columns:minmax(0,1fr);max-width:900px;margin:0 auto;background:var(--paper)}
 
 /* 上の帯（白） */
 .top{background:var(--paper);padding-block:var(--s8);padding-left:max(var(--s16),env(safe-area-inset-left,0px));padding-right:max(var(--s16),env(safe-area-inset-right,0px));display:flex;align-items:center;gap:var(--s8);min-height:64px;box-sizing:border-box}
-.brand{font-family:var(--display);font-size:var(--fs20);flex:1;min-width:0;line-height:1.2}
-.brand small{display:block;font-family:var(--body);font-weight:700;font-size:var(--fs12);color:var(--muted)}
+.brand{font-family:var(--display);font-size:15px;flex:1;min-width:0;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand small{display:block;overflow:hidden;text-overflow:ellipsis;font-family:var(--body);font-weight:700;font-size:var(--fs12);color:var(--muted)}
 .ask{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--s4)}
 .ask .meta{font-size:var(--fs14);color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
-.ask .q{font-family:var(--body);font-weight:700;font-size:var(--fs28);line-height:1.25;text-wrap:balance}
+/* 上部バーの見出し：1行目＝コース・ステージ名（入りきらなければ…で省略）、2行目＝何問目か／けっか */
+.top .ask{gap:0}
+.top .meta .nm{display:block;font-size:var(--fs12);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .meta .num{display:block;font-size:var(--fs16);color:var(--ink);white-space:nowrap}
+.ask .q{font-family:var(--body);font-weight:700;font-size:var(--fs28);line-height:1.5}
+/* ふりがなは漢字の上（ruby） */
+.ask .q rt{font-size:.42em;font-weight:700;color:var(--muted);letter-spacing:0}
 .ask .q.long{font-size:var(--fs20)}
 .ask .q.shout{font-family:var(--display);font-weight:400;font-size:var(--fs20)}
 /* 県名だけ黄色のマーカー線（下半分） */
@@ -82,8 +88,15 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .btn.restart{flex:none;align-self:stretch;margin-top:var(--s4)}
 .iconbtn{flex:none;min-width:var(--tap);height:var(--tap);padding:0 var(--s12);white-space:nowrap;font-size:var(--fs14);display:grid;place-items:center}
 .iconbtn svg{width:24px;height:24px}
+/* 上部バーのボタンは少し小さめ（44px）。見出しの幅をあける */
+.top .iconbtn{min-width:44px;height:44px;padding:0 var(--s8);font-size:13px}
+.top #toTitle svg{width:18px;height:18px}
+.top #toTitle span{font-size:11px}
 .iconbtn.dbg-on{background:var(--brand);color:var(--on-brand)}
 .dbgbox{display:contents}
+/* 上部バーの DBG・テストは小さな札を縦に重ねて、見出しの幅をあける */
+.top .dbgbox{display:flex;flex:none;flex-direction:column;justify-content:center;gap:2px}
+.top .dbgbox .iconbtn{height:21px;min-height:0;min-width:44px;padding:0 6px;font-size:11px;border-width:2px;border-radius:8px}
 /* 暗証番号の入力 */
 .pin{position:fixed;inset:0;z-index:10;background:var(--scrim);display:grid;place-items:center;padding:var(--s16)}
 .pin-box{background:var(--paper);color:var(--ink);border:var(--bw) solid var(--ink);border-radius:var(--r-sheet);padding:var(--s24);width:min(320px,100%);box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:var(--s12)}
@@ -186,9 +199,10 @@ svg:not(.explore) .region-line{display:none}
 .fb .txt{flex:1;min-width:0;line-height:1.45}
 .fb .txt b{display:block;font-weight:700;font-size:var(--fs20)}
 .fb .txt span{display:block;color:var(--muted);font-size:var(--fs14);font-weight:700}
-.fb .txt .ans{color:var(--ink);font-size:var(--fs20)}
-.fb .txt .ans em{font-style:normal;box-shadow:inset 0 calc(-1 * var(--marker)) 0 var(--brand)}
-.fb .txt .you{color:var(--ink);font-size:var(--fs16)}
+.fb .txt .head{display:block;color:var(--ink);font-size:var(--fs16);font-weight:700;line-height:1.5}
+.fb .txt .head b{display:inline;font-size:var(--fs20)}
+.fb .txt .head span{display:inline;color:var(--ink);font-size:inherit}
+.fb .txt .head em{font-style:normal;box-shadow:inset 0 calc(-1 * var(--marker)) 0 var(--brand)}
 .fb .txt .desc{margin-top:var(--s4)}
 .row{display:flex;gap:var(--s8);flex-wrap:wrap}
 .btn{flex:1 1 140px;font-size:var(--fs16);padding:0 var(--s12)}
@@ -326,7 +340,7 @@ const QUIZ_TYPES = {
     title: "県庁所在地 4択", kind: "choice",
     make: codes => codes.map(c => {
       const p = byCode(c), [ans] = CITIES.capitals[c];
-      return { key: c, prefs: [c], focus: c, sub: p.kana, choices: CITIES.capitals[c], correct: ans[0],
+      return { key: c, prefs: [c], focus: c, sub: c === 13 ? "とうきょうとちょう" : p.kana, choices: CITIES.capitals[c], correct: ans[0],
         text: c === 13 ? `<em>東京都庁</em>がある区は？` : `<em>${p.name}</em>の${p.office}所在地は？`,
         explain: c === 13 ? `東京都庁は ${ans[0]}（${ans[1]}）にあります` : `${p.name}の${p.office}所在地は ${ans[0]}（${ans[1]}）` };
     })
@@ -446,7 +460,7 @@ const INDUSTRY = [
   {id:"hachinohe", cat:"sea", word:"<em>八戸港</em>（いか・さばの水あげが多い）がある都道府県は？", kana:"はちのへこう", pref:2,
    note:"青森県。主に水あげされる魚は、いか・さば・いわし。年によって一番多い魚が入れかわる",
    basis:"八戸港の魚種別水あげ量", year:"2024年・2025年", source:"八戸市「水産統計」", url:"https://www.city.hachinohe.aomori.jp/soshikikarasagasu/suisanjimusho/1_1/3836.html", status:"ok"},
-  {id:"sakaiminato", cat:"sea", word:"日本海側の大きな漁港、<em>境港</em>がある都道府県は？", kana:"さかいみなとこう", pref:31,
+  {id:"sakaiminato", cat:"sea", word:"日本海側の大きな漁港、<em>境港</em>がある都道府県は？", kana:"さかいこう", pref:31,
    note:"鳥取県。境港市はベニズワイガニの水あげ日本一の港町",
    basis:"ベニズワイガニの水あげ量", year:"―", source:"鳥取県「蟹取県」紹介ページ", url:"https://www.pref.tottori.lg.jp/178225.htm", status:"ok"},
   {id:"oyster", cat:"sea", word:"<em>かき</em>の養殖が全国一の都道府県は？", kana:"", pref:34,
@@ -465,7 +479,7 @@ const INDUSTRY = [
   {id:"tokai", cat:"maker", word:"<em>東海工業地域</em>の中心の都道府県は？", kana:"とうかいこうぎょうちいき", pref:22,
    note:"静岡県。浜松市の楽器・オートバイ、富士市の製紙が有名",
    basis:"工業地域の位置", year:"―", source:"静岡県「西部地域の産業」・富士市「産業史」", url:"https://www.pref.shizuoka.jp/kensei/chiikikyoku/seibuchiiki/1058188/1035261.html", status:"ok"},
-  {id:"kitakyu", cat:"maker", word:"<em>北九州工業地帯（地域）</em>の中心の都道府県は？", kana:"きたきゅうしゅう", pref:40,
+  {id:"kitakyu", cat:"maker", word:"<em>北九州工業地帯（地域）</em>の中心の都道府県は？", kana:"きたきゅうしゅうこうぎょうちたい（ちいき）", pref:40,
    note:"福岡県。1901年に操業を始めた官営八幡製鐵所から発展した。筑豊炭田に近く、洞海湾に面していた",
    basis:"工業地帯の位置", year:"―", source:"北九州市「八幡のあゆみ」", url:"https://www.city.kitakyushu.lg.jp/yahatahigashi/file_0008.html", status:"ok"},
   {id:"kashima", cat:"maker", word:"<em>鹿島臨海工業地域</em>がある都道府県は？", kana:"かしまりんかいこうぎょうちいき", pref:8,
@@ -1135,7 +1149,12 @@ function renderProgress(){
 }
 
 // 下段に出す出題文（問題文＋よみ）
-const askBlock = () => `<div class="ask"><span class="q${quiz.q.text.replace(/<[^>]+>/g, "").length > 18 ? " long" : ""}">${quiz.q.text}</span><span class="kana">${quiz.q.sub || ""}</span></div>`;
+// よみ（sub）は、問題文の黄色い語（最初の <em>）の上にふりがなとして付ける。<em> がないときだけ下の行に出す
+function askText(q) {
+  if (!q.sub || !/<em>/.test(q.text)) return {html: q.text, under: q.sub || ""};
+  return {html: q.text.replace(/<em>(.*?)<\/em>/, (m, w) => `<em><ruby>${w}<rt>${q.sub}</rt></ruby></em>`), under: ""};
+}
+const askBlock = () => { const t = askText(quiz.q); return `<div class="ask"><span class="q${quiz.q.text.replace(/<[^>]+>/g, "").length > 18 ? " long" : ""}">${t.html}</span>${t.under ? `<span class="kana">${t.under}</span>` : ""}</div>`; };
 
 function nextQ() {
   eyeOff(); clearTag();
@@ -1143,7 +1162,7 @@ function nextQ() {
   const q = quiz.q = quiz.qs[quiz.i]; q.hint = false; quiz.answered = false;
   // 出題文はどのコースも下段（シート）に置き、上のバーには進み具合だけを出す。4択は出題文のすぐ下に選択肢
   // 上の帯：左端に✕（やめる）、小さい文字で「関東　3 / 7」、右に DBG とタイトルへ戻る家のボタン
-  top_.innerHTML = `<button class="iconbtn" id="quit" type="button" aria-label="やめる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><div class="ask"><span class="meta">${quiz.master ? "全国" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}　${quiz.i+1} / ${quiz.qs.length}</span></div>${debugBtn()}${titleBtn()}`;
+  top_.innerHTML = `<button class="iconbtn" id="quit" type="button" aria-label="やめる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><div class="ask"><span class="meta"><span class="nm">${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">${quiz.i+1} / ${quiz.qs.length}</span></span></div>${debugBtn()}${titleBtn()}`;
   renderProgress();
   bindBar(); byId("quit").onclick = home;
   if (quiz.type.kind === "choice") {
@@ -1216,7 +1235,7 @@ function answerChoice(j) {
   const ans = q.choices[0], desc = trimLead(q.explain, ans[0]);
   afterAnswer(ok, ok
     ? `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans[0]}</b><span class="desc">${q.hint ? "（ヒントを見て正解）" : ""}${desc}</span>${noteHtml(q.focus)}</div></div>`
-    : `<div class="fb ng">${face("ng")}<div class="txt"><b>ざんねん</b><span class="ans">正解は <em>${ans[0]}</em></span><span class="you">キミが選んだのは ${pick[0]}。</span><span class="desc">${desc}</span>${noteHtml(q.focus)}</div></div>`);
+    : `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　正解は <em>${ans[0]}</em>。キミが選んだのは ${pick[0]}。</span><span class="desc">${desc}</span>${noteHtml(q.focus)}</div></div>`);
 }
 
 function handleTap(code) {
@@ -1238,7 +1257,7 @@ function handleTap(code) {
     pathEl[code].classList.add("flash-ng"); showTag(code, p.short);
     pathEl[ans.code].classList.add("miss");
     JapanMap.highlightPrefecture(ans.code);
-    afterAnswer(false, `<div class="fb ng">${face("ng")}<div class="txt"><b>ざんねん</b><span class="ans">正解は <em>${ans.name}</em></span><span class="you">キミが指したのは ${p.name}。</span><span class="desc">${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}</div></div>`);
+    afterAnswer(false, `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　正解は <em>${ans.name}</em>。キミが指したのは ${p.name}。</span><span class="desc">${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}</div></div>`);
   }
 }
 
@@ -1278,7 +1297,7 @@ function result() {
   const msg = newMaster ? `${crown(course)}！` : newStage ? `👑${quiz.area.name}ステージ クリア！` : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしで👑マスター" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
   const nextStage = quiz.stage ? stagesOf(course)[stagesOf(course).indexOf(quiz.area) + 1] : null;
   const label = l => course.id === "terrain" ? TERRAIN.find(f => f.id === l.key).name : course.id === "industry" ? `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）` : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
-  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}　けっか</span></div>${debugBtn()}${muteBtn()}`;
+  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta"><span class="nm">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">けっか</span></span></div>${debugBtn()}${muteBtn()}`;
   bindBar();
   clearmsg.firstChild.textContent = msg.replace(" ", "\n"); clearmsg.hidden = false;
   sheet.innerHTML = `
