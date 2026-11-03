@@ -232,6 +232,34 @@ svg:not(.explore) .region-line{display:none}
 .rules{margin:0;padding-left:1.2em;font-size:var(--fs14);color:var(--muted);font-weight:700;line-height:1.5}
 .medal{display:inline-block;background:var(--ok);color:var(--on-strong);border-radius:var(--r-pill);padding:2px var(--s12);font-weight:700;font-size:var(--fs14)}
 .choices{display:grid;grid-template-columns:1fr 1fr;gap:var(--s8)}
+/* 問題の下の枠（qslot）は、答える前と後で高さを変えない。答えたら同じ枠の中を「左：選択肢／右：正誤とつぎへ」にする */
+.qslot{height:136px;box-sizing:border-box}
+.qslot.tap{height:140px}
+.qslot .choices{height:100%;grid-auto-rows:1fr}
+.ansrow{display:grid;grid-template-columns:1fr 1fr;gap:var(--s8);height:100%}
+.ansrow.tap{grid-template-columns:1fr 84px}
+.ansrow .fb{gap:var(--s8)}
+.ansrow .fb .face{width:36px;height:36px;font-size:18px}
+.ansrow .fb .txt b{font-size:var(--fs16)}
+.ansrow .fb .txt .head{font-size:var(--fs14)}
+.ansrow .fb .txt .head b{font-size:var(--fs16)}
+.ansrow .fb .txt .desc{font-size:13px;line-height:1.45}
+.ansrow .choices{gap:var(--s4)}
+.ansrow .choice{min-height:0;font-size:var(--fs16);padding:2px var(--s4)}
+.ansside{display:flex;flex-direction:column;gap:var(--s8);min-height:0}
+.ansside .fb{flex:1;min-height:0;overflow-y:auto;align-items:flex-start}
+.ansside .fb .txt{line-height:1.4}
+.ansside .fb .txt b{font-size:var(--fs16)}
+.ansside .fb .txt .head{font-size:var(--fs14)}
+.ansside .fb .txt .head b{font-size:var(--fs16)}
+.ansside .fb .face{width:32px;height:32px;font-size:var(--fs16)}
+.ansside .btn{flex:none;min-height:44px}
+.ansrow.tap .ansside{gap:0}
+.ansrow.tap .fbcol{min-height:0;overflow-y:auto}
+.ansrow.tap .fbcol .fb{align-items:flex-start}
+.ansrow.tap .nextcol .btn{height:100%;width:100%;padding:0}
+/* 正解の花火（canvas を画面にかぶせる。さわれない） */
+.fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
 .choice{min-height:64px;font-size:var(--fs20);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:var(--s4) var(--s8);line-height:1.2}
 .choice small{font-size:var(--fs12);color:var(--muted);font-weight:700}
 .choice rt,.fb rt{font-size:.5em;color:var(--muted);font-weight:700}
@@ -665,7 +693,27 @@ function tone(freqs, dur=0.09, type="triangle"){
 // 正解：「トゥルリーン！」。ド・ミ・ソ・ド・ミを素早く駆け上がり、そのままメジャーの和音で伸ばしてリバーブで響かせる
 function sndOk(){
   const a = audio(); if (!a) return;
-  const t0 = a.currentTime + 0.01, notes = [523.25, 659.25, 783.99, 1046.5, 1318.5];
+  const T = a.currentTime + 0.01;
+  // シュパーン：高い方へ駆け上がるノイズ（0.2秒）＋はじける音
+  const len = Math.floor(a.sampleRate * 0.35), nb = a.createBuffer(1, len, a.sampleRate), d = nb.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  const ns = a.createBufferSource(), bp = a.createBiquadFilter(), ng = a.createGain();
+  ns.buffer = nb; bp.type = "bandpass"; bp.Q.value = 1.2;
+  bp.frequency.setValueAtTime(700, T); bp.frequency.exponentialRampToValueAtTime(7000, T + 0.2);
+  ng.gain.setValueAtTime(0.0001, T); ng.gain.exponentialRampToValueAtTime(0.22, T + 0.05); ng.gain.exponentialRampToValueAtTime(0.0001, T + 0.3);
+  ns.connect(bp); bp.connect(ng); ng.connect(out); ng.connect(rev); ns.start(T); ns.stop(T + 0.35);
+  const po = a.createOscillator(), pg = a.createGain(); po.type = "triangle";
+  po.frequency.setValueAtTime(1600, T + 0.16); po.frequency.exponentialRampToValueAtTime(320, T + 0.26);
+  pg.gain.setValueAtTime(0.0001, T + 0.16); pg.gain.exponentialRampToValueAtTime(0.16, T + 0.17); pg.gain.exponentialRampToValueAtTime(0.0001, T + 0.3);
+  po.connect(pg); pg.connect(out); po.start(T + 0.16); po.stop(T + 0.32);
+  // きらきら：高い音を散らす（残響つき）
+  for (let i = 0; i < 7; i++) {
+    const t = T + 0.22 + Math.random() * 0.45, o = a.createOscillator(), g = a.createGain();
+    o.type = "sine"; o.frequency.value = 2400 + Math.random() * 2600;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+    o.connect(g); g.connect(out); g.connect(rev); o.start(t); o.stop(t + 0.3);
+  }
+  const t0 = T + 0.14, notes = [523.25, 659.25, 783.99, 1046.5, 1318.5];
   notes.forEach((f, i) => {
     const t = t0 + i*0.045, len = 1.4 - i*0.08;
     const g = a.createGain(); g.connect(out); g.connect(rev);
@@ -1254,12 +1302,12 @@ function nextQ() {
       if (quiz.area.wide) fitLater(unionBox(areaOfPref(q.focus).codes));
     }
     q.order = shuffle(q.choices);
-    sheet.innerHTML = `${askBlock()}<div class="choices">${q.order.map(([n, k], j) =>
-      `<button class="choice" type="button" data-j="${j}">${rb(n, k)}</button>`).join("")}</div>`;
+    sheet.innerHTML = `${askBlock()}<div class="qslot" id="qslot"><div class="choices">${q.order.map(([n, k], j) =>
+      `<button class="choice" type="button" data-j="${j}">${rb(n, k)}</button>`).join("")}</div></div>`;
     const owner = quiz;
     sheet.querySelectorAll("[data-j]").forEach(b => b.onclick = () => { if (quiz === owner && mode === "quiz") answerChoice(+b.dataset.j); });
   } else {
-    sheet.innerHTML = `${askBlock()}<p class="hint">地図の県をタップしてね。わからない時は目のボタン（押している間だけ県名）。</p>`;
+    sheet.innerHTML = `${askBlock()}<div class="qslot tap" id="qslot"><p class="hint">地図の県をタップしてね。わからない時は目のボタン（押している間だけ県名）。</p></div>`;
   }
 }
 
@@ -1285,7 +1333,10 @@ function noteHtml(code) {
   return ns.map(n => `<span>【${GEO_THEMES[n.theme] || ""}】${n.text}</span>`).join("");
 }
 
-function afterAnswer(ok, html) {
+// 答えたあと：音・れんぞく・花火を出し、問題の下の枠（qslot）の中に正誤と「つぎへ」を入れる（枠の高さは変えない）
+//   kind:"choice" … 左に選択肢（色つき）、右に正誤の文と「つぎへ」
+//   kind:"tap"    … 左に正誤の文、右に「つぎへ」
+function afterAnswer(ok, html, opt = {}) {
   const q = quiz.q;
   if (ok) {
     sndOk();
@@ -1295,10 +1346,51 @@ function afterAnswer(ok, html) {
   } else {
     sndNg(); quiz.combo = 0; combo.hidden = true;
   }
-  // 正解でも不正解でも、説明を読んでから「つぎへ」で進む（自動では進まない）
-  sheet.insertAdjacentHTML("beforeend", `${html}<div class="row"><button class="btn primary" id="next" type="button">つぎへ</button></div>`);
+  const slot = byId("qslot"), next = `<button class="btn primary" id="next" type="button">つぎへ</button>`;
+  if (opt.kind === "choice") {
+    const ch = slot.querySelector(".choices");
+    slot.innerHTML = `<div class="ansrow"><div class="ansside-l"></div><div class="ansside">${html}${next}</div></div>`;
+    const left = slot.querySelector(".ansside-l"); left.replaceWith(ch);
+  } else {
+    slot.innerHTML = `<div class="ansrow tap"><div class="fbcol">${html}</div><div class="nextcol">${next}</div></div>`;
+  }
+  if (ok && opt.burst) requestAnimationFrame(() => { const r = opt.burst(); if (r) burst(r.x, r.y); });
   const owner = quiz;
   byId("next").onclick = () => { if (quiz !== owner || mode !== "quiz") return; Object.values(pathEl).forEach(p => p.classList.remove("reveal", "flash-ng")); quiz.i++; nextQ(); };
+}
+
+/* ---------- 正解の花火：黄色い粒をシュパーンと散らす ---------- */
+let fxCanvas = null, fxParts = [], fxRunning = false;
+function burst(x, y) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (!fxCanvas) { fxCanvas = document.createElement("canvas"); fxCanvas.className = "fx"; document.body.appendChild(fxCanvas); }
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  if (fxCanvas.width !== innerWidth * dpr || fxCanvas.height !== innerHeight * dpr) { fxCanvas.width = innerWidth * dpr; fxCanvas.height = innerHeight * dpr; }
+  const cols = ["#FED003", "#FFE45C", "#FFF3A0", "#FFFFFF", "#FFB800"];
+  // 速い筋（シュパーン）＋ゆっくり舞うきらきら＋広がる輪
+  for (let i = 0; i < 46; i++) { const a = Math.random() * Math.PI * 2, v = 7 + Math.random() * 9;
+    fxParts.push({x, y, px: x, py: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 2, life: 0, max: 34 + Math.random() * 18, c: cols[i % cols.length], w: 2 + Math.random() * 2, streak: true}); }
+  for (let i = 0; i < 30; i++) { const a = Math.random() * Math.PI * 2, v = 1.5 + Math.random() * 4;
+    fxParts.push({x, y, px: x, py: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 3, life: 0, max: 50 + Math.random() * 30, c: cols[i % cols.length], w: 2 + Math.random() * 3, streak: false}); }
+  fxParts.push({ring: true, x, y, life: 0, max: 22});
+  if (!fxRunning) { fxRunning = true; requestAnimationFrame(fxStep); }
+}
+function fxStep() {
+  const g = fxCanvas.getContext("2d"), dpr = fxCanvas.width / innerWidth;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, innerWidth, innerHeight);
+  g.globalCompositeOperation = "lighter";
+  fxParts = fxParts.filter(p => p.life < p.max);
+  fxParts.forEach(p => {
+    p.life++; const k = 1 - p.life / p.max;
+    if (p.ring) { g.strokeStyle = `rgba(255,228,92,${k * 0.9})`; g.lineWidth = 4 * k + 1; g.beginPath(); g.arc(p.x, p.y, 10 + (1 - k) * 90, 0, Math.PI * 2); g.stroke(); return; }
+    p.px = p.x; p.py = p.y; p.vx *= p.streak ? 0.9 : 0.96; p.vy = p.vy * (p.streak ? 0.9 : 0.96) + (p.streak ? 0.25 : 0.12);
+    p.x += p.vx; p.y += p.vy;
+    g.globalAlpha = Math.max(0, k);
+    if (p.streak) { g.strokeStyle = p.c; g.lineWidth = p.w; g.lineCap = "round"; g.beginPath(); g.moveTo(p.px - p.vx * 1.5, p.py - p.vy * 1.5); g.lineTo(p.x, p.y); g.stroke(); }
+    else { g.fillStyle = p.c; const r = p.w * (0.6 + 0.4 * Math.sin(p.life * 0.6)); g.beginPath(); g.arc(p.x, p.y, Math.max(0.5, r), 0, Math.PI * 2); g.fill(); }
+  });
+  g.globalAlpha = 1; g.globalCompositeOperation = "source-over";
+  if (fxParts.length) requestAnimationFrame(fxStep); else { fxRunning = false; g.clearRect(0, 0, innerWidth, innerHeight); }
 }
 
 function answerChoice(j) {
@@ -1311,10 +1403,12 @@ function answerChoice(j) {
     if (c[0] === q.correct) b.classList.add("right"); else if (+b.dataset.j === j) b.classList.add("wrong");
   });
   renderProgress();
-  const ans = q.choices[0], desc = trimLead(q.explain, ans[0]);
+  // 4択の解説は答えの名前とよみのくり返しなので、右の枠には出さない（県の補足 GEO_NOTES だけ出す）
+  const ans = q.choices[0];
   afterAnswer(ok, ok
-    ? `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${rb(ans[0], ans[1])}</b><span class="desc">${q.hint ? "（ヒントを見て正解）" : ""}${desc}</span>${noteHtml(q.focus)}</div></div>`
-    : `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　正解は <em>${rb(ans[0], ans[1])}</em>。キミが選んだのは ${rb(pick[0], pick[1])}。</span><span class="desc">${desc}</span>${noteHtml(q.focus)}</div></div>`);
+    ? `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！</b><span class="head">${rb(ans[0], ans[1])}${q.hint ? "（ヒントを見て正解）" : ""}</span>${noteHtml(q.focus)}</div></div>`
+    : `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　正解は <em>${rb(ans[0], ans[1])}</em>。キミが選んだのは ${rb(pick[0], pick[1])}。</span>${noteHtml(q.focus)}</div></div>`,
+    {kind: "choice", burst: () => { const el = sheet.querySelector(".choice.right"); if (!el) return null; const r = el.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; }});
 }
 
 function handleTap(code) {
@@ -1326,17 +1420,17 @@ function handleTap(code) {
   const p = byCode(code), ans = byCode(q.answers[0]);
   logAnswer(ok);
   if (quiz.course.id === "prefName" && !ok) { store.miss[ans.code] = (store.miss[ans.code] || 0) + 1; save(); }
-  sheet.innerHTML = askBlock();   // 正誤を出しても出題文は残す
-  renderProgress();
+  renderProgress();   // 出題文と枠はそのまま。枠の中だけ正誤に入れかえる
   if (ok) {
     pathEl[code].classList.add("flash-ok");
     quizTimeout(() => { pathEl[code].classList.remove("flash-ok"); pathEl[code].classList.add("ok"); }, 450);
-    afterAnswer(true, `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans.name}</b><span class="desc">${q.hint ? "（ヒントを見て正解）" : ""}${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}</div></div>`);
+    afterAnswer(true, `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans.name}</b><span class="desc">${q.hint ? "（ヒントを見て正解）" : ""}${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}</div></div>`,
+      {kind: "tap", burst: () => { const r = pathEl[code].getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; }});
   } else {
     pathEl[code].classList.add("flash-ng"); showTag(code, p.short);
     pathEl[ans.code].classList.add("miss");
     JapanMap.highlightPrefecture(ans.code);
-    afterAnswer(false, `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　正解は <em>${ans.name}</em>。キミが指したのは ${p.name}。</span><span class="desc">${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}</div></div>`);
+    afterAnswer(false, `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　正解は <em>${ans.name}</em>。キミが指したのは ${p.name}。</span><span class="desc">${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}</div></div>`, {kind: "tap"});
   }
 }
 
