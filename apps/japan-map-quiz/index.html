@@ -1015,6 +1015,24 @@ function bindDbg() {
   };
   const tb = byId("dbgTest"); if (tb) tb.onclick = testSection;
 }
+// 確認の小窓（問題を終了する？）。「終了」で onOk、「続ける」・外側・Esc で閉じるだけ
+function confirmQuit(onOk) {
+  if (document.querySelector(".pin")) return;
+  const owner = quiz;
+  const ov = document.createElement("div");
+  ov.className = "pin";
+  ov.innerHTML = `<div class="pin-box" role="alertdialog" aria-modal="true" aria-labelledby="qtTitle">
+    <b id="qtTitle">問題を終了する？</b><p class="hint" style="text-align:center">終了すると、次は1問目からになるよ（答えた問題の記録は残る）</p>
+    <div class="row" style="width:100%"><button class="btn" type="button" id="qtEnd" style="flex:1 1 0">終了</button><button class="btn primary" type="button" id="qtGo" style="flex:1 1 0">続ける</button></div></div>`;
+  document.body.appendChild(ov);
+  const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); };
+  const onKey = e => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  ov.onclick = e => { if (e.target === ov) close(); };
+  ov.querySelector("#qtGo").onclick = close;
+  ov.querySelector("#qtEnd").onclick = () => { close(); if (quiz === owner && mode === "quiz") onOk(); };
+  ov.querySelector("#qtGo").focus();
+}
 // 暗証番号の入力（4けた）。ブラウザのダイアログは使わない
 function askPin(onOk) {
   const ov = document.createElement("div");
@@ -1194,7 +1212,10 @@ function nextQ() {
   // 上の帯：左端に✕（やめる）、小さい文字で「関東　3 / 7」、右に DBG とタイトルへ戻る家のボタン
   top_.innerHTML = `<button class="iconbtn" id="quit" type="button" aria-label="やめる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><div class="ask"><span class="meta"><span class="nm">${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">${quiz.i+1} / ${quiz.qs.length}</span></span></div>${debugBtn()}${titleBtn()}`;
   renderProgress();
-  bindBar(); byId("quit").onclick = home;
+  bindBar();
+  // 問題中に ✕・タイトルを押したら、すぐには出ずに確認する（続けるならそのまま）
+  byId("quit").onclick = () => confirmQuit(home);
+  const tt = byId("toTitle"); if (tt) tt.onclick = () => confirmQuit(modeSelect);
   if (quiz.type.kind === "choice") {
     // 対象の都道府県を地図で示し、選択肢の並びは毎回まぜる
     Object.values(pathEl).forEach(p => p.classList.remove("sel", "ok", "miss"));
