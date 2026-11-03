@@ -186,6 +186,10 @@ svg:not(.explore) .region-line{display:none}
 .fb .txt{flex:1;min-width:0;line-height:1.45}
 .fb .txt b{display:block;font-weight:700;font-size:var(--fs20)}
 .fb .txt span{display:block;color:var(--muted);font-size:var(--fs14);font-weight:700}
+.fb .txt .ans{color:var(--ink);font-size:var(--fs20)}
+.fb .txt .ans em{font-style:normal;box-shadow:inset 0 calc(-1 * var(--marker)) 0 var(--brand)}
+.fb .txt .you{color:var(--ink);font-size:var(--fs16)}
+.fb .txt .desc{margin-top:var(--s4)}
 .row{display:flex;gap:var(--s8);flex-wrap:wrap}
 .btn{flex:1 1 140px;font-size:var(--fs16);padding:0 var(--s12)}
 .score{display:flex;align-items:baseline;gap:var(--s12);flex-wrap:wrap}
@@ -1172,6 +1176,9 @@ function logAnswer(ok) {
   save();
 }
 
+// 解説が答えの名前で始まるとき（「静岡県。…」）は、上の行と重ならないようにその部分を省く
+const trimLead = (text, name) => text && text.startsWith(name + "。") ? text.slice(name.length + 1) : (text || "");
+
 // 正誤の記号の丸。キャラクターの顔アイコンに差し替えるときは、ここだけ変えればよい
 const face = state => `<div class="face" aria-hidden="true">${state === "ok" ? "◯" : "✕"}</div>`;
 
@@ -1187,14 +1194,13 @@ function afterAnswer(ok, html) {
     if (q.hint) quiz.combo = 0; else { quiz.combo++; quiz.maxCombo = Math.max(quiz.maxCombo, quiz.combo); }
     if (quiz.combo >= 2) { combo.textContent = `${quiz.combo}れんぞく！`; combo.hidden = false; combo.classList.remove("pop"); void combo.offsetWidth; combo.classList.add("pop"); }
     else combo.hidden = true;
-    sheet.insertAdjacentHTML("beforeend", html);
-    quizTimeout(() => { quiz.i++; nextQ(); }, 1300);
   } else {
     sndNg(); quiz.combo = 0; combo.hidden = true;
-    sheet.insertAdjacentHTML("beforeend", `${html}<div class="row"><button class="btn primary" id="next" type="button">つぎへ</button></div>`);
-    const owner = quiz;
-    byId("next").onclick = () => { if (quiz !== owner || mode !== "quiz") return; Object.values(pathEl).forEach(p => p.classList.remove("reveal", "flash-ng")); quiz.i++; nextQ(); };
   }
+  // 正解でも不正解でも、説明を読んでから「つぎへ」で進む（自動では進まない）
+  sheet.insertAdjacentHTML("beforeend", `${html}<div class="row"><button class="btn primary" id="next" type="button">つぎへ</button></div>`);
+  const owner = quiz;
+  byId("next").onclick = () => { if (quiz !== owner || mode !== "quiz") return; Object.values(pathEl).forEach(p => p.classList.remove("reveal", "flash-ng")); quiz.i++; nextQ(); };
 }
 
 function answerChoice(j) {
@@ -1207,10 +1213,10 @@ function answerChoice(j) {
     if (c[0] === q.correct) b.classList.add("right"); else if (+b.dataset.j === j) b.classList.add("wrong");
   });
   renderProgress();
-  const ans = q.choices[0];
+  const ans = q.choices[0], desc = trimLead(q.explain, ans[0]);
   afterAnswer(ok, ok
-    ? `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans[0]}</b><span>${q.hint ? "（ヒントを見て正解）" : ""}${q.explain}</span>${noteHtml(q.focus)}</div></div>`
-    : `<div class="fb ng">${face("ng")}<div class="txt"><b>ざんねん　正しくは ${ans[0]}</b><span>${q.explain}</span>${noteHtml(q.focus)}</div></div>`);
+    ? `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans[0]}</b><span class="desc">${q.hint ? "（ヒントを見て正解）" : ""}${desc}</span>${noteHtml(q.focus)}</div></div>`
+    : `<div class="fb ng">${face("ng")}<div class="txt"><b>ざんねん</b><span class="ans">正解は <em>${ans[0]}</em></span><span class="you">キミが選んだのは ${pick[0]}。</span><span class="desc">${desc}</span>${noteHtml(q.focus)}</div></div>`);
 }
 
 function handleTap(code) {
@@ -1227,12 +1233,12 @@ function handleTap(code) {
   if (ok) {
     pathEl[code].classList.add("flash-ok");
     quizTimeout(() => { pathEl[code].classList.remove("flash-ok"); pathEl[code].classList.add("ok"); }, 450);
-    afterAnswer(true, `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans.name}</b><span>${q.hint ? "（ヒントを見て正解）" : ""}${q.explain}</span>${noteHtml(ans.code)}</div></div>`);
+    afterAnswer(true, `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans.name}</b><span class="desc">${q.hint ? "（ヒントを見て正解）" : ""}${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}</div></div>`);
   } else {
     pathEl[code].classList.add("flash-ng"); showTag(code, p.short);
     pathEl[ans.code].classList.add("miss");
     JapanMap.highlightPrefecture(ans.code);
-    afterAnswer(false, `<div class="fb ng">${face("ng")}<div class="txt"><b>ざんねん　そこは ${p.name}</b><span>${ans.name}は太い枠のところ。${q.explain}</span>${noteHtml(ans.code)}</div></div>`);
+    afterAnswer(false, `<div class="fb ng">${face("ng")}<div class="txt"><b>ざんねん</b><span class="ans">正解は <em>${ans.name}</em></span><span class="you">キミが指したのは ${p.name}。</span><span class="desc">${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}</div></div>`);
   }
 }
 
