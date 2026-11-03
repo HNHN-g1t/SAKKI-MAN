@@ -167,6 +167,8 @@ svg:not(.explore) .region-line{display:none}
 /* けっか画面の大きな一言：地図の真ん中に札で出す。地図は触れるように素通し */
 .clearmsg{position:absolute;inset:0 0 var(--r-sheet);display:grid;place-items:center;padding:var(--s16);pointer-events:none}
 .clearmsg[hidden]{display:none}
+.toast{position:absolute;left:50%;top:72px;transform:translateX(-50%);max-width:90%;box-sizing:border-box;background:var(--ink);color:var(--paper);font-weight:700;font-size:var(--fs14);padding:var(--s8) var(--s16);border-radius:var(--r-pill);pointer-events:none;z-index:2;text-align:center}
+.toast[hidden]{display:none}
 .clearmsg span{max-width:min(90%,420px);text-align:center;font-family:var(--display);font-size:clamp(var(--fs20),6vw,var(--fs28));line-height:1.35;white-space:pre-line;word-break:keep-all;overflow-wrap:anywhere;color:var(--on-brand);background:var(--brand);border:var(--bw) solid var(--on-brand);border-radius:var(--r-sheet);padding:var(--s16) var(--s24);box-shadow:0 6px 0 var(--on-brand);animation:clearpop .4s ease-out 1}
 @keyframes clearpop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
 
@@ -248,6 +250,7 @@ svg:not(.explore) .region-line{display:none}
     </svg>
     <div class="combo" id="combo" hidden></div>
     <div class="clearmsg" id="clearmsg" hidden><span></span></div>
+    <div class="toast" id="toast" role="status" hidden></div>
     <button class="zoomreset" id="zoomreset" type="button">ぜんこく</button>
     <button class="eye" id="eye" type="button" aria-label="押している間だけ県名を表示">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
@@ -576,7 +579,10 @@ const FINAL = null;
 const STORE_KEY = "jmq-v1";
 let store = { best:{}, miss:{}, mute:false, mode:null, rec:{} };
 try { const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); if (s) store = Object.assign(store, s); } catch(e){}
-const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch(e){} };
+// 自動保存：答えるたび・結果が出るたびに呼ぶ。DBG ON の間は、お試し記録も別の場所（DBG_KEY）に保存する（本当の記録とは混ぜない）
+const DBG_KEY = "jmq-dbg-v1";
+const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); if (debug && dbgRec) localStorage.setItem(DBG_KEY, JSON.stringify(dbgRec)); } catch(e){} };
+const loadDbg = () => { try { return JSON.parse(localStorage.getItem(DBG_KEY) || "null"); } catch(e){ return null; } };
 // DBG ON の間は、本当の記録（store.rec）ではなくお試し用の記録（dbgRec。保存しない）を読み書きする
 let debug = false, dbgRec = null;
 const recRoot = () => debug ? dbgRec : store.rec;
@@ -965,23 +971,47 @@ function rerender() {
   if (mode === "quiz" || mode === "result") { byId("dbgbox").outerHTML = debugBtn(); return bindDbg(); }
   if (screenNow.kind === "course") coursePage(screenNow.c); else if (screenNow.kind === "home") home(); else modeSelect();
 }
-// テスト：今いる画面の単位を初めての状態に戻す（クイズ中・結果ならその区切りを1問目からやり直す）
+// テスト：今いる画面の単位だけを「まったく未達成」に戻して保存する（お試し記録だけ。本当の記録は変えない）
+//   クイズ中・結果 … そのステージ（地方の練習なら その地方）の問題の正解・ヒントなし正解・まちがい・最高記録・ステージ👑を消し、
+//                    コースの👑と完了も外す。そのあと1問目からやり直す
+//   コース画面     … そのコースの記録をすべて消す
+//   コース一覧・タイトル … お試し記録をすべて消す
+function resetKeys(courseId, keys, areaId, stageId) {
+  MODES.forEach(m => {
+    const r = (dbgRec[m.id] || {})[courseId]; if (!r) return;
+    ["got", "clean", "miss"].forEach(k => { if (r[k]) keys.forEach(key => delete r[k][key]); });
+    if (r.best) { delete r.best[areaId]; delete r.best.zenkoku; }
+    if (stageId && r.stage) delete r.stage[stageId];
+    r.master = null; r.complete = false;
+  });
+}
+let toastTimer = 0;
+function toast(text) {
+  const t = byId("toast"); t.textContent = text; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2200);
+}
 function testSection() {
+  let msg;
   if (mode === "quiz" || mode === "result") {
     const c = quiz.course, a = quiz.area, o = Object.assign({}, quiz.opts); o.keys = undefined;
-    MODES.forEach(m => { const r = (dbgRec[m.id] || {})[c.id]; if (!r) return;
-      if (quiz.stage) { r.stage[a.id] = undefined; r.master = null; r.complete = false; } else dbgRec[m.id][c.id] = undefined; });
-    return startQuiz(c, a, a.codes, o);
+    const keys = quiz.type.make(a.codes, a).map(q => q.key);
+    resetKeys(c.id, keys, a.id, quiz.stage || c.stages ? a.id : null);
+    save(); startQuiz(c, a, a.codes, o);
+    msg = `テスト：「${c.name}」の${a.wide ? "全国" : a.name}（${keys.length}問）を未達成にしたよ`;
+  } else if (screenNow.kind === "course") {
+    MODES.forEach(m => { if (dbgRec[m.id]) delete dbgRec[m.id][screenNow.c.id]; });
+    save(); rerender(); msg = `テスト：「${screenNow.c.name}」コースを未達成にしたよ`;
+  } else {
+    dbgRec = {}; save(); rerender(); msg = "テスト：お試し記録をぜんぶ未達成にしたよ";
   }
-  if (screenNow.kind === "course") MODES.forEach(m => { if (dbgRec[m.id]) dbgRec[m.id][screenNow.c.id] = undefined; });
-  else dbgRec = {};
-  rerender();
+  toast(msg);
 }
 function bindDbg() {
   const d = byId("dbg");
   if (d) d.onclick = () => {
     if (debug) { debug = false; dbgRec = null; return rerender(); }
-    askPin(() => { debug = true; dbgRec = fullRecs(); rerender(); });
+    // 前回のお試し記録が保存されていればそれを続ける。なければ全👑済みから始める
+    askPin(() => { debug = true; dbgRec = loadDbg() || fullRecs(); save(); rerender(); });
   };
   const tb = byId("dbgTest"); if (tb) tb.onclick = testSection;
 }
