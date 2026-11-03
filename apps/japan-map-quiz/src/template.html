@@ -1,6 +1,6 @@
 <!doctype html>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>日本地図タップクイズ</title>
 <!-- ファビコンは公開サイトの直下（site/ から tools/build_site.py で配置）。?v= はスマホの覚え込み対策で、差し替えたら上げる -->
 <link rel="icon" href="../favicon.ico?v=2" sizes="any">
@@ -46,6 +46,8 @@
   --marker:4px; color-scheme:dark}
 
 html,body{height:100%;margin:0}
+/* ページ全体の拡大（ピンチ・ダブルタップ）を止める。拡大できるのは地図だけ（svg#map は touch-action:none で自前で拡大縮小） */
+*{touch-action:pan-x pan-y}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:400;font-size:var(--fs16);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .app{height:100%;display:grid;grid-template-rows:auto auto 1fr auto;grid-template-columns:minmax(0,1fr);max-width:900px;margin:0 auto;background:var(--paper)}
 
@@ -532,9 +534,10 @@ const TERRAIN_CATS = { mount: "山地・山脈・山", river: "川", plain: "平
    stages:true のコースは全国の挑戦のかわりに地方ステージ（STAGES）で進める。ステージをヒントなしで全問正解するとそのステージに👑、
    全ステージ👑でコースの👑マスター、全ステージを最後まで解くと完了（need:"complete" はこれを見る） */
 const COURSES = [
-  {id:"prefName", name:"県名タップ", master:"県名マスター", from:"g4", ready:true,
+  {id:"prefName", name:"県名タップ", master:"県名マスター", from:"g4", ready:true, perfectOpens:true,
    rules:["全国の挑戦：47都道府県を1回ずつ、順番はランダム", "完了：全国47問を最後まで解く",
-          "👑マスター：ヒントなしで全国47問すべて正解 → 県庁所在地コースが開く"]},
+          "👑マスター：ヒントなしで全国47問すべて正解 → 県庁所在地コースが開く",
+          "全国の挑戦がまだでも、地方ごとの練習を7地方すべてヒントなしで全問正解（パーフェクト）すれば、県庁所在地コースが開く"]},
   {id:"capital", name:"県庁所在地 4択", master:"県庁所在地マスター", from:"g4", ready:true, stages:true, unlock:{course:"prefName", need:"master"},
    rules:["地方ごとの7ステージ（4〜9問）。選択肢の並びは毎回ランダム", "ステージ👑：そのステージをヒントなしで全問正解",
           "👑県庁所在地マスター：7ステージすべて👑", "完了：7ステージすべてを最後まで解く（→ 政令指定都市コースが開く）",
@@ -594,7 +597,14 @@ const curMode = () => modeOf(store.mode) || MODES[MODES.length - 1];
 const lowerModes = () => MODES.filter(m => m.rank <= curMode().rank);
 const recsOf = courseId => lowerModes().map(m => (recRoot()[m.id] || {})[courseId]).filter(Boolean);
 const inMode = c => modeOf(c.from).rank <= curMode().rank;
+// 地方ごとの練習を、全地方ヒントなしで全問正解（パーフェクト）したか。県名タップは、これでも次のコースが開く
+function regionsPerfect(courseId) {
+  const type = QUIZ_TYPES[courseId], best = {};
+  recsOf(courseId).forEach(r => Object.entries(r.best || {}).forEach(([k, v]) => { best[k] = Math.max(best[k] ?? 0, v); }));
+  return STAGES.every(a => { const n = type.make(a.codes, a).length; return n === 0 || (best[a.id] ?? 0) >= n; });
+}
 function achieved(courseId, need) {
+  if (need === "master" && courseOf(courseId).perfectOpens && regionsPerfect(courseId)) return true;
   return recsOf(courseId).some(r => need === "master" ? isMaster(r) : (r.complete || !!r.master));
 }
 const unlocked = c => !c.unlock || achieved(c.unlock.course, c.unlock.need);
@@ -830,11 +840,21 @@ let homeBox = FULL;
 document.getElementById("zoomreset").onclick = () => fitBox(FULL);
 function zoomArea(id){ fitBox(unionBox(AREAS.find(a => a.id === id).codes)); }
 
+/* ---------- ページ全体の拡大を止める ----------
+   iPhone の Safari は viewport の拡大禁止を無視するので、ジェスチャーと2本指の動きを地図の外では止める。
+   拡大されたままになると body が overflow:hidden のため戻せなくなる不具合があった */
+["gesturestart", "gesturechange", "gestureend"].forEach(t => document.addEventListener(t, e => e.preventDefault(), {passive: false}));
+document.addEventListener("touchmove", e => { if (e.touches.length > 1 && !svg.contains(e.target)) e.preventDefault(); }, {passive: false});
+let lastTouchEnd = 0;
+document.addEventListener("touchend", e => { const now = Date.now(); if (now - lastTouchEnd < 320 && !svg.contains(e.target) && e.target.closest && !e.target.closest("button")) e.preventDefault(); lastTouchEnd = now; }, {passive: false});
+
 /* ---------- タップ・ドラッグ・ピンチ ---------- */
 const ptrs = new Map(); let gesture = null;
 function svgPt(px, py) { const b = box(); return {x: view.x + (px-b.l)/b.w*view.w, y: view.y + (py-b.t)/b.h*view.h}; }
 svg.addEventListener("pointerdown", e => {
-  svg.setPointerCapture(e.pointerId);
+  // 新しい操作の1本目なら、前の操作で離した通知が届かなかった指を捨てる（残るとタップがピンチ扱いになり、地図が動かなくなる）
+  if (e.isPrimary) { ptrs.clear(); gesture = null; }
+  try { svg.setPointerCapture(e.pointerId); } catch(err){}
   ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
   if (ptrs.size === 1) {
     const z = e.target.closest ? e.target.closest("[data-zoom]") : null;
@@ -872,7 +892,7 @@ function endPtr(e) {
   if (ptrs.size === 0) gesture = null;
   else if (gesture && gesture.type === "pinch") gesture = {type:"pan-locked"};
 }
-svg.addEventListener("pointerup", endPtr); svg.addEventListener("pointercancel", endPtr);
+svg.addEventListener("pointerup", endPtr); svg.addEventListener("pointercancel", endPtr); svg.addEventListener("lostpointercapture", endPtr);
 svg.addEventListener("wheel", e => {
   e.preventDefault();
   const m = svgPt(e.clientX, e.clientY), k = Math.exp(e.deltaY * 0.0015), b = box();
@@ -1098,7 +1118,7 @@ function courseStatus(c) {
   if (!inMode(c)) return {text: `${modeOf(c.from).name}から`, off: true};
   if (!unlocked(c)) {
     const pre = courseOf(c.unlock.course);
-    return {text: c.unlock.need === "master" ? `${crown(pre)}で開く` : `${pre.name}の全国の挑戦を終えると開く`, off: true};
+    return {text: c.unlock.need === "master" ? (pre.perfectOpens ? `${crown(pre)}か、全地方パーフェクトで開く` : `${crown(pre)}で開く`) : `${pre.name}の全国の挑戦を終えると開く`, off: true};
   }
   const m = masterOf(c.id);
   if (m) return {text: crown(c), done: true};

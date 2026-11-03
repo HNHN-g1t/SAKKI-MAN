@@ -363,3 +363,10 @@ Codex の `quizTimeout` に加え、4択のボタン・「つぎへ」は押し�
 - 自動保存：本当の記録は `save()` で答えるたび・結果のたびに localStorage（`jmq-v1`）へ保存（以前から）。クイズの途中の何問目かは保存しない
 - DBG のお試し記録も `jmq-dbg-v1` に保存する。DBG を ON にすると前回のお試し記録を続ける（なければ全👑済みから）。本当の記録とは混ぜない
 - テスト（`testSection`）：クイズ中・結果＝そのステージ／地方の問題だけ got・clean・miss・best・ステージ👑を消し、コースの👑と完了も外して1問目から。コース画面＝そのコースの記録を全部消す。コース一覧・タイトル＝お試し記録を全部消す。押すと上に何を消したか出る（`toast`）
+
+## 2026-11-03 Claude 更新：拡大で戻らなくなる不具合・県名タップの開き方
+
+- ページ全体の拡大を止めた（viewport の maximum-scale=1・user-scalable=no、`*{touch-action:pan-x pan-y}`、iPhone 向けに gesturestart と地図の外の2本指 touchmove・ダブルタップを preventDefault）。地図だけは今まで通り自前でピンチ拡大できる。body が overflow:hidden なので、ページが拡大されると戻せなかった
+- 地図の指の管理（`ptrs`）：離した通知が届かなかった指が残ると、以後のタップがピンチ扱いになって地図が反応しなくなっていた。1本目の pointerdown（isPrimary）で古い指を捨て、lostpointercapture でも片付ける
+- 県名タップ（`perfectOpens:true`）：全国の挑戦の👑がなくても、地方ごとの練習を7地方すべてヒントなし全問正解（`best[地方id]` が問題数以上）なら県庁所在地コースが開く（`regionsPerfect`）。👑県名マスターそのものは全国の挑戦でだけ付く
+- 実機（iPhone）での拡大の確認はまだ。Chromium のモバイル表示で、地図のピンチは効き、地図の外のピンチでページが拡大しないことを確認
