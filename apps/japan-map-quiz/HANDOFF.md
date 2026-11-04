@@ -489,3 +489,9 @@ Codex の `quizTimeout` に加え、4択のボタン・「つぎへ」は押し�
 - 2026-11-04 追記（まだぼやけるとの報告を受けて）：iOS 26 の Safari は、時計の帯の下もしばらく中身をぼかす。iPhone の Safari でブラウザ表示のとき（`@supports (-webkit-touch-callout:none)` かつ `display-mode: browser`）だけ、上部バーの上の余白を 52px（＋帯）に広げた。あわせて `site/manifest.webmanifest` の display を browser → standalone にし、`apple-mobile-web-app-capable` を付けた（ホーム画面から開くと Safari の枠なしで開き、ぼかしが出ない）。実機での確認はまだ
 - 2026-11-04 再追記：それでも上がぼやける、時事ニュースクイズ（SAKKI-JIJI）はぼやけないとの報告。比べると、地図クイズだけ body を `overflow:hidden`・高さ100%で固定していた。時事クイズと同じふつうのページの作り（`html,body{min-height:100%}`、固定は `.app{height:100dvh;overflow:hidden}` だけ）に変えた。前回足した iPhone 用の上の余白（+40px）と theme-color・apple-mobile-web-app 系の meta は、時事クイズにないので外した。ページ自体はスクロールしないことを 375×812・390×664・1280×800 で確認
 - 2026-11-04 再々追記：ホーム画面のアイコンから開いてもぼやける。時事クイズは上の帯に `position:sticky; top:0` が付いていた（iOS 26 の Safari は上に貼りついた帯の色で時計の部分を塗り、ぼかさない）。地図クイズの `.top` にも sticky top:0 を付け、`.app` の overflow:hidden を外した。manifest の display は時事クイズと同じ browser に戻した
+
+## 2026-11-04 Claude 更新：BGM と効果音のボタン
+
+- 「音ON/OFF」1つ（`store.mute`）を、BGM（`store.bgmOff`）と効果音（`store.sfxOff`）の2つに分けた。前の `mute` は両方に引きつぐ
+- `audio(kind)`：kind が "bgm" なら bgmOff、それ以外（効果音）なら sfxOff を見る。`bgmStart` は `audio("bgm")`
+- ボタンはとなり合う2つを1組（`.sndpair`、`muteBtn()` が返す）。ホーム・コース・問題中・けっかのバーに出す（問題中は DBG とホームのあいだ）。オフは斜線つきのアイコンとうすい背景

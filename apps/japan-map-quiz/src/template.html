@@ -100,6 +100,14 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .top .iconbtn{min-width:44px;height:44px;padding:0 var(--s8);font-size:13px}
 .top #toTitle svg{width:18px;height:18px}
 .top #toTitle span{font-size:11px}
+/* BGM・効果音のボタン：となり合う2つを1組に（あいだのふちを共有） */
+.sndpair{display:flex;flex:none}
+.top .sndbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;line-height:1;min-width:46px;padding:0 4px}
+.top .sndbtn svg{width:18px;height:18px}
+.top .sndbtn span{font-size:10px;font-weight:700;margin-top:2px}
+.sndpair .sndbtn:first-child{border-radius:var(--r-btn) 0 0 var(--r-btn)}
+.sndpair .sndbtn:last-child{border-radius:0 var(--r-btn) var(--r-btn) 0;margin-left:calc(-1 * var(--bw))}
+.sndbtn.off{color:var(--muted);background:var(--off)}
 .iconbtn.dbg-on{background:var(--brand);color:var(--on-brand)}
 .dbgbox{display:contents}
 /* 上部バーの DBG・テストは小さな札を縦に重ねて、見出しの幅をあける */
@@ -833,6 +841,8 @@ try { const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); if (s) st
 const DBG_KEY = "jmq-dbg-v1";
 // ご褒美ゲーム（いまは準備中）の記録 gameBest は残さない
 try { Object.values(store.rec || {}).forEach(m => Object.values(m || {}).forEach(r => { if (r) delete r.gameBest; })); } catch(e){}
+// 前の「音ON/OFF」（store.mute）は、BGM と効果音の両方に引きつぐ
+if ("mute" in store) { if (store.mute) { store.bgmOff = true; store.sfxOff = true; } delete store.mute; }
 const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); if (debug && dbgRec) localStorage.setItem(DBG_KEY, JSON.stringify(dbgRec)); } catch(e){} };
 const DBG_ON_KEY = "jmq-dbg-on";
 const loadDbg = () => { try { return JSON.parse(localStorage.getItem(DBG_KEY) || "null"); } catch(e){ return null; } };
@@ -897,8 +907,9 @@ function prefLevels() {
 /* ---------- 効果音とBGM（最初のタップのあとに鳴る） ---------- */
 // 出口は1本（out）。正解音はリバーブ（rev）にも送って響かせる。BGM は bgmBus でまとめて音量・フェードを扱う
 let ac = null, out = null, rev = null, bgmBus = null;
-function audio(){
-  if (store.mute) return null;
+// kind："sfx"＝効果音（正解・不正解・ファンファーレなど）／"bgm"＝問題中のBGM。それぞれ別にオンオフできる
+function audio(kind = "sfx"){
+  if (kind === "bgm" ? store.bgmOff : store.sfxOff) return null;
   try {
     if (!ac) {
       ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -1004,7 +1015,7 @@ function bgmSchedule(){
   }
 }
 function bgmStart(){
-  if (BGM.timer || !audio()) return;
+  if (BGM.timer || !audio("bgm")) return;
   BGM.next = ac.currentTime + 0.1; BGM.step = 0;
   bgmBus.gain.cancelScheduledValues(ac.currentTime);
   bgmBus.gain.setValueAtTime(0.0001, ac.currentTime); bgmBus.gain.linearRampToValueAtTime(0.3, ac.currentTime + 1.5);
@@ -1295,8 +1306,21 @@ function quizTimeout(fn, delay) {
   quizTimers.add(id);
 }
 
-function muteBtn(){ return `<button class="iconbtn" id="mute" type="button" aria-label="音のオンオフ">${store.mute ? "音OFF" : "音ON"}</button>`; }
-function bindMute(){ const m = document.getElementById("mute"); if (m) m.onclick = () => { store.mute = !store.mute; save(); m.textContent = store.mute ? "音OFF" : "音ON"; if (store.mute) bgmStop(); else if (mode === "quiz") bgmStart(); }; }
+// 音のボタン：BGM と効果音の2つを並べる（それぞれオンオフ）。オフは斜線つきのアイコンとうすい色
+const SND_ICON = {
+  bgm: `<path d="M9 17.5V6l10-2v11.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="6.8" cy="17.5" r="2.6"/><circle cx="16.8" cy="15.5" r="2.6"/>`,
+  sfx: `<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
+};
+function sndBtn(kind) {
+  const off = kind === "bgm" ? store.bgmOff : store.sfxOff, label = kind === "bgm" ? "BGM" : "効果音";
+  return `<button class="iconbtn sndbtn${off ? " off" : ""}" id="${kind}Btn" type="button" aria-pressed="${!off}" aria-label="${label}を${off ? "オンにする" : "オフにする"}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${SND_ICON[kind]}${off ? `<path d="M4 4l16 16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>` : ""}</svg><span>${label}</span></button>`;
+}
+function muteBtn(){ return `<span class="sndpair" id="sndpair">${sndBtn("bgm")}${sndBtn("sfx")}</span>`; }
+function bindMute(){
+  const bb = document.getElementById("bgmBtn"), sb = document.getElementById("sfxBtn"), redraw = () => { byId("sndpair").outerHTML = muteBtn(); bindMute(); };
+  if (bb) bb.onclick = () => { store.bgmOff = !store.bgmOff; save(); if (store.bgmOff) bgmStop(); else if (mode === "quiz") bgmStart(); redraw(); };
+  if (sb) sb.onclick = () => { store.sfxOff = !store.sfxOff; save(); redraw(); };
+}
 const byId = id => document.getElementById(id);
 
 /* デバッグ（DBG）：暗証番号を入れると ON。ON の間は全コース・全ステージが👑マスター済みのお試し記録になり、
@@ -1568,7 +1592,7 @@ function nextQ() {
   const q = quiz.q = quiz.qs[quiz.i]; q.hint = false; quiz.answered = false;
   // 出題文はどのコースも下段（シート）に置き、上のバーには進み具合だけを出す。4択は出題文のすぐ下に選択肢
   // 上の帯：左端に✕（やめる）、小さい文字で「関東　3 / 7」、右に DBG とタイトルへ戻る家のボタン
-  top_.innerHTML = `<button class="iconbtn" id="quit" type="button" aria-label="やめる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><div class="ask"><span class="meta"><span class="nm">${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">${quiz.i+1} / ${quiz.qs.length}</span></span></div>${debugBtn()}${titleBtn()}`;
+  top_.innerHTML = `<button class="iconbtn" id="quit" type="button" aria-label="やめる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><div class="ask"><span class="meta"><span class="nm">${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">${quiz.i+1} / ${quiz.qs.length}</span></span></div>${debugBtn()}${muteBtn()}${titleBtn()}`;
   renderProgress();
   bindBar();
   // 問題中に ✕・タイトルを押したら、すぐには出ずに確認する（続けるならそのまま）
