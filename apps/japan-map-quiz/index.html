@@ -1,7 +1,11 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>日本地図タップクイズ</title>
+<title>サッ記マン 日本地図タップドリル</title>
+<!-- iPhone：上の時計・電池の帯を、上部バーと同じ色で塗る（ぼかしで中身が見えにくくならないように） -->
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#232222" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <!-- ファビコンは公開サイトの直下（site/ から tools/build_site.py で配置）。?v= はスマホの覚え込み対策で、差し替えたら上げる -->
 <link rel="icon" href="../favicon.ico?v=2" sizes="any">
 <link rel="icon" href="../favicon-32.png?v=2" type="image/png" sizes="32x32">
@@ -54,8 +58,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .app{height:100%;display:grid;grid-template-rows:auto auto 1fr auto;grid-template-columns:minmax(0,1fr);max-width:900px;margin:0 auto;background:var(--paper)}
 
 /* 上の帯（白） */
-.top{background:var(--paper);padding-block:var(--s8);padding-left:max(var(--s16),env(safe-area-inset-left,0px));padding-right:max(var(--s16),env(safe-area-inset-right,0px));display:flex;align-items:center;gap:var(--s8);min-height:64px;box-sizing:border-box}
-.brand{font-family:var(--display);font-size:15px;flex:1;min-width:0;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 上部バー：iPhone の時計・電池の帯（safe-area-inset-top）の下から中身を置く。帯の部分はぼかされるので、そこには何も置かない */
+.top{background:var(--paper);padding-top:calc(env(safe-area-inset-top,0px) + var(--s12));padding-bottom:var(--s12);padding-left:max(var(--s16),env(safe-area-inset-left,0px));padding-right:max(var(--s16),env(safe-area-inset-right,0px));display:flex;align-items:center;gap:var(--s8);min-height:calc(72px + env(safe-area-inset-top,0px));box-sizing:border-box}
+.brand{font-family:var(--display);font-size:17px;flex:1;min-width:0;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .brand small{display:block;overflow:hidden;text-overflow:ellipsis;font-family:var(--body);font-weight:700;font-size:var(--fs12);color:var(--muted)}
 .ask{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--s4)}
 .ask .meta{font-size:var(--fs14);color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
@@ -1451,7 +1456,7 @@ function courseStatus(c) {
 function home() {
   const lv = toHomeScreen(); screenNow = {kind: "home"};
   const colored = Object.values(lv).filter(n => n > 0).length;
-  top_.innerHTML = `<div class="brand">日本地図タップクイズ<small>サッ記マン・中学受験 社会</small></div>${debugBtn()}${muteBtn()}`;
+  top_.innerHTML = `<div class="brand">サッと記憶！サッ記マン<small>日本地図タップドリル</small></div>${debugBtn()}${muteBtn()}`;
   bindBar();
   sheet.innerHTML = `
     <div class="info" id="info"><span class="hint">色がついた県 ${colored} / 47。正解した県から地図に色がつくよ。</span></div>
