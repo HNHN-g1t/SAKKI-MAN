@@ -1948,7 +1948,9 @@ function result() {
   }
   save();
   const opened = COURSES.filter(c => before.includes(c.id) && unlocked(c));
-  const msg = newMaster ? `${crown(course)}！` : newStage ? `${ic("crown")}${quiz.area.name}ステージ クリア！` : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしでマスター" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
+  // まちがえた問題だけのやり直し（opts.keys）は、全部正解しても「パーフェクト」ではなく「クリア」
+  const retry = !!quiz.opts.keys;
+  const msg = newMaster ? `${crown(course)}！` : newStage ? `${ic("crown")}${quiz.area.name}ステージ クリア！` : retry && correct === total ? "クリア！" : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしでマスター" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
   const nextStage = quiz.stage ? stagesOf(course)[stagesOf(course).indexOf(quiz.area) + 1] : null;
   const label = l => course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? TERRAIN.find(f => f.id === l.key).name : course.id === "industry" ? `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）` : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
   top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta"><span class="nm">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">けっか</span></span></div>${themeBtn()}${muteBtn()}`;
@@ -1974,7 +1976,7 @@ function result() {
   // 👑マスターを初めて取ったときだけ、称号をたたえる画面と花火を出す（cheered を記録して二度は出さない）
   if (newMaster && !newMaster.cheered) { newMaster.cheered = true; save(); celebrateMaster(course); }
   // ステージクリア・パーフェクトのとき：結果の札のまわりに花火を打ち上げ、クリアの音を鳴らす（👑マスターのときはお祝い画面のほうで鳴らす）
-  else if (newStage || clean === total) cheerClear();
+  else if (newStage || (clean === total && !retry)) cheerClear();   // やり直しのクリアでは花火を出さない
 }
 
 // つぎのステージの「▶▶」（三角は横幅を高さの6割にして、すっきり見せる）
