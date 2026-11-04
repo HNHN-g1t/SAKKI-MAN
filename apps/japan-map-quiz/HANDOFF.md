@@ -465,3 +465,10 @@ Codex の `quizTimeout` に加え、4択のボタン・「つぎへ」は押し�
 - コース名「県庁所在地 4択」を「県庁所在地」に（`COURSES` と `QUIZ_TYPES.capital.title`）
 - 政令指定都市の問題は、答えたあと（正解・不正解とも）その市の市役所の位置にピンク の光る円を出す（`QUIZ_TYPES.designated` の `pinLL`、`DESIGNATED_LL`、`showPinAt`）。20市すべて自分の県の形の内側にあることを確認。相模原市だけは簡略化した地図で東京都側に出るため、表示用に約1.8km南へ寄せた
 - 地図左上の「ぜんこく」ボタン（`#zoomreset`）を削除。全国表示へはピンチで戻す
+
+## 2026-11-04 Claude 更新：絵文字をSVGアイコンに
+
+- 画面に出る絵文字（👑・↻・←・◯✕）をやめ、`ICONS` と `ic(name)` のシンプルなSVG（crown／refresh／back／ok／ng。色は currentColor）にした。王冠はコース一覧の `CROWN_SVG` と同じ形
+- 王冠はキーカラーの黄色に墨の細いふち（`.ic-crown`）。緑のメダルや結果の札の上では文字と同じ色にする
+- 結果の札（`#clearmsg`）は王冠を入れるため innerHTML に。最初のすきま（タグの外）で改行する
+- コメントと `COURSES[].rules`（画面には出さない）の👑はそのまま

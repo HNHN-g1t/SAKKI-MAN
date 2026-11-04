@@ -108,7 +108,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 /* 👑マスターのお祝い：花火（.fx）がこの上に重なる */
 .celebrate{z-index:4}
 .cele-box{border-color:var(--brand);border-width:4px;box-shadow:0 0 0 4px var(--on-brand),0 0 40px var(--brand);animation:celeIn .5s cubic-bezier(.2,1.6,.4,1) 1}
-.cele-crown{font-size:64px;line-height:1;animation:celeCrown 1.2s ease-in-out infinite alternate}
+.cele-crown{font-size:72px;line-height:1;color:var(--brand);filter:drop-shadow(0 0 6px var(--brand)) drop-shadow(0 0 16px var(--brand));animation:celeCrown 1.2s ease-in-out infinite alternate}
+.cele-crown .ic{vertical-align:0}
 .cele-sub{margin:0;font-weight:700;color:var(--muted);font-size:var(--fs14)}
 .pin-box b.cele-title{font-size:var(--fs28);text-align:center;background:var(--brand);color:var(--on-brand);padding:var(--s4) var(--s16);border-radius:var(--r-btn)}
 @keyframes celeIn{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
@@ -295,7 +296,16 @@ svg:not(.explore) .region-line{display:none}
 .course.done .no{background:var(--ok);color:var(--on-strong)}
 .course:disabled{opacity:.5;cursor:default}
 .rules{margin:0;padding-left:1.2em;font-size:var(--fs14);color:var(--muted);font-weight:700;line-height:1.5}
-.medal{display:inline-block;background:var(--ok);color:var(--on-strong);border-radius:var(--r-pill);padding:2px var(--s12);font-weight:700;font-size:var(--fs14)}
+/* アイコン：文字と同じ大きさ。王冠はキーカラーの黄色に墨の細いふち（白地でも見える） */
+.ic{display:inline-block;width:1.05em;height:1.05em;vertical-align:-.16em;fill:currentColor;flex:none}
+.ic-crown{color:var(--brand);stroke:var(--on-brand);stroke-width:1.2;stroke-linejoin:round;paint-order:stroke;margin-right:2px}
+.ic-crown .ic-gem{fill:var(--paper);stroke:none}
+.medal .ic-crown,.clearmsg .ic-crown{color:currentColor;stroke:none}
+.medal .ic-crown .ic-gem{fill:var(--ok)}
+.clearmsg .ic-crown .ic-gem{fill:var(--brand)}
+.btn .ic-back,.btn .ic-refresh{margin-right:var(--s4)}
+.face .ic{width:60%;height:60%;vertical-align:0}
+.medal{display:inline-flex;align-items:center;gap:2px;background:var(--ok);color:var(--on-strong);border-radius:var(--r-pill);padding:2px var(--s12);font-weight:700;font-size:var(--fs14)}
 .choices{display:grid;grid-template-columns:1fr 1fr;gap:var(--s8)}
 /* 問題の下の枠（qslot）は、答える前と後で高さを変えない。答えたら同じ枠の中を「左：選択肢／右：正誤とつぎへ」にする */
 .qslot{height:136px;box-sizing:border-box}
@@ -847,7 +857,16 @@ function achieved(courseId, need) {
 const unlocked = c => !c.unlock || achieved(c.unlock.course, c.unlock.need);
 const isMaster = r => !!(r && r.master && r.master.clean);
 const masterOf = courseId => (recsOf(courseId).find(isMaster) || {}).master || null;
-const crown = c => `👑${c.master}`;
+/* ---------- アイコン（絵文字のかわりのシンプルなSVG。色は currentColor） ---------- */
+const ICONS = {
+  crown: `<path d="M2.5 7.5 7.5 12 12 4l4.5 8 5-4.5-1.8 11H4.3z"/><rect x="4.3" y="17" width="15.4" height="2.6" rx="1"/><circle class="ic-gem" cx="12" cy="13.2" r="1.5"/>`,
+  refresh: `<path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M20.5 3.5v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`,
+  back: `<path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`,
+  ok: `<circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="3"/>`,
+  ng: `<path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>`,
+};
+const ic = (name, cls = "") => `<svg class="ic ic-${name}${cls ? " " + cls : ""}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
+const crown = c => `${ic("crown")}${c.master}`;
 // 地方ステージ（stages:true のコース）。rec の stage[地方id] = {complete:bool, master:null|{at}}
 const STAGES = AREAS.filter(a => !a.wide);
 const stagesOf = c => c.stageList || STAGES;
@@ -1413,7 +1432,7 @@ function modeSelect() {
     <h2>モードをえらんでね</h2>
     <div class="chips modes">${MODES.map(m => `<button class="chip${m.id === store.mode ? " now" : ""}" type="button" data-mode="${m.id}">${m.name}</button>`).join("")}</div>
     <p class="hint">上のモードほど学べるコースがふえるよ（下のモードの内容もぜんぶ入っている）。学年ごとの範囲は仮の設定です。</p>
-    <button class="btn restart" id="restart" type="button">↻ アプリを再起動</button>`;
+    <button class="btn restart" id="restart" type="button">${ic("refresh")}アプリを再起動</button>`;
   // 再起動：ページを読みこみ直す。記録はこの端末に保存してあるので消えない
   byId("restart").onclick = () => { bgmStop(); location.reload(); };
   sheet.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { store.mode = b.dataset.mode; save(); home(); });
@@ -1430,7 +1449,7 @@ function courseStatus(c) {
   }
   const m = masterOf(c.id);
   if (m) return {text: crown(c), done: true};
-  if (c.stages) return {text: `ステージ👑 ${stageCrowns(c.id)} / ${stagesOf(c).length}`};
+  if (c.stages) return {text: `ステージ${ic("crown")}${stageCrowns(c.id)} / ${stagesOf(c).length}`};
   const got = new Set(); recsOf(c.id).forEach(r => Object.keys(r.got).forEach(k => got.add(k)));
   return {text: `正解した問題 ${got.size} / ${fullCount(c.id)}`};
 }
@@ -1456,7 +1475,7 @@ function home() {
   byId("chgMode").onclick = modeSelect;
   // 進捗の全初期化（すべてのモードの記録・👑・地図の色、v4 の記録も消す）。モードと音の設定は残す。押しまちがい防止に2段階
   byId("reset").onclick = () => {
-    byId("resetRow").innerHTML = `<p class="hint" style="flex-basis:100%">すべてのモードの記録・👑マスター・地図の色が消えて、最初の状態にもどります。</p>
+    byId("resetRow").innerHTML = `<p class="hint" style="flex-basis:100%">すべてのモードの記録・マスター・地図の色が消えて、最初の状態にもどります。</p>
       <button class="btn primary" id="resetYes" type="button">消す</button><button class="btn" id="resetNo" type="button">やめる</button>`;
     byId("resetYes").onclick = () => { store.rec = {}; store.best = {}; store.miss = {}; save(); home(); };
     byId("resetNo").onclick = home;
@@ -1473,13 +1492,13 @@ function coursePage(c) {
   bindBar();
   const regions = (c.stages ? stagesOf(c) : STAGES).map(a => ({a, n: type.make(a.codes, a).length})).filter(x => x.n > 0);
   sheet.innerHTML = `
-    <div class="modebar"><button class="btn backbtn" id="back" type="button">← コース一覧にもどる</button>${m ? `<span class="medal">${crown(c)}</span>` : ""}</div>
+    <div class="modebar"><button class="btn backbtn" id="back" type="button">${ic("back")}コース一覧にもどる</button>${m ? `<span class="medal">${crown(c)}</span>` : ""}</div>
     ${c.stages ? "" : `<div class="chips"><button class="chip wide" type="button" id="master">全国の挑戦<small>${total}問${best.zenkoku != null ? `・ベスト ${best.zenkoku}/${total}` : ""}</small></button></div>`}
-    <h2>${c.stages ? `${c.stageList ? "" : "地方"}ステージ（👑 ${stageCrowns(c.id)} / ${stagesOf(c).length}）` : "地方ごとの練習"}</h2>
+    <h2>${c.stages ? `${c.stageList ? "" : "地方"}ステージ（${ic("crown")}${stageCrowns(c.id)} / ${stagesOf(c).length}）` : "地方ごとの練習"}</h2>
     <div class="chips">${regions.map(({a, n}) => {
       // 県名タップは v4 の地方ベスト（store.best）も参考に出す
       const b = Math.max(best[a.id] ?? -1, c.id === "prefName" ? (store.best[a.id] ?? -1) : -1);
-      const cr = c.stages && stageDone(c.id, a.id, "master") ? "👑" : "";
+      const cr = c.stages && stageDone(c.id, a.id, "master") ? ic("crown") : "";
       return `<button class="chip" type="button" data-area="${a.id}"><span class="cnm${!a.name.includes("・") && a.name.length >= 5 ? " tight" : ""}">${brkDot(a.name)}</span><small>${cr}${b >= 0 ? `ベスト ${b}/${n}` : `${n}問`}</small></button>`;
     }).join("")}</div>
     <p class="motto">県名なしの日本地図でノーミスクリアをめざそう！</p>`;   // くわしい条件は COURSES[].rules（画面には出さない）
@@ -1594,7 +1613,7 @@ const rb = (w, k) => k ? `<ruby>${w}<rt>${k}</rt></ruby>` : w;
 const trimLead = (text, name) => text && text.startsWith(name + "。") ? text.slice(name.length + 1) : (text || "");
 
 // 正誤の記号の丸。キャラクターの顔アイコンに差し替えるときは、ここだけ変えればよい
-const face = state => `<div class="face" aria-hidden="true">${state === "ok" ? "◯" : "✕"}</div>`;
+const face = state => `<div class="face" aria-hidden="true">${ic(state === "ok" ? "ok" : "ng")}</div>`;
 
 function noteHtml(code) {
   const ns = GEO_NOTES[code] || [];
@@ -1748,15 +1767,16 @@ function result() {
   }
   save();
   const opened = COURSES.filter(c => before.includes(c.id) && unlocked(c));
-  const msg = newMaster ? `${crown(course)}！` : newStage ? `👑${quiz.area.name}ステージ クリア！` : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしで👑マスター" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
+  const msg = newMaster ? `${crown(course)}！` : newStage ? `${ic("crown")}${quiz.area.name}ステージ クリア！` : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしでマスター" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
   const nextStage = quiz.stage ? stagesOf(course)[stagesOf(course).indexOf(quiz.area) + 1] : null;
   const label = l => course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? TERRAIN.find(f => f.id === l.key).name : course.id === "industry" ? `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）` : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
   top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta"><span class="nm">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">けっか</span></span></div>${debugBtn()}${muteBtn()}`;
   bindBar();
-  clearmsg.firstChild.textContent = msg.replace(" ", "\n"); clearmsg.hidden = false;
+  // 文の最初のすきま（タグの外）で改行する。王冠はSVGなので innerHTML で入れる
+  clearmsg.firstChild.innerHTML = msg.replace(/^((?:<[^>]*>|[^ <])*) /, "$1\n"); clearmsg.hidden = false;
   sheet.innerHTML = `
     <div class="score"><span class="big">${correct}<small style="font-size:1.2rem"> / ${total}</small></span><span class="msg">ヒントなし正解 ${clean}問・最高 ${quiz.maxCombo}れんぞく</span></div>
-    ${newStage || newMaster ? `<div class="modebar">${newStage ? `<span class="medal">👑${quiz.area.name}ステージ</span>` : ""}${newMaster ? `<span class="medal">${crown(course)}</span>` : ""}</div>` : ""}
+    ${newStage || newMaster ? `<div class="modebar">${newStage ? `<span class="medal">${ic("crown")}${quiz.area.name}ステージ</span>` : ""}${newMaster ? `<span class="medal">${crown(course)}</span>` : ""}</div>` : ""}
     ${opened.map(c => `<p class="hint"><b>「${c.name}」コースが開いたよ！</b></p>`).join("")}
     ${missed.length ? `<h2>まちがえた問題</h2><div class="misslist">${missed.map(l => `<span>${label(l)}</span>`).join("")}</div>` : ""}
     <div class="row">
@@ -1779,7 +1799,7 @@ function celebrateMaster(course) {
   const ov = document.createElement("div");
   ov.className = "pin celebrate";
   ov.innerHTML = `<div class="pin-box cele-box" role="dialog" aria-modal="true" aria-labelledby="celeTitle">
-    <div class="cele-crown" aria-hidden="true">👑</div>
+    <div class="cele-crown" aria-hidden="true">${ic("crown")}</div>
     <p class="cele-sub">称号ゲット！</p>
     <b id="celeTitle" class="cele-title">${course.master}</b>
     <p class="hint" style="text-align:center">「${course.name}」をヒントなしで全問正解！<br>キミは今日から ${course.master} だ！</p>
