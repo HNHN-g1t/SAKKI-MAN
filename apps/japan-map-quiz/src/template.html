@@ -31,19 +31,20 @@
   --marker:.45em;   /* 県名マーカーの太さ（ダークは文字に重ならない細い下線にする） */
   --scrim:#282727B3;   /* 暗証番号の入力のうしろを暗くする幕 */
   --river:#1F6FB2;     /* 地形コースの川の線 */
+  --temp-ink:#C23A2B; --rain-ink:#1F6FB2;   /* 雨温図の「℃」（気温の線と同じ赤）と「mm」（降水量の棒と同じ青）の文字 */
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --ink:#FEF3E6; --paper:#232222; --cream:#3A3632; --sea:#26313A; --bg:#141313;
   --muted:#C8BEB1; --line-soft:#4D4A47; --off:#2B2928;
   --ok:#1E7B45; --ng:#C23A2B; --ok-soft:#24543A; --ng-soft:#6A2A22;
   --land-none:#4B4B4B; --tier-a:#2F2D2B; --tier-b:#3A3632; --tier-c:#4A4227; --rich:#6B5A1C; --rich2:#7A6614;
-  --marker:4px; color-scheme:dark}}
+  --temp-ink:#FF8E80; --rain-ink:#82BDF2; --marker:4px; color-scheme:dark}}
 :root[data-theme="dark"]{
   --ink:#FEF3E6; --paper:#232222; --cream:#3A3632; --sea:#26313A; --bg:#141313;
   --muted:#C8BEB1; --line-soft:#4D4A47; --off:#2B2928;
   --ok:#1E7B45; --ng:#C23A2B; --ok-soft:#24543A; --ng-soft:#6A2A22;
   --land-none:#4B4B4B; --tier-a:#2F2D2B; --tier-b:#3A3632; --tier-c:#4A4227; --rich:#6B5A1C; --rich2:#7A6614;
-  --marker:4px; color-scheme:dark}
+  --temp-ink:#FF8E80; --rain-ink:#82BDF2; --marker:4px; color-scheme:dark}
 
 html,body{height:100%;margin:0}
 /* ページ全体の拡大（ピンチ・ダブルタップ）を止める。拡大できるのは地図だけ（svg#map は touch-action:none で自前で拡大縮小） */
@@ -187,6 +188,9 @@ svg:not(.explore) .region-line{display:none}
 .chart .cg{stroke:var(--line-soft);stroke-width:1}
 .chart .cl{fill:var(--muted);font-size:10px;font-family:var(--body)}
 .chart .cb{fill:var(--river)}
+/* 単位の文字だけ、気温＝赤・降水量＝青で図の線と棒にさりげなく合わせる */
+.chart .cut{fill:var(--temp-ink);color:var(--temp-ink);font-weight:700}
+.chart .cur{fill:var(--rain-ink);color:var(--rain-ink);font-weight:700}
 .chart .ct{fill:none;stroke:var(--ng);stroke-width:2.5;stroke-linejoin:round}
 .chart .cd{fill:var(--ng)}
 @keyframes pop{50%{transform:translateX(-50%) scale(1.2)}}
@@ -698,11 +702,11 @@ function climateChart(c, note) {
     if (mk.type === "under") under = mk.n;
   });
   const defs = `<defs><marker id="cArrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="carrow"/></marker></defs>`;
-  const rainYear = `年降水量 ${Math.round(c.year[0])}mm`;
+  const rainYear = `年降水量 ${Math.round(c.year[0])}<span class="cur">mm</span>`;
   const list = note ? `<ol class="cpts">${note.points(c).map((p, i) => `<li><b>${"①②③"[i]}</b>${p}</li>`).join("")}</ol>` : "";
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="雨温図">${defs}<text x="${L - 4}" y="12" class="cl" text-anchor="end">℃</text><text x="${L + w + 4}" y="12" class="cl">mm</text>
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="雨温図">${defs}<text x="${L - 4}" y="12" class="cl cut" text-anchor="end">℃</text><text x="${L + w + 4}" y="12" class="cl cur">mm</text>
     ${grid}${right}${back}${bars}<polyline points="${pts}" class="ct"/>${c.temp.map((v, i) => `<circle cx="${xm(i + 1)}" cy="${yT(v)}" r="2.6" class="cd"/>`).join("")}${months}${front}</svg>
-    <p>年平均気温 ${c.year[1]}℃・${under ? `<span class="cunder">${rainYear}</span><span class="cnum">${"①②③"[under - 1]}</span>` : rainYear}</p>${list}`;
+    <p>年平均気温 ${c.year[1]}<span class="cut">℃</span>・${under ? `<span class="cunder">${rainYear}</span><span class="cnum">${"①②③"[under - 1]}</span>` : rainYear}</p>${list}`;
 }
 /* ---------- コース（地理）。出題数・完了・マスターの条件はここで管理 ----------
    from：このコースを出す最初のモード（仮設定）／unlock：前のコースで何を満たせば開くか
