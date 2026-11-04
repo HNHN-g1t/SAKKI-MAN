@@ -344,7 +344,7 @@ svg:not(.explore) .region-line{display:none}
 .qslot.tap{height:140px}
 .qslot .choices{height:100%;grid-auto-rows:1fr}
 .ansrow{display:grid;grid-template-columns:1fr 1fr;gap:var(--s8);height:100%}
-.ansrow.tap{grid-template-columns:1fr 84px}
+.ansrow.tap{grid-template-columns:1fr}
 .ansrow .fb{gap:var(--s8)}
 .ansrow .fb .face{width:36px;height:36px;font-size:18px}
 .ansrow .fb .txt b{font-size:var(--fs16)}
@@ -366,6 +366,18 @@ svg:not(.explore) .region-line{display:none}
 .ansrow.tap .fbcol .fb{align-items:flex-start}
 .ansrow.tap .nextcol .btn{height:100%;width:100%;padding:0}
 /* 正解の花火（canvas を画面にかぶせる。さわれない） */
+/* つぎへの三角（地図の上・問題文ウインドウのすぐ上・まん中） */
+.nexttri{position:absolute;left:50%;bottom:calc(var(--r-sheet) + var(--s8));transform:translateX(-50%);width:84px;height:95px;padding:0;border:0;background:none;cursor:pointer;z-index:3;
+  pointer-events:none;-webkit-tap-highlight-color:transparent;animation:triBlink 1.6s ease-in-out infinite}
+.nexttri .hit{fill:transparent;pointer-events:all;cursor:pointer}
+.nexttri svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.nexttri .tri{filter:drop-shadow(0 0 4px var(--brand))}
+.nexttri .tri{fill:none;stroke:var(--brand);stroke-width:6;stroke-linejoin:round}
+.nexttri span{position:absolute;left:0;width:66%;top:50%;transform:translateY(-50%);text-align:center;font:700 15px/1 var(--body);color:var(--brand);
+  text-shadow:0 0 2px var(--on-brand),0 0 2px var(--on-brand),0 0 3px var(--on-brand);white-space:nowrap;padding-left:6px;pointer-events:none}
+.nexttri:active{transform:translateX(-50%) scale(.94)}
+@keyframes triBlink{0%,100%{opacity:1}50%{opacity:.6}}
+@media (prefers-reduced-motion:reduce){.nexttri{animation:none}}
 .fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
 .choice{min-height:64px;font-size:var(--fs20);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:var(--s4) var(--s8);line-height:1.2}
 .choice small{font-size:var(--fs12);color:var(--muted);font-weight:700}
@@ -1483,7 +1495,7 @@ function placeDbg() {
 
 // ホーム系の画面（モード選択・コース一覧・コース）に共通：地図をコレクションの色で見せ、県をさわると名前を出す
 function toHomeScreen(box = FULL) {
-  cancelQuizTimers(); eyeOff();
+  cancelQuizTimers(); eyeOff(); clearNextTri();
   mode = "home"; bgmStop(); quiz = null; selected = null; clearTag(); combo.hidden = true; clearmsg.hidden = true; pbar.innerHTML = ""; showFeature(null); showChart(null); showPin(null);
   JapanMap.resetColors(); svg.classList.add("explore"); svg.classList.remove("region-quiz");
   Object.values(labelEl).forEach(t => t.classList.remove("off"));
@@ -1626,7 +1638,7 @@ function askText(q) {
 const askBlock = () => { const t = askText(quiz.q); return `<div class="ask"><span class="q${quiz.q.text.replace(/<[^>]+>/g, "").length > 18 ? " long" : ""}">${t.html}</span>${t.under ? `<span class="kana">${t.under}</span>` : ""}</div>`; };
 
 function nextQ() {
-  eyeOff(); clearTag();
+  eyeOff(); clearTag(); clearNextTri();
   if (quiz.i >= quiz.qs.length) return result();
   const q = quiz.q = quiz.qs[quiz.i]; q.hint = false; quiz.answered = false;
   // 出題文はどのコースも下段（シート）に置き、上のバーには進み具合だけを出す。4択は出題文のすぐ下に選択肢
@@ -1706,17 +1718,29 @@ function afterAnswer(ok, html, opt = {}) {
   } else {
     sndNg(); quiz.combo = 0; combo.hidden = true;
   }
-  const slot = byId("qslot"), next = `<button class="btn primary" id="next" type="button">つぎへ</button>`;
+  const slot = byId("qslot");
   if (opt.kind === "choice") {
     const ch = slot.querySelector(".choices");
-    slot.innerHTML = `<div class="ansrow"><div class="ansside-l"></div><div class="ansside">${html}${next}</div></div>`;
+    slot.innerHTML = `<div class="ansrow"><div class="ansside-l"></div><div class="ansside">${html}</div></div>`;
     const left = slot.querySelector(".ansside-l"); left.replaceWith(ch);
   } else {
-    slot.innerHTML = `<div class="ansrow tap"><div class="fbcol">${html}</div><div class="nextcol">${next}</div></div>`;
+    slot.innerHTML = `<div class="ansrow tap"><div class="fbcol">${html}</div></div>`;
   }
+  showNextTri();
   if (ok && opt.burst) requestAnimationFrame(() => { const r = opt.burst(); if (r) burst(r.x, r.y); });
   const owner = quiz;
   byId("next").onclick = () => { if (quiz !== owner || mode !== "quiz") return; Object.values(pathEl).forEach(p => p.classList.remove("reveal", "flash-ng")); quiz.i++; nextQ(); };
+}
+
+/* ---------- つぎへ：問題文のウインドウのすぐ上、まん中に、中抜きの黄色い ▷ ----------
+   地図が透けて見えるよう中は塗らない。押せるのは三角の中だけ（ボタン自体は素通しにして、三角の形 .hit だけで受ける）。うっすら光って、ゆっくり点滅する */
+function clearNextTri() { const o = byId("next"); if (o) o.remove(); }
+function showNextTri() {
+  clearNextTri();
+  const b = document.createElement("button");
+  b.type = "button"; b.id = "next"; b.className = "nexttri"; b.setAttribute("aria-label", "つぎへ");
+  b.innerHTML = `<svg viewBox="0 0 92 104" aria-hidden="true"><path class="tri" d="M6 6 L86 52 L6 98 Z"/><path class="hit" d="M0 0 L92 52 L0 104 Z"/></svg><span>つぎへ</span>`;
+  byId("mapwrap").appendChild(b);
 }
 
 /* ---------- 正解の花火：黄色い粒をシュパーンと散らす ---------- */
@@ -1808,7 +1832,7 @@ function generalLabel(l) {
 }
 
 function result() {
-  cancelQuizTimers(); eyeOff();
+  cancelQuizTimers(); eyeOff(); clearNextTri();
   Object.values(pathEl).forEach(p => p.classList.remove("flash-ok", "flash-ng", "reveal"));
   pbar.innerHTML = ""; showFeature(null); showChart(null); showPin(null);
   // 正解した県の色は、途中の遅延処理が取り消されても結果画面で付けそろえる
