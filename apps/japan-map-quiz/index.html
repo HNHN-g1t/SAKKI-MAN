@@ -270,6 +270,11 @@ svg:not(.explore) .region-line{display:none}
 .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:var(--s8)}
 /* 地方・ステージのボタンで、ベストがパーフェクトのときだけ黄色（白地でも読めるよう墨の細い影。マスター！の字と同じ） */
 .chip small.perfect{color:var(--brand);text-shadow:0 1px 2px var(--shade),0 0 1px var(--shade)}
+/* ライトでは黄色が見えにくいので、グレーのふち（8方向の細い影）とドロップシャドウをつける */
+:root:not([data-theme="dark"]) .chip small.perfect{text-shadow:
+  -1px -1px 0 var(--tri-edge),1px -1px 0 var(--tri-edge),-1px 1px 0 var(--tri-edge),1px 1px 0 var(--tri-edge),
+  0 -1px 0 var(--tri-edge),0 1px 0 var(--tri-edge),-1px 0 0 var(--tri-edge),1px 0 0 var(--tri-edge),1px 2px 3px var(--shade)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chip small.perfect{text-shadow:0 1px 2px var(--shade),0 0 1px var(--shade)}}
 .chip .cnm{word-break:keep-all;overflow-wrap:anywhere}
 .chip .cnm.tight{font-size:12px;letter-spacing:-.02em}   /* ・のない長い名前（伝統工芸品など）は1行に収める */
 .chip{font-size:var(--fs16);white-space:nowrap;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:var(--s4) var(--s8)}
