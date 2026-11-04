@@ -127,9 +127,13 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .gaming #eye,.gaming #zoomreset,.gaming #zooms{display:none}
 .gaming .chart{top:50%;transform:translate(-50%,-50%) scale(.6)}
 .balloons{position:absolute;inset:0;pointer-events:none;z-index:3}
-.balloon{position:absolute;height:50px;pointer-events:auto;border:0;padding:0 6px;cursor:pointer;touch-action:manipulation;
-  border-radius:50% 50% 46% 46% / 55% 55% 45% 45%;background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.75) 0 10%,transparent 26%),var(--bc);
-  color:#282727;font:700 14px/1 var(--body);white-space:nowrap;box-shadow:inset -4px -6px 10px rgba(0,0,0,.18),0 3px 6px rgba(0,0,0,.25);animation:bob 3s ease-in-out infinite}
+.balloon{position:absolute;pointer-events:auto;border:0;padding:0 4px;cursor:pointer;touch-action:manipulation;border-radius:50%;
+  /* 球に見せる：左上の強い光、ふちに向かって暗く、下側に照り返し */
+  background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.95) 0 6%,rgba(255,255,255,.35) 14%,transparent 30%),
+    radial-gradient(circle at 60% 85%,rgba(255,255,255,.25) 0 8%,transparent 22%),
+    radial-gradient(circle at 45% 40%,var(--bc) 0 45%,color-mix(in srgb,var(--bc) 70%,#000) 100%);
+  color:#282727;font:700 14px/1.2 var(--body);white-space:nowrap;text-shadow:0 1px 0 rgba(255,255,255,.55);
+  box-shadow:inset -6px -8px 14px rgba(0,0,0,.22),0 4px 8px rgba(0,0,0,.3);animation:bob 3s ease-in-out infinite}
 .balloon::after{content:"";position:absolute;left:50%;top:100%;width:1.5px;height:16px;background:rgba(40,39,39,.55);transform:translateX(-50%)}
 .balloon::before{content:"";position:absolute;left:50%;top:calc(100% - 3px);border:5px solid transparent;border-top:6px solid var(--bc);transform:translateX(-50%)}
 .balloon.pop{animation:popB .26s ease-out forwards}
@@ -1926,40 +1930,43 @@ function gameRound() {
 }
 // フーセンを地図のふちにぐるっと並べる（真ん中の答えの場所はあけておく）
 const BALLOON_COLS = ["#FF6B9A", "#FFB347", "#7BD389", "#6EC6FF", "#B39DFF", "#FFD84D", "#FF8A65", "#4DD0C8"];
-const balloonW = len => Math.max(58, len * 14 + 22);
-function ringRect(bw, inset = 6) {
-  const wrap = byId("mapwrap"), W = wrap.clientWidth, H = wrap.clientHeight - 24;
-  const x0 = inset + bw / 2, y0 = inset + 30, x1 = W - inset - bw / 2, y1 = H - inset - 36;
+// フーセンは正円。直径は名前の長さで決め、1回のフーセンはみな同じ大きさ（5字以上は2行に折る）
+const balloonW = len => len <= 3 ? 62 : len <= 4 ? 70 : Math.max(70, Math.ceil(len / 2) * 15 + 26);
+const balloonText = t => t.length <= 4 ? t : `${t.slice(0, Math.ceil(t.length / 2))}<br>${t.slice(Math.ceil(t.length / 2))}`;
+function ringRect(d, inset = 9) {
+  const wrap = byId("mapwrap"), W = wrap.clientWidth, H = wrap.clientHeight - 24;   // 下はシートの角のぶん少しあける
+  const x0 = inset + d / 2, y0 = inset + d / 2, x1 = W - inset - d / 2, y1 = H - inset - d / 2 - 16;   // 16＝ひもの長さ
   return {W, H, x0, y0, x1, y1, per: 2 * ((x1 - x0) + (y1 - y0))};
 }
-const ringCap = bw => Math.max(6, Math.floor(ringRect(bw).per / (bw + 8)));
+// ふち1周の置き場所：四隅に1こずつ、あいだは辺ごとに等間隔（となりと重ならない間かくで）
+function ringSlots(d) {
+  const {x0, y0, x1, y1} = ringRect(d), gap = d + 6;
+  const nx = Math.max(1, Math.floor((x1 - x0) / gap)), ny = Math.max(1, Math.floor((y1 - y0) / (gap + 12))), out = [];
+  for (let i = 0; i < nx; i++) out.push([x0 + (x1 - x0) * i / nx, y0]);
+  for (let i = 0; i < ny; i++) out.push([x1, y0 + (y1 - y0) * i / ny]);
+  for (let i = 0; i < nx; i++) out.push([x1 - (x1 - x0) * i / nx, y1]);
+  for (let i = 0; i < ny; i++) out.push([x0, y1 - (y1 - y0) * i / ny]);
+  return out;
+}
+// ふち1周に重ならずに入る数。入りきらないぶんはフーセンを減らす
+const ringCap = d => Math.max(6, ringSlots(d).length);
 function clearBalloons() { const o = byId("balloons"); if (o) o.remove(); }
 function placeBalloons(labels, answer) {
   clearBalloons();
   const wrap = byId("mapwrap");
   const ov = document.createElement("div"); ov.className = "balloons"; ov.id = "balloons"; wrap.appendChild(ov);
-  const sizes = labels.map(t => ({w: Math.max(58, t.length * 14 + 22), h: 50})), bw = Math.max(...sizes.map(z => z.w));
-  // ふちに沿った長方形（外周）を等間隔に区切る。入りきらなければ内側にもう1周
-  const slots = [];
-  let inset = 6, ring = 0;
-  const {W, H} = ringRect(bw);   // 下はシートの角のぶん少しあける
-  while (slots.length < labels.length && ring < 3) {
-    const {x0, y0, x1, y1, per} = ringRect(bw, inset), cap = Math.max(4, Math.floor(per / (bw + 8))), need = Math.min(cap, labels.length - slots.length);
-    const off = Math.random();
-    for (let i = 0; i < need; i++) {
-      let d = ((i + off) / need) * per, x, y;
-      if (d < x1 - x0) { x = x0 + d; y = y0; } else if ((d -= x1 - x0) < y1 - y0) { x = x1; y = y0 + d; }
-      else if ((d -= y1 - y0) < x1 - x0) { x = x1 - d; y = y1; } else { d -= x1 - x0; x = x0; y = y1 - d; }
-      slots.push([x + (Math.random() - 0.5) * 8, y + (Math.random() - 0.5) * 8]);
-    }
-    inset += Math.max(62, bw * 0.75); ring++;
-  }
-  labels.forEach((t, i) => {
-    let [x, y] = slots[i] || [W / 2, 40]; const sz = sizes[i];
-    x = Math.min(W - sz.w / 2 - 4, Math.max(sz.w / 2 + 4, x)); y = Math.min(H - sz.h / 2 - 14, Math.max(sz.h / 2 + 4, y));   // 画面からはみ出さない
+  const D = balloonW(Math.max(...labels.map(t => t.length)));
+  const all = ringSlots(D), cap = all.length;
+  // 答えのフーセンは必ず残し、入りきらないひっかけを減らす
+  let list = labels;
+  if (list.length > cap) { const ans = list.filter(t => t === answer), dec = list.filter(t => t !== answer); list = shuffle([...ans, ...dec.slice(0, Math.max(0, cap - ans.length))]); }
+  // 置き場所が余るときは、1周に均等にばらして使う
+  const off = Math.floor(Math.random() * cap), slots = list.map((_, i) => all[(off + Math.floor(i * cap / list.length)) % cap]);
+  list.forEach((t, i) => {
+    const [x, y] = slots[i], sz = {w: D, h: D};
     const b = document.createElement("button");
-    b.type = "button"; b.className = "balloon"; b.dataset.t = t === answer ? 1 : 0; b.textContent = t;
-    b.style.cssText = `left:${(x - sz.w / 2).toFixed(0)}px;top:${(y - sz.h / 2).toFixed(0)}px;width:${sz.w}px;--bc:${BALLOON_COLS[i % BALLOON_COLS.length]};animation-delay:${(-Math.random() * 3).toFixed(2)}s`;
+    b.type = "button"; b.className = "balloon"; b.dataset.t = t === answer ? 1 : 0; b.innerHTML = balloonText(t);
+    b.style.cssText = `left:${(x - sz.w / 2).toFixed(0)}px;top:${(y - sz.h / 2).toFixed(0)}px;width:${sz.w}px;height:${sz.h}px;--bc:${BALLOON_COLS[i % BALLOON_COLS.length]};animation-delay:${(-Math.random() * 3).toFixed(2)}s`;
     b.onclick = () => gameTap(b);
     ov.appendChild(b);
   });
