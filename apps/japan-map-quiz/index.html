@@ -913,14 +913,15 @@ function prefLevels() {
 
 /* ---------- 効果音とBGM（最初のタップのあとに鳴る） ---------- */
 // 出口は1本（out）。正解音はリバーブ（rev）にも送って響かせる。BGM は bgmBus でまとめて音量・フェードを扱う
-let ac = null, out = null, rev = null, bgmBus = null;
+let ac = null, out = null, rev = null, bgmBus = null, master = null;
 // kind："sfx"＝効果音（正解・不正解・ファンファーレなど）／"bgm"＝問題中のBGM。それぞれ別にオンオフできる
 function audio(kind = "sfx"){
   if (kind === "bgm" ? store.bgmOff : store.sfxOff) return null;
   try {
     if (!ac) {
       ac = new (window.AudioContext || window.webkitAudioContext)();
-      out = ac.createDynamicsCompressor(); out.connect(ac.destination);
+      // 全体の音量：効果音・BGM ともここを通る。0.5＝以前の半分（2026-11-04 調整）
+      out = ac.createDynamicsCompressor(); master = ac.createGain(); master.gain.value = 0.5; out.connect(master); master.connect(ac.destination);
       // 残響：減衰するノイズを左右別に作ってインパルス応答にする（約2.2秒）
       const len = Math.floor(ac.sampleRate * 2.2), ir = ac.createBuffer(2, len, ac.sampleRate);
       for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 3); }
