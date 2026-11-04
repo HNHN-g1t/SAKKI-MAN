@@ -18,6 +18,7 @@
    --brand と --on-brand はダークでも変えない（黄色の上の文字は常に墨。白やクリームの上に黄色の文字は置かない） */
 :root{
   --brand:#FED003; --on-brand:#282727; --pin:#FF4FA3;
+  --tri-edge:#4A4745; --tri-fill:#4A4745CC;   /* つぎへの三角：グレーのふちと中（ダークでも同じ） */
   --ink:#282727; --paper:#EEEDEA; --cream:#F4EBDF; --sea:#D3DDE2; --bg:#E2E1DD;   /* ライトは真っ白をやめ、目にやさしいライトグレー */
   --muted:#5A5654; --line-soft:#C7C4C0; --off:#DAD9D5;
   --ok:#1E7B45; --ng:#C23A2B; --on-strong:#FFFFFF; --ok-soft:#CBEBD6; --ng-soft:#F9D4CD;
@@ -367,13 +368,14 @@ svg:not(.explore) .region-line{display:none}
 .ansrow.tap .nextcol .btn{height:100%;width:100%;padding:0}
 /* 正解の花火（canvas を画面にかぶせる。さわれない） */
 /* つぎへの三角（地図の上・問題文ウインドウのすぐ上・まん中） */
-.nexttri{position:absolute;left:50%;bottom:calc(var(--r-sheet) + var(--s8));transform:translateX(-50%);width:84px;height:95px;padding:0;border:0;background:none;cursor:pointer;z-index:3;
+.nexttri{position:absolute;left:50%;bottom:calc(var(--r-sheet) + var(--s8));transform:translateX(-50%);width:105px;height:119px;padding:0;border:0;background:none;cursor:pointer;z-index:3;
   pointer-events:none;-webkit-tap-highlight-color:transparent;animation:triBlink 1.6s ease-in-out infinite}
 .nexttri .hit{fill:transparent;pointer-events:all;cursor:pointer}
 .nexttri svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .nexttri .tri{filter:drop-shadow(0 0 4px var(--brand))}
+.nexttri .tri-bg{fill:var(--tri-fill);stroke:var(--tri-edge);stroke-width:12;stroke-linejoin:round}   /* グレーのふち（黄色の外側）と中のグレー */
 .nexttri .tri{fill:none;stroke:var(--brand);stroke-width:6;stroke-linejoin:round}
-.nexttri span{position:absolute;left:0;width:66%;top:50%;transform:translateY(-50%);text-align:center;font:700 15px/1 var(--body);color:var(--brand);
+.nexttri span{position:absolute;left:0;width:66%;top:50%;transform:translateY(-50%);text-align:center;font:700 19px/1 var(--body);color:var(--brand);
   text-shadow:0 0 2px var(--on-brand),0 0 2px var(--on-brand),0 0 3px var(--on-brand);white-space:nowrap;padding-left:6px;pointer-events:none}
 .nexttri:active{transform:translateX(-50%) scale(.94)}
 @keyframes triBlink{0%,100%{opacity:1}50%{opacity:.6}}
@@ -1739,7 +1741,7 @@ function showNextTri() {
   clearNextTri();
   const b = document.createElement("button");
   b.type = "button"; b.id = "next"; b.className = "nexttri"; b.setAttribute("aria-label", "つぎへ");
-  b.innerHTML = `<svg viewBox="0 0 92 104" aria-hidden="true"><path class="tri" d="M6 6 L86 52 L6 98 Z"/><path class="hit" d="M0 0 L92 52 L0 104 Z"/></svg><span>つぎへ</span>`;
+  b.innerHTML = `<svg viewBox="0 0 92 104" aria-hidden="true"><path class="tri-bg" d="M6 6 L86 52 L6 98 Z"/><path class="tri" d="M6 6 L86 52 L6 98 Z"/><path class="hit" d="M0 0 L92 52 L0 104 Z"/></svg><span>つぎへ</span>`;
   byId("mapwrap").appendChild(b);
 }
 
