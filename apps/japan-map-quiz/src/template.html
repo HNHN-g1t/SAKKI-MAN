@@ -840,10 +840,13 @@ try { const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); if (s) st
 // 自動保存：答えるたび・結果が出るたびに呼ぶ。DBG ON の間は、お試し記録も別の場所（DBG_KEY）に保存する（本当の記録とは混ぜない）
 const DBG_KEY = "jmq-dbg-v1";
 const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); if (debug && dbgRec) localStorage.setItem(DBG_KEY, JSON.stringify(dbgRec)); } catch(e){} };
+const DBG_ON_KEY = "jmq-dbg-on";
 const loadDbg = () => { try { return JSON.parse(localStorage.getItem(DBG_KEY) || "null"); } catch(e){ return null; } };
 // DBG ON の間は、本当の記録（store.rec）ではなくお試し用の記録（dbgRec。保存しない）を読み書きする
 let debug = false, dbgRec = null;
-const recRoot = () => debug ? dbgRec : store.rec;
+// DBG を ON のまま再読み込みしたら、ON とお試し記録を続ける
+try { if (localStorage.getItem("jmq-dbg-on") === "1") { debug = true; dbgRec = JSON.parse(localStorage.getItem("jmq-dbg-v1") || "null"); } } catch(e){}
+const recRoot = () => debug ? (dbgRec || (dbgRec = fullRecs())) : store.rec;
 function rec(modeId, courseId) {
   const root = recRoot(), m = root[modeId] = root[modeId] || {};
   return m[courseId] = Object.assign({best:{}, got:{}, clean:{}, miss:{}, stage:{}, complete:false, master:null}, m[courseId] || {});
@@ -1346,9 +1349,10 @@ function testSection() {
 function bindDbg() {
   const d = byId("dbg");
   if (d) d.onclick = () => {
-    if (debug) { debug = false; dbgRec = null; return rerender(); }
-    // 前回のお試し記録が保存されていればそれを続ける。なければ全👑済みから始める
-    askPin(() => { debug = true; dbgRec = loadDbg() || fullRecs(); save(); rerender(); });
+    // OFF：お試し記録を捨てる。ON：いつも全クリア（全👑・全マスター）から始める
+    //   ON のまま再読み込みしたときだけ、保存したお試し記録（テストで消した状態など）を続ける
+    if (debug) { debug = false; dbgRec = null; try { localStorage.removeItem(DBG_KEY); localStorage.removeItem(DBG_ON_KEY); } catch(e){} return rerender(); }
+    askPin(() => { debug = true; dbgRec = fullRecs(); try { localStorage.setItem(DBG_ON_KEY, "1"); } catch(e){} save(); rerender(); });
   };
   const tb = byId("dbgTest"); if (tb) tb.onclick = testSection;
 }
