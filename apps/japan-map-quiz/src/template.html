@@ -250,6 +250,10 @@ svg:not(.explore) .region-line{display:none}
 .motto{margin:0;text-align:center;font-weight:700;font-size:13px;line-height:1.4;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .btn.resetbtn{flex:none;align-self:center;min-height:40px;padding:0 var(--s24);font-size:var(--fs14);margin-top:var(--s4)}
 .btn.resetbtn .ic{margin-right:var(--s4)}
+/* つぎのステージ：1行目「つぎのステージ」、2行目「▶▶地方名」 */
+.btn.nextbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.25;padding:var(--s4) var(--s8)}
+.btn.nextbtn .nx{display:inline-flex;align-items:center;gap:4px;word-break:keep-all}
+.ic-next2{width:.86em;height:.72em;vertical-align:0}
 .btn.backbtn{flex:none;min-height:40px;font-size:var(--fs14);padding:0 var(--s12)}
 .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:var(--s8)}
 /* 地方・ステージのボタンで、ベストがパーフェクトのときだけ黄色（白地でも読めるよう墨の細い影。マスター！の字と同じ） */
@@ -1818,7 +1822,7 @@ function result() {
     <div class="row">
       ${missed.length ? `<button class="btn primary" id="retryMiss" type="button">まちがえた問題だけ もう一回</button>` : ""}
       <button class="btn${missed.length ? "" : " primary"}" id="retry" type="button">もう一回</button>
-      ${nextStage ? `<button class="btn" id="nextStage" type="button">つぎのステージ（${nextStage.name}）</button>` : ""}
+      ${nextStage ? `<button class="btn nextbtn" id="nextStage" type="button"><span>つぎのステージ</span><span class="nx">${NEXT2}${brkDot(nextStage.name)}</span></button>` : ""}
       <button class="btn" id="back" type="button">コースにもどる</button>
     </div>`;
   const area = quiz.area, opts = quiz.opts, missKeys = missed.map(l => l.key);
@@ -1828,6 +1832,32 @@ function result() {
   byId("back").onclick = () => coursePage(course);
   // 👑マスターを初めて取ったときだけ、称号をたたえる画面と花火を出す（cheered を記録して二度は出さない）
   if (newMaster && !newMaster.cheered) { newMaster.cheered = true; save(); celebrateMaster(course); }
+  // ステージクリア・パーフェクトのとき：結果の札のまわりに花火を打ち上げ、クリアの音を鳴らす（👑マスターのときはお祝い画面のほうで鳴らす）
+  else if (newStage || clean === total) cheerClear();
+}
+
+// つぎのステージの「▶▶」（三角は横幅を高さの6割にして、すっきり見せる）
+const NEXT2 = `<svg class="ic ic-next2" viewBox="0 0 14.4 12" aria-hidden="true"><path d="M0 0 7.2 6 0 12z M7.2 0 14.4 6 7.2 12z"/></svg>`;
+// クリアの花火と音：札のまわりで5回、少しずつずらして打ち上げる
+function cheerClear() {
+  sndClear();
+  const r = clearmsg.firstChild.getBoundingClientRect(), pts = [[0.1, 0.1], [0.9, 0.15], [0.5, -0.2], [0.2, 0.9], [0.8, 0.95]];
+  pts.forEach(([fx, fy], i) => setTimeout(() => { if (mode === "result") burst(r.left + r.width * fx, r.top + r.height * fy); }, 120 + i * 170));
+}
+// クリアの音：明るく駆け上がる5音のあと、きらきらを散らしてメジャーの和音で響かせる
+function sndClear() {
+  const a = audio(); if (!a) return;
+  const T = a.currentTime + 0.03;
+  const bell = (f, t, len, v) => {
+    const g = a.createGain(); g.connect(out); g.connect(rev);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.01); g.gain.exponentialRampToValueAtTime(v * 0.3, t + len * 0.35); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    [[f, "sine", 1], [f * 2, "sine", 0.3], [f * 1.003, "triangle", 0.4]].forEach(([fr, type, vv]) => {
+      const o = a.createOscillator(), og = a.createGain(); o.type = type; o.frequency.value = fr; og.gain.value = vv; o.connect(og); og.connect(g); o.start(t); o.stop(t + len + 0.05);
+    });
+  };
+  [783.99, 1046.5, 1318.5, 1568, 2093].forEach((f, i) => bell(f, T + i * 0.07, 0.5, 0.09));
+  for (let i = 0; i < 10; i++) bell(2600 + Math.random() * 2400, T + 0.35 + Math.random() * 0.6, 0.3, 0.03);
+  [523.25, 659.25, 783.99, 1046.5].forEach(f => bell(f, T + 0.4, 1.8, 0.05));
 }
 
 /* ---------- 👑マスター達成のお祝い画面（最初の一度だけ） ---------- */
