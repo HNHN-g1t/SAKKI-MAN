@@ -273,7 +273,8 @@ svg:not(.explore) .region-line{display:none}
 /* ライトでは黄色が見えにくいので、グレーのふち（8方向の細い影）と、右下へずらした影で立体的に（パーフェクトのベスト・マスター！） */
 :root:not([data-theme="dark"]) .chip small.perfect,:root:not([data-theme="dark"]) .course .mastered{text-shadow:
   -1px -1px 0 var(--tri-edge),1px -1px 0 var(--tri-edge),-1px 1px 0 var(--tri-edge),1px 1px 0 var(--tri-edge),
-  0 -1px 0 var(--tri-edge),0 1px 0 var(--tri-edge),-1px 0 0 var(--tri-edge),1px 0 0 var(--tri-edge),2.5px 3px 2px var(--shade)}
+  0 -1px 0 var(--tri-edge),0 1px 0 var(--tri-edge),-1px 0 0 var(--tri-edge),1px 0 0 var(--tri-edge),
+  2px 2px 0 var(--tri-edge),2.5px 2.5px 0 var(--tri-edge),3px 3px 0 var(--tri-edge)}   /* 影はふちと同じ不透明なグレー（ぼかしなし）で立体的に */
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chip small.perfect,:root:not([data-theme="light"]) .course .mastered{text-shadow:0 1px 2px var(--shade),0 0 1px var(--shade)}}
 .chip .cnm{word-break:keep-all;overflow-wrap:anywhere}
 .chip .cnm.tight{font-size:12px;letter-spacing:-.02em}   /* ・のない長い名前（伝統工芸品など）は1行に収める */
