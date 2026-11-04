@@ -202,6 +202,18 @@ svg:not(.explore) .region-line{display:none}
 .chart .cur{fill:var(--rain-ink);color:var(--rain-ink);font-weight:700}
 .chart .ct{fill:none;stroke:var(--ng);stroke-width:2.5;stroke-linejoin:round}
 .chart .cd{fill:var(--ng)}
+/* 雨温図のくらべる：押している間だけ、選んだ都市の雨温図を墨色・50％で重ねる */
+.chart .cwrap{position:relative}
+.chart .cover{position:absolute;inset:0;opacity:.5;display:none}
+.chart.cmp-on .cover{display:block}
+.chart .cover .cg,.chart .cover .cl{display:none}
+.chart .cover .cb{fill:var(--ink)}
+.chart .cover .ct{stroke:var(--ink);stroke-dasharray:5 3}
+.chart .cover .cd{fill:var(--ink)}
+.chart .clegend{display:none;position:absolute;left:50%;top:0;transform:translateX(-50%);margin:0;white-space:nowrap;font-size:11px;color:var(--ink);background:var(--paper);border:1.5px solid var(--ink);border-radius:var(--r-pill);padding:0 var(--s8)}
+.chart.cmp-on .clegend{display:block}
+.cmpbtn{position:absolute;left:50%;transform:translateX(-50%);z-index:2;min-height:40px;padding:0 var(--s16);font-size:var(--fs14);white-space:nowrap;touch-action:none;box-shadow:0 3px 0 var(--ink)}
+.cmpbtn.on{background:var(--ink);color:var(--paper);transform:translateX(-50%) translateY(3px);box-shadow:none}
 @keyframes pop{50%{transform:translateX(-50%) scale(1.2)}}
 /* けっか画面の大きな一言：地図の真ん中に札で出す。地図は触れるように素通し */
 .clearmsg{position:absolute;inset:0 0 var(--r-sheet);display:grid;place-items:center;padding:var(--s16);pointer-events:none}
@@ -1013,7 +1025,24 @@ TERRAIN.forEach(f => {
 });
 const chartEl = document.getElementById("chart");
 // withNote：答えたあとは雨温図に印と説明をつける
-const showChart = (id, withNote) => { const c = id && CLIMATE_CITIES.find(x => x.id === id); chartEl.hidden = !c; chartEl.innerHTML = c ? climateChart(c, withNote && CLIMATE_NOTES[c.id]) : ""; };
+// 雨温図のくらべるボタン（不正解のときだけ出す）。押している間だけ選んだ都市を重ねる
+function setupCompare(other) {
+  const main = chartEl.querySelector("svg"); if (!main || !other) return;
+  const wrap = document.createElement("div"); wrap.className = "cwrap"; main.replaceWith(wrap); wrap.appendChild(main);
+  const tmp = document.createElement("div"); tmp.innerHTML = climateChart(other);
+  const ov = tmp.querySelector("svg"); ov.classList.add("cover"); ov.setAttribute("aria-label", `${other.name}の雨温図`); wrap.appendChild(ov);
+  wrap.insertAdjacentHTML("beforeend", `<p class="clegend">点線・こい色＝${other.name}（${other.year[1]}℃・${Math.round(other.year[0])}mm）</p>`);
+  const btn = document.createElement("button");
+  btn.className = "btn cmpbtn"; btn.id = "cmpBtn"; btn.type = "button"; btn.textContent = `${other.name}と重ねる（おしてる間）`;
+  btn.style.top = `${chartEl.offsetTop + chartEl.offsetHeight + 8}px`;
+  document.getElementById("mapwrap").appendChild(btn);
+  const on = e => { e.preventDefault(); btn.classList.add("on"); chartEl.classList.add("cmp-on"); try { btn.setPointerCapture(e.pointerId); } catch(err){} };
+  const off = () => { btn.classList.remove("on"); chartEl.classList.remove("cmp-on"); };
+  btn.addEventListener("pointerdown", on); ["pointerup", "pointercancel", "lostpointercapture"].forEach(t => btn.addEventListener(t, off));
+  btn.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); btn.classList.add("on"); chartEl.classList.add("cmp-on"); } });
+  btn.addEventListener("keyup", off); btn.addEventListener("blur", off);
+}
+const showChart = (id, withNote) => { const old = document.getElementById("cmpBtn"); if (old) old.remove(); chartEl.classList.remove("cmp-on"); const c = id && CLIMATE_CITIES.find(x => x.id === id); chartEl.hidden = !c; chartEl.innerHTML = c ? climateChart(c, withNote && CLIMATE_NOTES[c.id]) : ""; };
 const showFeature = id => Object.entries(featEls).forEach(([k, els]) => els.forEach(p => p.classList.toggle("show", k === id)));
 let insetShown = true;
 
@@ -1622,7 +1651,8 @@ function answerChoice(j) {
   renderProgress();
   // 雨温図の問題は、答えたら雨温図を閉じて、その都市の県を黄色にして地方へ寄せる（札に隠れないように）
   // 雨温図の問題は、正解・不正解にかかわらず雨温図に読みとりの印と説明を出し、その都市の県を黄色にする
-  if (q.chart) { showChart(q.chart, true); pathEl[q.prefs[0]].classList.add("sel"); toFront(q.prefs[0]); }
+  if (q.chart) { showChart(q.chart, true); pathEl[q.prefs[0]].classList.add("sel"); toFront(q.prefs[0]);
+    if (!ok) setupCompare(CLIMATE_CITIES.find(x => x.name === pick[0])); }
   // 4択の解説は答えの名前とよみのくり返しなので、右の枠には出さない（県の補足 GEO_NOTES だけ出す）
   const ans = q.choices[0];
   afterAnswer(ok, ok
