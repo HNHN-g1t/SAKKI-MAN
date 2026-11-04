@@ -18,10 +18,10 @@
    --brand と --on-brand はダークでも変えない（黄色の上の文字は常に墨。白やクリームの上に黄色の文字は置かない） */
 :root{
   --brand:#FED003; --on-brand:#282727; --pin:#FF4FA3;
-  --ink:#282727; --paper:#FFFFFF; --cream:#FEF3E6; --sea:#DCE6EA; --bg:#ECEBE9;
-  --muted:#5E5A58; --line-soft:#CFCCCA; --off:#E1E1DF;
+  --ink:#282727; --paper:#EEEDEA; --cream:#F4EBDF; --sea:#D3DDE2; --bg:#E2E1DD;   /* ライトは真っ白をやめ、目にやさしいライトグレー */
+  --muted:#5A5654; --line-soft:#C7C4C0; --off:#DAD9D5;
   --ok:#1E7B45; --ng:#C23A2B; --on-strong:#FFFFFF; --ok-soft:#CBEBD6; --ng-soft:#F9D4CD;
-  --land-none:#C9CCCF; --tier-a:#FFFFFF; --tier-b:#FEF3E6; --tier-c:#FFF4BF; --rich:#FFE680; --rich2:#FFDA4D;
+  --land-none:#C9CCCF; --tier-a:#F8F7F4; --tier-b:#F4EBDF; --tier-c:#FFF4BF; --rich:#FFE680; --rich2:#FFDA4D;
   --display:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
   --body:"BIZ UDPGothic","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
   /* 文字サイズ7段階・余白6段階・角丸 */
@@ -933,8 +933,8 @@ function audio(kind = "sfx"){
   try {
     if (!ac) {
       ac = new (window.AudioContext || window.webkitAudioContext)();
-      // 全体の音量：効果音・BGM ともここを通る。0.5＝以前の半分（2026-11-04 調整）
-      out = ac.createDynamicsCompressor(); master = ac.createGain(); master.gain.value = 0.5; out.connect(master); master.connect(ac.destination);
+      // 全体の音量：効果音・BGM ともここを通る。0.25＝最初の4分の1（2026-11-04 に半分→さらに半分）
+      out = ac.createDynamicsCompressor(); master = ac.createGain(); master.gain.value = 0.25; out.connect(master); master.connect(ac.destination);
       // 残響：減衰するノイズを左右別に作ってインパルス応答にする（約2.2秒）
       const len = Math.floor(ac.sampleRate * 2.2), ir = ac.createBuffer(2, len, ac.sampleRate);
       for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 3); }
