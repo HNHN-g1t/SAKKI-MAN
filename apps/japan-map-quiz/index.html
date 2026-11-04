@@ -252,6 +252,8 @@ svg:not(.explore) .region-line{display:none}
 .btn.resetbtn .ic{margin-right:var(--s4)}
 .btn.backbtn{flex:none;min-height:40px;font-size:var(--fs14);padding:0 var(--s12)}
 .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:var(--s8)}
+/* 地方・ステージのボタンで、ベストがパーフェクトのときだけ黄色（白地でも読めるよう墨の細い影。マスター！の字と同じ） */
+.chip small.perfect{color:var(--brand);text-shadow:0 1px 2px var(--shade),0 0 1px var(--shade)}
 .chip .cnm{word-break:keep-all;overflow-wrap:anywhere}
 .chip .cnm.tight{font-size:12px;letter-spacing:-.02em}   /* ・のない長い名前（伝統工芸品など）は1行に収める */
 .chip{font-size:var(--fs16);white-space:nowrap;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:var(--s4) var(--s8)}
@@ -1533,7 +1535,7 @@ function coursePage(c) {
       // 県名タップは v4 の地方ベスト（store.best）も参考に出す
       const b = Math.max(best[a.id] ?? -1, c.id === "prefName" ? (store.best[a.id] ?? -1) : -1);
       const cr = c.stages && stageDone(c.id, a.id, "master") ? ic("crown") : "";
-      return `<button class="chip" type="button" data-area="${a.id}"><span class="cnm${!a.name.includes("・") && a.name.length >= 5 ? " tight" : ""}">${brkDot(a.name)}</span><small>${cr}${b >= 0 ? `ベスト ${b}/${n}` : `${n}問`}</small></button>`;
+      return `<button class="chip" type="button" data-area="${a.id}"><span class="cnm${!a.name.includes("・") && a.name.length >= 5 ? " tight" : ""}">${brkDot(a.name)}</span><small${b >= n ? ` class="perfect"` : ""}>${cr}${b >= 0 ? `ベスト ${b}/${n}` : `${n}問`}</small></button>`;   // パーフェクト（ベストが全問）は黄色
     }).join("")}</div>
     <p class="motto">県名なしの日本地図でノーミスクリアをめざそう！</p>`;   // くわしい条件は COURSES[].rules（画面には出さない）
   byId("back").onclick = home;
