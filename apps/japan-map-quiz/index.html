@@ -268,6 +268,7 @@ svg:not(.explore) .region-line{display:none}
 .home .chips.modes{grid-template-columns:1fr 1fr}
 .home .chips.modes .chip{font-size:var(--fs16)}
 .info{display:flex;align-items:baseline;gap:var(--s8);flex-wrap:wrap;min-height:2.2em}
+.info:empty{display:none}   /* ふだんは何も出さない。地図の県をさわると県名・よみ・地方・県庁所在地を出す */
 .info .nm{font-weight:700;font-size:var(--fs20)}
 .info .sub{color:var(--muted);font-weight:700;font-size:var(--fs14)}
 .hint{color:var(--muted);font-size:var(--fs14);font-weight:700;margin:0;line-height:1.5}
@@ -1480,11 +1481,10 @@ function courseStatus(c) {
 /* コース一覧（モードごと） */
 function home() {
   const lv = toHomeScreen(); screenNow = {kind: "home"};
-  const colored = Object.values(lv).filter(n => n > 0).length;
   top_.innerHTML = `<div class="brand">サッと記憶！サッ記マン<small>日本地図タップドリル</small></div>${debugBtn()}${muteBtn()}`;
   bindBar();
   sheet.innerHTML = `
-    <div class="info" id="info"><span class="hint">色がついた県 ${colored} / 47。正解した県から地図に色がつくよ。</span></div>
+    <div class="info" id="info"></div>
     <h2>${TRACKS[0].name}</h2>
     <div class="courses">${COURSES.map((c, i) => {
       const s = courseStatus(c);
