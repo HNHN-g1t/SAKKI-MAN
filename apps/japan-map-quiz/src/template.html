@@ -1473,7 +1473,7 @@ function courseStatus(c) {
   }
   const m = masterOf(c.id);
   if (m) return {text: crown(c), done: true};
-  if (c.stages) return {text: `ステージ${ic("crown")}${stageCrowns(c.id)} / ${stagesOf(c).length}`};
+  if (c.stages) return {text: `ステージ ${stageCrowns(c.id)} / ${stagesOf(c).length}`};   // コース一覧では王冠を付けない（ヒントなし全問正解したステージの数）
   const got = new Set(); recsOf(c.id).forEach(r => Object.keys(r.got).forEach(k => got.add(k)));
   return {text: `正解した問題 ${got.size} / ${fullCount(c.id)}`};
 }
