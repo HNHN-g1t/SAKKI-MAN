@@ -107,6 +107,30 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .pin-box b{font-family:var(--display);font-weight:400;font-size:var(--fs20)}
 /* 👑マスターのお祝い：花火（.fx）がこの上に重なる */
 .celebrate{z-index:4}
+/* ご褒美ゲーム「ぜんぶ見つけろ！」 */
+.chip.gamechip{background:var(--on-brand);color:var(--brand);border-color:var(--on-brand)}
+.chip.wide.gamechip small{color:var(--paper)}
+.sheet.game{max-height:66vh;gap:var(--s8)}
+.ghead{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s8)}
+.ghead .gq{font-weight:700;font-size:var(--fs16);line-height:1.5}
+.ghead .gq em{font-style:normal;box-shadow:inset 0 calc(-1 * var(--marker)) 0 var(--brand)}
+.ghead .gq rt{font-size:.5em;color:var(--muted)}
+.ghead .gs{flex:none;font-family:var(--display);font-size:var(--fs20);font-variant-numeric:tabular-nums}
+.gtarget{font-size:var(--fs14);font-weight:700;color:var(--muted)}
+.gtarget b{color:var(--ink);font-size:var(--fs16)}
+.gtarget .gans{font-size:var(--fs20);box-shadow:inset 0 calc(-1 * var(--marker)) 0 var(--brand)}
+.gtarget rt{font-size:.45em;color:var(--muted)}
+.gbar{height:8px;border-radius:var(--r-pill);background:var(--off);overflow:hidden}
+.gbar i{display:block;height:100%;background:var(--brand);transform-origin:left;transition:background .2s}
+.gbar.low i{background:var(--ng)}
+.ggrid{display:grid;gap:4px}
+.gtile{box-sizing:border-box;min-height:40px;border:2px solid var(--ink);border-radius:8px;background:var(--paper);color:var(--ink);font:700 1em/1.15 var(--body);padding:2px;cursor:pointer;touch-action:manipulation;white-space:nowrap;overflow:hidden;text-overflow:clip}
+.gtile:active{transform:translateY(1px)}
+.gtile.hit{background:var(--ok);border-color:var(--ok);color:var(--on-strong);animation:bounce .25s ease-out 1}
+.gtile.miss{animation:gshake .3s 1;background:var(--ng);border-color:var(--ng);color:var(--on-strong)}
+.gtile.show{outline:3px solid var(--ok);outline-offset:-3px}
+.gtile:disabled{cursor:default}
+@keyframes gshake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 .cele-box{border-color:var(--brand);border-width:4px;box-shadow:0 0 0 4px var(--on-brand),0 0 40px var(--brand);animation:celeIn .5s cubic-bezier(.2,1.6,.4,1) 1}
 .cele-crown{font-size:64px;line-height:1;animation:celeCrown 1.2s ease-in-out infinite alternate}
 .cele-sub{margin:0;font-weight:700;color:var(--muted);font-size:var(--fs14)}
@@ -1380,14 +1404,14 @@ function bindBar() {
 // ホーム系の画面（モード選択・コース一覧・コース）に共通：地図をコレクションの色で見せ、県をさわると名前を出す
 function toHomeScreen(box = FULL) {
   cancelQuizTimers(); eyeOff();
-  mode = "home"; bgmStop(); quiz = null; selected = null; clearTag(); combo.hidden = true; clearmsg.hidden = true; pbar.innerHTML = ""; showFeature(null); showChart(null); showPin(null);
+  stopGame(); mode = "home"; bgmStop(); quiz = null; selected = null; clearTag(); combo.hidden = true; clearmsg.hidden = true; pbar.innerHTML = ""; showFeature(null); showChart(null); showPin(null);
   JapanMap.resetColors(); svg.classList.add("explore"); svg.classList.remove("region-quiz");
   Object.values(labelEl).forEach(t => t.classList.remove("off"));
   const lv = prefLevels();
   PREFS.forEach(p => pathEl[p.code].dataset.lv = lv[p.code]);
   okiCopy.dataset.lv = lv[47];
   homeBox = box; fitLater(box);
-  sheet.classList.add("home");
+  sheet.classList.remove("game"); sheet.classList.add("home");
   return lv;
 }
 
@@ -1469,9 +1493,13 @@ function coursePage(c) {
       const cr = c.stages && stageDone(c.id, a.id, "master") ? "👑" : "";
       return `<button class="chip" type="button" data-area="${a.id}">${a.name}<small>${cr}${b >= 0 ? `ベスト ${b}/${n}` : `${n}問`}</small></button>`;
     }).join("")}</div>
+    <h2>ご褒美ゲーム</h2>
+    ${m ? `<div class="chips"><button class="chip wide gamechip" type="button" id="game">🎮 ぜんぶ見つけろ！<small>${gameBest(c.id) ? `ベスト ${gameBest(c.id)}点` : "お題の答えだけを、ぜんぶタップ！"}</small></button></div>`
+        : `<p class="hint">🔒 ${crown(c)}になると遊べるよ</p>`}
     <h2>このコースのきまり</h2>
     <p class="hint">県名なしでノーミスクリアをめざそう！</p>`;   // くわしい条件は COURSES[].rules（画面には出さない）
   byId("back").onclick = home;
+  if (m) byId("game").onclick = () => startGame(c);
   if (!c.stages) byId("master").onclick = () => startQuiz(c, zen, zen.codes, {master: true});
   sheet.querySelectorAll("[data-area]").forEach(b => b.onclick = () => { const a = (c.stages ? stagesOf(c) : AREAS).find(x => x.id === b.dataset.area); startQuiz(c, a, a.codes, {stage: !!c.stages}); });
 }
@@ -1795,6 +1823,135 @@ function sndFanfare() {
   };
   [[523.25, 0], [659.25, 0.14], [783.99, 0.28], [1046.5, 0.42]].forEach(([f, d]) => note(f, T + d, 0.22, 0.12));
   [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach(f => note(f, T + 0.62, 2.2, 0.07));
+}
+
+/* ---------- ご褒美ゲーム「ぜんぶ見つけろ！」（コースの👑マスターで遊べる） ----------
+   お題（そのコースの問題）の答えの札だけを、36枚ほどの札の中からぜんぶタップする。地図には答えの場所を光らせる
+   1回＝5ラウンド（各10秒）。お題は本編でまちがえた問題を優先して選ぶ
+   点：正解 +10（れんぞくで最大 +20 まで増える）／まちがい 残り時間 −1秒・れんぞく0／ぜんぶ見つけたら残り時間×5 のボーナス
+   正解をタップするたび、答えのよみを声で読む（音OFFなら読まない） */
+const GAME_ROUNDS = 5, GAME_SEC = 10;
+let G = null;
+const gameBest = courseId => Math.max(0, ...recsOf(courseId).map(r => r.gameBest || 0));
+function stopGame() { if (G) { cancelAnimationFrame(G.raf); clearTimeout(G.wait); G = null; } try { speechSynthesis.cancel(); } catch(e){} }
+function gameItems(c) {
+  const type = QUIZ_TYPES[c.id];
+  const qs = c.stages ? stagesOf(c).flatMap(a => type.make(a.codes || range(1, 47), a)) : type.make(range(1, 47));
+  return qs.map(q => {
+    const k = q.kind || type.kind;
+    // grp：ひっかけの札に使う仲間（雨温図の都市どうし・気候区どうし・山なら山どうし…）
+    const grp = q.chart ? "chart" : q.zone ? "zone" : q.feature ? "feat:" + (TERRAIN.find(f => f.id === q.feature) || {}).cat : q.pin ? "cap" : k;
+    if (k === "choice") return {q, grp, label: q.correct, kana: (q.choices.find(x => x[0] === q.correct) || [])[1] || "", others: q.choices.filter(x => x[0] !== q.correct).map(x => x[0]), pref: q.focus || q.prefs[0], kind: k};
+    const p = byCode(q.answers[0]);
+    return {q, grp: "pref", label: p.name, kana: p.kana, others: (areaOfPref(p.code) || {codes: []}).codes.filter(x => x !== p.code).map(x => byCode(x).name), pref: p.code, kind: k};
+  });
+}
+function startGame(c) {
+  toHomeScreen(); stopGame(); mode = "game"; bgmStart();
+  svg.classList.remove("explore");
+  const items = gameItems(c), miss = {};
+  recsOf(c.id).forEach(r => Object.entries(r.miss || {}).forEach(([k, v]) => { miss[k] = (miss[k] || 0) + v; }));
+  // まちがえた問題を先に、残りはランダム。同じお題は1回に1度だけ
+  const order = [...shuffle(items.filter(it => miss[it.q.key])).sort((a, b) => miss[b.q.key] - miss[a.q.key]), ...shuffle(items.filter(it => !miss[it.q.key]))];
+  G = {c, items, rounds: order.slice(0, GAME_ROUNDS), r: -1, score: 0, combo: 0, maxCombo: 0, found: 0, all: 0, raf: 0, wait: 0};
+  top_.innerHTML = `<button class="iconbtn" id="gquit" type="button" aria-label="やめる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><div class="ask"><span class="meta"><span class="nm">${c.name}・ご褒美ゲーム</span><span class="num" id="gnum"></span></span></div>${muteBtn()}`;
+  bindMute(); byId("gquit").onclick = () => coursePage(c);
+  sheet.classList.remove("home"); sheet.classList.add("game");
+  gameRound();
+}
+function gameRound() {
+  const g = G; if (!g) return;
+  g.r++;
+  if (g.r >= g.rounds.length) return gameEnd();
+  const it = g.rounds[g.r], q = it.q;
+  byId("gnum").textContent = `ラウンド ${g.r + 1} / ${g.rounds.length}`;
+  // 地図：答えの場所を光らせる（4択の問題は本編と同じ見せ方）
+  JapanMap.resetColors(); Object.values(pathEl).forEach(p => p.classList.remove("sel", "ok", "miss"));
+  showFeature(null); showChart(null); showPin(null);
+  if (q.chart) { showChart(q.chart); fitLater(FULL); }
+  else if (q.zone) { q.zone.forEach(x => pathEl[x].classList.add("sel")); fitLater(unionBox(q.zone)); }
+  else if (q.feature) { showFeature(q.feature); const b = TERRAIN.find(f => f.id === q.feature).b, cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2, h = Math.max(b[2] - b[0], b[3] - b[1], 160) / 2; fitLater([cx - h, cy - h, cx + h, cy + h]); }
+  else { pathEl[it.pref].classList.add("sel"); toFront(it.pref); if (q.pin) showPin(q.pin); fitLater(unionBox((areaOfPref(it.pref) || AREAS[0]).codes)); }
+  // お題の文：県名の問題（答えが問題文に入っている）は「光っている都道府県は？」にする
+  const plain = q.text.replace(/<[^>]+>/g, "");
+  const prompt = plain.includes(it.label) ? "地図で光っているのは？" : askText(q).html;
+  // 札：答えを7枚前後、残りは同じ問題の選択肢・同じ地方の県・ほかのお題の答え（まぎらわしいものを多めに）
+  const near = it.others.filter(o => o !== it.label), maxLen = Math.max(it.label.length, ...near.map(o => o.length));
+  // ほかのお題の答えは、答え・選択肢より長くないものだけ（札の幅をそろえる）
+  const far = [...new Set(g.items.filter(x => x.grp === it.grp).map(x => x.label))].filter(o => o !== it.label && !near.includes(o) && o.length <= maxLen);
+  // 札の数は名前の長さで決める（折り返さずに1行で読める幅）：3字まで6列36枚／4字5列30枚／5字以上4列24枚
+  const cols = maxLen <= 3 ? 6 : maxLen <= 4 ? 5 : 4, n = cols * 6, nt = Math.round(n * 0.2);
+  const dec = [], farPick = shuffle(far);
+  for (let i = 0; dec.length < n - nt; i++) dec.push(i % 2 === 0 && near.length ? near[(i / 2) % near.length] : (farPick.length ? farPick[i % farPick.length] : near[i % Math.max(1, near.length)]));
+  const tiles = shuffle([...Array(nt).fill(it.label), ...dec.slice(0, n - nt)]);
+  const tileW = (Math.min(innerWidth, 900) - 32 - (cols - 1) * 4) / cols - 8, fs = Math.max(10, Math.min(14, Math.floor(tileW / Math.max(...tiles.map(t => t.length)))));
+  g.cur = {it, left: nt, t0: performance.now(), sec: GAME_SEC, done: false};
+  sheet.innerHTML = `<div class="ghead"><span class="gq">${prompt}</span><span class="gs" id="gscore">${g.score}</span></div>
+    <div class="gtarget">答えは <b class="gans">${rb(it.label, it.kana)}</b>！ ぜんぶタップ　のこり <b id="gleft">${nt}</b> 枚</div>
+    <div class="gbar" id="gbar"><i></i></div>
+    <div class="ggrid" style="grid-template-columns:repeat(${cols},minmax(0,1fr));font-size:${fs}px">${tiles.map(t => `<button class="gtile" type="button" data-t="${t === it.label ? 1 : 0}">${t}</button>`).join("")}</div>`;
+  g.all += nt;
+  sheet.querySelectorAll(".gtile").forEach(b => b.onclick = () => gameTap(b));
+  const tick = now => {
+    if (G !== g || g.cur.done) return;
+    const rest = g.cur.sec - (now - g.cur.t0) / 1000, bar = byId("gbar");
+    bar.firstChild.style.transform = `scaleX(${Math.max(0, rest / GAME_SEC)})`; bar.classList.toggle("low", rest < 3);
+    if (rest <= 0) return roundEnd(false);
+    g.raf = requestAnimationFrame(tick);
+  };
+  g.raf = requestAnimationFrame(tick);
+}
+function gameTap(b) {
+  const g = G; if (!g || g.cur.done || b.disabled) return;
+  if (b.dataset.t === "1") {
+    b.disabled = true; b.classList.add("hit");
+    g.combo++; g.maxCombo = Math.max(g.maxCombo, g.combo); g.found++;
+    g.score += 10 + Math.min(10, (g.combo - 1) * 2);
+    g.cur.left--; byId("gleft").textContent = g.cur.left; byId("gscore").textContent = g.score;
+    sndTap(g.combo); say(g.cur.it.kana || g.cur.it.label);
+    if (g.cur.left === 0) roundEnd(true);
+  } else {
+    b.classList.remove("miss"); void b.offsetWidth; b.classList.add("miss");
+    setTimeout(() => b.classList.remove("miss"), 320);
+    g.combo = 0; g.cur.sec -= 1; sndNg();
+  }
+}
+function roundEnd(clear) {
+  const g = G; g.cur.done = true; cancelAnimationFrame(g.raf);
+  sheet.querySelectorAll(".gtile").forEach(b => { b.disabled = true; if (b.dataset.t === "1" && !b.classList.contains("hit")) b.classList.add("show"); });
+  if (clear) {
+    const rest = Math.max(0, g.cur.sec - (performance.now() - g.cur.t0) / 1000), bonus = Math.round(rest * 5);
+    g.score += bonus; byId("gscore").textContent = g.score;
+    byId("gleft").parentNode.innerHTML = `ぜんぶ見つけた！ <b>ボーナス +${bonus}</b>`;   // 答えの名前の行を入れかえる
+    sndOk(); const r = sheet.querySelector(".ggrid").getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2);
+  } else byId("gleft").parentNode.innerHTML = `時間切れ！ 答えは <b>${g.cur.it.label}</b>`;
+  g.wait = setTimeout(gameRound, clear ? 1100 : 1600);
+}
+function gameEnd() {
+  const g = G, r = rec(curMode().id, g.c.id), prev = gameBest(g.c.id), isBest = g.score > prev;
+  if (isBest) { r.gameBest = g.score; save(); }
+  cancelAnimationFrame(g.raf); bgmStop();
+  JapanMap.resetColors(); showFeature(null); showChart(null); showPin(null);
+  byId("gnum").textContent = "けっか";
+  sheet.innerHTML = `<div class="score"><span class="big">${g.score}<small style="font-size:1.2rem"> 点</small></span><span class="msg">見つけた札 ${g.found} / ${g.all}・最高 ${g.maxCombo}れんぞく</span></div>
+    ${isBest ? `<div class="modebar"><span class="medal">🎉 ベスト記録！</span></div>` : `<p class="hint">ベスト ${prev}点</p>`}
+    <div class="row"><button class="btn primary" id="gagain" type="button">もう一回</button><button class="btn" id="gback" type="button">コースにもどる</button></div>`;
+  const c = g.c; G = null;
+  if (isBest) { sndFanfare(); burst(innerWidth / 2, innerHeight * 0.35); }
+  byId("gagain").onclick = () => startGame(c); byId("gback").onclick = () => coursePage(c);
+}
+// 正解の札の音：短く明るい「ピコッ」。れんぞくするほど少しずつ高くなる
+function sndTap(combo) {
+  const a = audio(); if (!a) return;
+  const t = a.currentTime + 0.005, f = 880 * Math.pow(2, Math.min(12, combo - 1) / 12), o = a.createOscillator(), g = a.createGain();
+  o.type = "triangle"; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 2, t + 0.06);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.14, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+  o.connect(g); g.connect(out); g.connect(rev); o.start(t); o.stop(t + 0.2);
+}
+// 読み上げ（端末の音声。音OFFのときは読まない）
+function say(text) {
+  if (store.mute || !("speechSynthesis" in window)) return;
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = "ja-JP"; u.rate = 1.3; speechSynthesis.speak(u); } catch(e){}
 }
 
 window.addEventListener("load", home);
