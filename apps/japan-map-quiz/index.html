@@ -2,12 +2,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>サッ記マン 日本地図タップドリル</title>
-<!-- iPhone：上の時計・電池の帯を、上部バーと同じ色で塗る（ぼかしで中身が見えにくくならないように） -->
-<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#232222" media="(prefers-color-scheme: dark)">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
 <!-- ファビコンは公開サイトの直下（site/ から tools/build_site.py で配置）。?v= はスマホの覚え込み対策で、差し替えたら上げる -->
 <link rel="icon" href="../favicon.ico?v=2" sizes="any">
 <link rel="icon" href="../favicon-32.png?v=2" type="image/png" sizes="32x32">
@@ -53,11 +47,13 @@
   --land-none:#4B4B4B; --tier-a:#2F2D2B; --tier-b:#3A3632; --tier-c:#4A4227; --rich:#6B5A1C; --rich2:#7A6614;
   --temp-ink:#FF8E80; --rain-ink:#82BDF2; --marker:4px; color-scheme:dark}
 
-html,body{height:100%;margin:0}
+/* 時事ニュースクイズと同じ、ふつうのページの作り（body を overflow:hidden で固定しない）。
+   iOS 26 の Safari は、固定したページだと上の帯のぼかしが消えないため。高さは .app を 100dvh にして、ページ自体はスクロールしない */
+html,body{margin:0;min-height:100%}
 /* ページ全体の拡大（ピンチ・ダブルタップ）を止める。拡大できるのは地図だけ（svg#map は touch-action:none で自前で拡大縮小） */
 *{touch-action:pan-x pan-y}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:400;font-size:var(--fs16);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-.app{height:100%;display:grid;grid-template-rows:auto auto 1fr auto;grid-template-columns:minmax(0,1fr);max-width:900px;margin:0 auto;background:var(--paper)}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:400;font-size:var(--fs16);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.app{height:100vh;height:100dvh;overflow:hidden;display:grid;grid-template-rows:auto auto 1fr auto;grid-template-columns:minmax(0,1fr);max-width:900px;margin:0 auto;background:var(--paper)}
 
 /* 上の帯（白） */
 /* 上部バー：iPhone の時計・電池の帯（safe-area-inset-top）の下から中身を置く。帯の部分はぼかされるので、そこには何も置かない */
@@ -68,13 +64,6 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .ask .meta{font-size:var(--fs14);color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
 /* 上部バーの見出し：1行目＝コース・ステージ名（入りきらなければ…で省略）、2行目＝何問目か／けっか */
 .top .ask{gap:0}
-/* iPhone の Safari（ブラウザで開いたとき）は、画面のいちばん上から少し下まで中身をぼかして見せる（iOS 26 の仕様）。
-   その範囲には何も置かないよう、上の余白をさらに 40px 広げる。ホーム画面から開いたとき（standalone）はぼかしがないので広げない */
-@supports (-webkit-touch-callout: none) {
-  @media (display-mode: browser) {
-    .top{padding-top:calc(env(safe-area-inset-top,0px) + 52px);min-height:calc(112px + env(safe-area-inset-top,0px))}
-  }
-}
 .top .meta .nm{display:block;font-size:var(--fs12);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top .meta .num{display:block;font-size:var(--fs16);color:var(--ink);white-space:nowrap}
 .ask .q{font-family:var(--body);font-weight:700;font-size:var(--fs28);line-height:1.5}

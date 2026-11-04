@@ -487,3 +487,4 @@ Codex の `quizTimeout` に加え、4択のボタン・「つぎへ」は押し�
 - `theme-color`（ライト #FFFFFF・ダーク #232222＝`--paper`）を指定して、帯の色を上部バーとそろえた
 - ホームのバーの見出しを「サッと記憶！サッ記マン／日本地図タップドリル」に。ページのタイトルも「サッ記マン 日本地図タップドリル」
 - 2026-11-04 追記（まだぼやけるとの報告を受けて）：iOS 26 の Safari は、時計の帯の下もしばらく中身をぼかす。iPhone の Safari でブラウザ表示のとき（`@supports (-webkit-touch-callout:none)` かつ `display-mode: browser`）だけ、上部バーの上の余白を 52px（＋帯）に広げた。あわせて `site/manifest.webmanifest` の display を browser → standalone にし、`apple-mobile-web-app-capable` を付けた（ホーム画面から開くと Safari の枠なしで開き、ぼかしが出ない）。実機での確認はまだ
+- 2026-11-04 再追記：それでも上がぼやける、時事ニュースクイズ（SAKKI-JIJI）はぼやけないとの報告。比べると、地図クイズだけ body を `overflow:hidden`・高さ100%で固定していた。時事クイズと同じふつうのページの作り（`html,body{min-height:100%}`、固定は `.app{height:100dvh;overflow:hidden}` だけ）に変えた。前回足した iPhone 用の上の余白（+40px）と theme-color・apple-mobile-web-app 系の meta は、時事クイズにないので外した。ページ自体はスクロールしないことを 375×812・390×664・1280×800 で確認
