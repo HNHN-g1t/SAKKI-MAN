@@ -391,6 +391,10 @@ svg:not(.explore) .region-line{display:none}
 @media (prefers-reduced-motion:reduce){.nexttri .shine{animation:none;transform:translateX(60px)}}
 .fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
 .choice{min-height:64px;font-size:var(--fs20);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:var(--s4) var(--s8);line-height:1.2}
+.choice .paren{display:block;font-size:.7em;line-height:1.2}
+/* 4択の名前は言葉の途中で折らない（・のあとだけ）。答えたあとの小さいボタンでは字を小さくして収める */
+.choice{word-break:keep-all;overflow-wrap:anywhere}
+.ansrow .choice{font-size:12px;padding:2px}
 .choice small{font-size:var(--fs12);color:var(--muted);font-weight:700}
 .choice rt,.fb rt{font-size:.5em;color:var(--muted);font-weight:700}
 .choice.right rt,.choice.wrong rt{color:var(--on-strong)}
@@ -1753,7 +1757,7 @@ function nextQ() {
     }
     q.order = shuffle(q.choices);
     sheet.innerHTML = `${askBlock()}<div class="qslot" id="qslot"><div class="choices">${q.order.map(([n, k], j) =>
-      `<button class="choice" type="button" data-j="${j}">${rb(n, k)}</button>`).join("")}</div></div>`;
+      `<button class="choice" type="button" data-j="${j}">${rb(brkDot(n), k, true)}</button>`).join("")}</div></div>`;
     const owner = quiz;
     sheet.querySelectorAll("[data-j]").forEach(b => b.onclick = () => { if (quiz === owner && mode === "quiz") answerChoice(+b.dataset.j); });
   } else {
@@ -1773,7 +1777,14 @@ function logAnswer(ok) {
 // 「・」のうしろでだけ改行する（言葉の途中では切らない。・は行の頭に置かない）
 const brkDot = t => t.replace(/・/g, "・<wbr>");
 // ふりがな（よみ）を漢字の上に付ける
-const rb = (w, k) => k ? `<ruby>${w}<rt>${k}</rt></ruby>` : w;
+// 「元寇（博多湾）」のようにかっこの補足がある名前は、ふりがなを本体（元寇）だけに付け、補足はそのあとに出す。
+// br:true（4択のボタン）では補足を次の行に小さく出す
+const rb = (w, k, br = false) => {
+  const m = w.match(/^(.+?)（(.+)）$/);
+  if (!m) return k ? `<ruby>${w}<rt>${k}</rt></ruby>` : w;
+  const base = k ? `<ruby>${m[1]}<rt>${k}</rt></ruby>` : m[1];
+  return br ? `${base}<span class="paren">（${m[2]}）</span>` : `${base}（${m[2]}）`;
+};
 // 解説が答えの名前で始まるとき（「静岡県。…」）は、上の行と重ならないようにその部分を省く
 const trimLead = (text, name) => text && text.startsWith(name + "。") ? text.slice(name.length + 1) : (text || "");
 
@@ -1950,7 +1961,7 @@ function result() {
   const opened = COURSES.filter(c => before.includes(c.id) && unlocked(c));
   // まちがえた問題だけのやり直し（opts.keys）は、全部正解しても「パーフェクト」ではなく「クリア」
   const retry = !!quiz.opts.keys;
-  const msg = newMaster ? `${crown(course)}！` : newStage ? `${ic("crown")}${quiz.area.name}ステージ クリア！` : retry && correct === total ? "クリア！" : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしでマスター" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
+  const msg = newMaster ? `${crown(course)}！` : newStage ? `${ic("crown")}${quiz.area.name}ステージ パーフェクト！` : retry && correct === total ? "クリア！" : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしでマスター" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
   const nextStage = quiz.stage ? stagesOf(course)[stagesOf(course).indexOf(quiz.area) + 1] : null;
   const label = l => course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? TERRAIN.find(f => f.id === l.key).name : course.id === "industry" ? `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）` : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
   top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta"><span class="nm">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">けっか</span></span></div>${themeBtn()}${muteBtn()}`;
