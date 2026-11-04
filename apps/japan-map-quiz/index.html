@@ -560,6 +560,16 @@ const QUIZ_TYPES = {
       return [...cap, ...ter, ...agri, ...make];
     }
   },
+  history: {
+    title: "歴史の場所", kind: "choice",
+    // 時代ステージ（area.cat）の場所を出題。ピンクの光る印の場所が何かを4択。選択肢は同じ種類から（足りなければほかの種類から）
+    make: (codes, area) => HISTORY.filter(h => !area || !area.cat || h.era === area.cat).map(h => {
+      const same = shuffle(HISTORY.filter(o => o.id !== h.id && o.kind === h.kind)), other = shuffle(HISTORY.filter(o => o.id !== h.id && o.kind !== h.kind));
+      const pool = [...same, ...other].slice(0, 3);
+      return { key: h.id, prefs: [h.pref], focus: h.pref, pinLL: h.ll, sub: "", choices: [[h.name, h.kana], ...pool.map(o => [o.name, o.kana])], correct: h.name,
+        text: HISTORY_KINDS[h.kind], explain: h.note };
+    })
+  },
   designated: {
     title: "政令指定都市", kind: "tap",
     make: codes => CITIES.designated.map((d, i) => [d, i]).filter(([d]) => codes.includes(d[2])).map(([[name, kana, c], i]) => (
@@ -717,6 +727,56 @@ const industryOf = id => INDUSTRY.find(f => f.id === id);
 const industryLive = () => INDUSTRY.filter(f => f.status !== "stop");   // 出題する問題（出題停止を除く）
 const industryName = f => (f.word.match(/<em>(.*?)<\/em>/) || [0, f.word])[1];   // 結果の一覧に出す短い名前
 
+/* ---------- 歴史の場所（地図で、歴史で有名な場所を覚える） ----------
+   ピンクの光る印の場所が何かを4択で答える。選択肢は同じ種類（戦い・都・遺跡・寺社・城・施設）から
+   [id, 時代ステージ, 種類, 名前, よみ, 県コード, 緯度, 経度, 解説]
+   海ぎわの壇ノ浦・元寇（博多湾）・原城は、簡略化した地図で海に出てしまうため、表示用にいちばん近い陸へ1〜2km寄せている */
+const HISTORY_ERAS = {
+  ancient: "旧石器〜古墳", nara: "飛鳥・奈良", heian: "平安", kamakura: "鎌倉・室町", sengoku: "戦国・安土桃山", edo: "江戸", modern: "明治〜昭和",
+};
+const HISTORY_KINDS = {
+  // 問い方は短く（1行に入るように）
+  battle: "光る場所で起きた<em>戦い</em>は？", capital: "光る場所の<em>政治の中心</em>は？", site: "光る場所の<em>遺跡・古墳</em>は？",
+  temple: "光る場所の<em>寺・神社</em>は？", castle: "光る場所の<em>城</em>は？", place: "光る場所の<em>史跡</em>は？",
+};
+const HISTORY = [
+  ["iwajuku","ancient","site","岩宿遺跡","いわじゅくいせき",10,36.405,139.293,"群馬県。日本にも旧石器時代があったことがわかった遺跡（1946年、相沢忠洋が発見）"],
+  ["sannai","ancient","site","三内丸山遺跡","さんないまるやまいせき",2,40.811,140.696,"青森県。縄文時代の大きな集落のあと。大きな柱のあとが見つかった"],
+  ["toro","ancient","site","登呂遺跡","とろいせき",22,34.957,138.405,"静岡県。弥生時代の水田と高床倉庫のあと"],
+  ["yoshinogari","ancient","site","吉野ヶ里遺跡","よしのがりいせき",41,33.326,130.383,"佐賀県。弥生時代の、まわりを堀で囲んだ大きな集落（環濠集落）のあと"],
+  ["daisen","ancient","site","大仙古墳","だいせんこふん",27,34.564,135.487,"大阪府（堺市）。日本でいちばん大きい前方後円墳。仁徳天皇陵ともいう"],
+  ["inariyama","ancient","site","稲荷山古墳","いなりやまこふん",11,36.128,139.475,"埼玉県（行田市）。ワカタケル大王の名がきざまれた鉄剣が見つかった"],
+  ["horyuji","nara","temple","法隆寺","ほうりゅうじ",29,34.614,135.734,"奈良県（斑鳩町）。聖徳太子が建てた寺。現存する世界最古の木造建築"],
+  ["heijo","nara","capital","平城京","へいじょうきょう",29,34.691,135.796,"奈良県（奈良市）。710年に都が移された"],
+  ["todaiji","nara","temple","東大寺","とうだいじ",29,34.689,135.840,"奈良県（奈良市）。聖武天皇が大仏をつくらせた（752年に開眼）"],
+  ["dazaifu","nara","capital","大宰府","だざいふ",40,33.514,130.515,"福岡県（太宰府市）。九州をおさめ、外国との窓口にもなった役所"],
+  ["tagajo","nara","castle","多賀城","たがじょう",4,38.306,141.003,"宮城県（多賀城市）。東北地方をおさめるために置かれた城（役所）"],
+  ["heian","heian","capital","平安京","へいあんきょう",26,35.0116,135.7681,"京都府（京都市）。794年に桓武天皇が都を移した"],
+  ["byodoin","heian","temple","平等院鳳凰堂","びょうどういんほうおうどう",26,34.889,135.808,"京都府（宇治市）。藤原頼通が建てた。10円玉の絵"],
+  ["chusonji","heian","temple","中尊寺金色堂","ちゅうそんじこんじきどう",3,39.001,141.100,"岩手県（平泉町）。奥州藤原氏が建てた、金ぱくでおおわれたお堂"],
+  ["itsukushima","heian","temple","厳島神社","いつくしまじんじゃ",34,34.296,132.320,"広島県（廿日市市）。平清盛があつく信仰した。海の上に立つ社殿"],
+  ["dannoura","heian","battle","壇ノ浦の戦い","だんのうらのたたかい",35,33.949,130.932,"山口県（下関市）。1185年、源氏が平氏をほろぼした"],
+  ["kamakura","kamakura","capital","鎌倉","かまくら",14,35.319,139.551,"神奈川県（鎌倉市）。源頼朝が幕府を開いた場所"],
+  ["genko","kamakura","battle","元寇（博多湾）","げんこう",40,33.581,130.358,"福岡県（福岡市）。1274年と1281年に元（モンゴル）の大軍がせめてきた"],
+  ["kinkaku","kamakura","temple","金閣（鹿苑寺）","きんかく",26,35.039,135.729,"京都府（京都市）。室町幕府の3代将軍・足利義満が建てた"],
+  ["ginkaku","kamakura","temple","銀閣（慈照寺）","ぎんかく",26,35.027,135.798,"京都府（京都市）。8代将軍・足利義政が建てた"],
+  ["okehazama","sengoku","battle","桶狭間の戦い","おけはざまのたたかい",23,35.056,136.985,"愛知県。1560年、織田信長が今川義元をたおした"],
+  ["nagashino","sengoku","battle","長篠の戦い","ながしののたたかい",23,34.910,137.520,"愛知県（新城市）。1575年、織田・徳川の軍が鉄砲を使って武田の軍をやぶった"],
+  ["sekigahara","sengoku","battle","関ケ原の戦い","せきがはらのたたかい",21,35.365,136.467,"岐阜県（関ケ原町）。1600年、徳川家康が石田三成らをやぶった"],
+  ["azuchi","sengoku","castle","安土城","あづちじょう",25,35.156,136.139,"滋賀県（近江八幡市）。織田信長が琵琶湖のほとりに建てた城"],
+  ["osakajo","sengoku","castle","大阪城","おおさかじょう",27,34.687,135.526,"大阪府（大阪市）。豊臣秀吉が建てた城"],
+  ["edojo","edo","castle","江戸城","えどじょう",13,35.685,139.753,"東京都（千代田区）。江戸幕府の将軍がいた城。今の皇居"],
+  ["nikko","edo","temple","日光東照宮","にっこうとうしょうぐう",9,36.758,139.599,"栃木県（日光市）。徳川家康をまつる神社"],
+  ["dejima","edo","place","出島","でじま",42,32.744,129.873,"長崎県（長崎市）。鎖国のあいだ、オランダと貿易した人工の島"],
+  ["harajo","edo","battle","島原・天草一揆（原城）","しまばら・あまくさいっき",42,32.619,130.225,"長崎県（南島原市）。1637年、キリスト教の信者や農民が原城にたてこもった"],
+  ["himeji","edo","castle","姫路城","ひめじじょう",28,34.839,134.694,"兵庫県（姫路市）。白い城。世界遺産"],
+  ["goryokaku","modern","castle","五稜郭","ごりょうかく",1,41.797,140.757,"北海道（函館市）。星の形の城。戊辰戦争の最後の戦いの場所"],
+  ["tomioka","modern","place","富岡製糸場","とみおかせいしじょう",10,36.255,138.889,"群馬県（富岡市）。1872年に国がつくった、生糸をつくる工場"],
+  ["yawata","modern","place","八幡製鉄所","やはたせいてつしょ",40,33.870,130.810,"福岡県（北九州市）。1901年に操業を始めた国の製鉄所"],
+  ["genbaku","modern","place","原爆ドーム","げんばくドーム",34,34.3955,132.4535,"広島県（広島市）。1945年8月6日に原子爆弾が落とされた。世界遺産"],
+].map(([id, era, kind, name, kana, pref, lat, lon, note]) => ({id, era, kind, name, kana, pref, ll: [lat, lon], note}));
+const historyOf = id => HISTORY.find(h => h.id === id);
+
 const TERRAIN_CATS = { mount: "山地・山脈・山", river: "川", plain: "平野" };
 
 /* ---------- 気候（気候区分・雨温図） ----------
@@ -849,6 +909,10 @@ const COURSES = [
    rules:[`5ステージ（全${industryLive().length}問）。収穫量などが全国一の都道府県や、工業地域・伝統工芸品の場所を地図でタップ`, "ステージ👑：そのステージをヒントなしで全問正解",
           "👑産業マスター：5ステージすべて👑", "完了：5ステージすべてを最後まで解く",
           "順位は国や県の統計で確認したもの。解説に統計の年を書いている"]},
+  {id:"history", track:"history", name:"歴史の場所", master:"歴史の場所マスター", from:"g5", ready:true, stages:true,
+   stageList:Object.entries(HISTORY_ERAS).map(([id, name]) => ({id, cat:id, name, codes:range(1,47)})),
+   rules:[`時代ごとの${Object.keys(HISTORY_ERAS).length}ステージ（全${HISTORY.length}か所）。地図の光る場所が何かを4択で答える`, "ステージ👑：そのステージをヒントなしで全問正解",
+          "👑マスター：すべてのステージ👑", "完了：すべてのステージを最後まで解く"]},
   {id:"general", name:"総合問題", master:"総合マスター", from:"g5", ready:true, stages:true, unlock:{course:"industry", need:"complete"},
    rules:["地方ごとの7ステージ。県庁所在地・河川など地形・農林水産業・工業と伝統工芸を、その地方の中からまぜて出す（毎回えらび直す）",
           "ステージ👑：そのステージをヒントなしで全問正解", "👑総合マスター：7ステージすべて👑", "完了：7ステージすべてを最後まで解く",
@@ -856,7 +920,7 @@ const COURSES = [
 ];
 const courseOf = id => COURSES.find(c => c.id === id);
 // 歴史は地理とは別コースで設計する（今回は準備中の表示のみ）
-const TRACKS = [{id:"geo", name:"地理コース"}, {id:"history", name:"歴史コース", note:"地理とは別のコースとして準備中"}];
+const TRACKS = [{id:"geo", name:"地理コース"}, {id:"history", name:"歴史コース"}];
 /* 地理の補足として扱う地域の歴史的背景（必須の進行には入れない）。
    GEO_NOTES[県コード] = [{theme:"river", text:"…"}] を足すと、その県の問題の正誤のあとに表示する */
 const GEO_THEMES = { river: "川・水害とくらし", town: "城下町・港町・街道", industry: "農業・工業の発達" };
@@ -933,7 +997,7 @@ const STAGES = AREAS.filter(a => !a.wide);
 const stagesOf = c => c.stageList || STAGES;
 const stageDone = (courseId, areaId, need) => recsOf(courseId).some(r => { const s = (r.stage || {})[areaId]; return s && (need === "master" ? !!s.master : s.complete); });
 const stageCrowns = courseId => stagesOf(courseOf(courseId)).filter(a => stageDone(courseId, a.id, "master")).length;
-const prefOfKey = (courseId, key) => courseId === "general" ? prefOfKey({cap: "capital", ter: "terrain", ind: "industry"}[String(key).split(":")[0]], String(key).split(":")[1])
+const prefOfKey = (courseId, key) => courseId === "history" ? (historyOf(key) || {}).pref : courseId === "general" ? prefOfKey({cap: "capital", ter: "terrain", ind: "industry"}[String(key).split(":")[0]], String(key).split(":")[1])
   : courseId === "climate" ? (String(key).startsWith("zone:") ? zoneOf(key.slice(5)).codes[0] : (CLIMATE_CITIES.find(c => "city:" + c.id === key) || {}).pref)
   : courseId === "designated" ? CITIES.designated[key][2] : courseId === "terrain" ? (TERRAIN.find(f => f.id === key) || {}).pref : courseId === "industry" ? (industryOf(key) || {}).pref : +key;
 const fullCount = courseId => QUIZ_TYPES[courseId].make(range(1,47)).length;
@@ -1546,11 +1610,15 @@ function home() {
   sheet.innerHTML = `
     <div class="info" id="info"></div>
     <h2>${TRACKS[0].name}</h2>
-    <div class="courses">${COURSES.map((c, i) => {
+    <div class="courses">${COURSES.filter(c => c.track !== "history").map((c, i) => {
       const s = courseStatus(c);
       return `<button class="course${s.done ? " done" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${s.done ? CROWN_SVG : ""}${c.name}${s.done ? `<em class="mastered">マスター！</em>` : `<small>${s.text}</small>`}</span></button>`;
     }).join("")}</div>
-    <h2>${TRACKS[1].name}</h2><p class="hint">${TRACKS[1].note}</p>
+    <h2>${TRACKS[1].name}</h2>
+    <div class="courses">${COURSES.filter(c => c.track === "history").map((c, i) => {
+      const s = courseStatus(c);
+      return `<button class="course${s.done ? " done" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${s.done ? CROWN_SVG : ""}${c.name}${s.done ? `<em class="mastered">マスター！</em>` : `<small>${s.text}</small>`}</span></button>`;
+    }).join("")}</div>
     <button class="btn resetbtn" id="reset" type="button">${ic("refresh")}リセット</button>`;
   byId("reset").onclick = openReset;
   sheet.querySelectorAll("[data-course]").forEach(b => b.onclick = () => coursePage(courseOf(b.dataset.course)));
@@ -1679,7 +1747,8 @@ function nextQ() {
       fitLater([cx - h, cy - h, cx + h, cy + h]);
     } else {
       pathEl[q.focus].classList.add("sel");
-      showPin(q.pin);   // 県庁所在地の問題：県庁のある場所をピンクの光で示す
+      // 県庁所在地は県庁、歴史の場所はその場所を、ピンクの光で示す
+      if (q.pinLL) { showPinAt(q.pinLL, q.focus); fitLater(unionBox(areaOfPref(q.focus).codes)); } else showPin(q.pin);
       if (quiz.area.wide) fitLater(unionBox(areaOfPref(q.focus).codes));
     }
     q.order = shuffle(q.choices);
@@ -1881,7 +1950,7 @@ function result() {
   const opened = COURSES.filter(c => before.includes(c.id) && unlocked(c));
   const msg = newMaster ? `${crown(course)}！` : newStage ? `${ic("crown")}${quiz.area.name}ステージ クリア！` : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしでマスター" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
   const nextStage = quiz.stage ? stagesOf(course)[stagesOf(course).indexOf(quiz.area) + 1] : null;
-  const label = l => course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? TERRAIN.find(f => f.id === l.key).name : course.id === "industry" ? `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）` : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
+  const label = l => course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? TERRAIN.find(f => f.id === l.key).name : course.id === "industry" ? `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）` : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
   top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta"><span class="nm">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">けっか</span></span></div>${themeBtn()}${muteBtn()}`;
   bindBar();
   // 文の最初のすきま（タグの外）で改行する。王冠はSVGなので innerHTML で入れる
