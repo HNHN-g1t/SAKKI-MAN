@@ -81,8 +81,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .pbar i.hintd{background:repeating-linear-gradient(135deg,var(--ok) 0 3px,var(--ok-soft) 3px 6px)}
 
 /* ボタンは3種類：主要（黄色＋墨の枠＋真下の影。押すと沈む）／補助（白＋墨の枠、影なし）／最小限（文字だけ） */
-.btn,.iconbtn,.chip,.course,.choice,.zoomreset{box-sizing:border-box;min-height:var(--tap);border:var(--bw) solid var(--ink);border-radius:var(--r-btn);background:var(--paper);color:var(--ink);font-family:var(--body);font-weight:700;cursor:pointer}
-.btn:active,.iconbtn:active,.chip:active,.course:active,.choice:active,.zoomreset:active{transform:translateY(2px)}
+.btn,.iconbtn,.chip,.course,.choice{box-sizing:border-box;min-height:var(--tap);border:var(--bw) solid var(--ink);border-radius:var(--r-btn);background:var(--paper);color:var(--ink);font-family:var(--body);font-weight:700;cursor:pointer}
+.btn:active,.iconbtn:active,.chip:active,.course:active,.choice:active{transform:translateY(2px)}
 .btn.primary,.chip.wide{background:var(--brand);color:var(--on-brand);box-shadow:0 4px 0 var(--ink)}
 .btn.primary:active,.chip.wide:active{transform:translateY(4px);box-shadow:none}
 .linkbtn{border:0;background:none;color:var(--ink);font:700 var(--fs14) var(--body);text-decoration:underline;cursor:pointer;min-height:var(--tap);padding:0 var(--s4)}
@@ -118,7 +118,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .pin-dots i.on{background:var(--ink)}
 .pin-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s8);width:100%}
 .pin-keys .btn{font-size:var(--fs20);min-height:56px}
-.btn:focus-visible,.iconbtn:focus-visible,.chip:focus-visible,.course:focus-visible,.choice:focus-visible,.zoomreset:focus-visible,.linkbtn:focus-visible,.eye:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.btn:focus-visible,.iconbtn:focus-visible,.chip:focus-visible,.course:focus-visible,.choice:focus-visible,.linkbtn:focus-visible,.eye:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
 
 /* 地図（問題中は海と陸を落ち着かせ、黄色は選択・正解表示の時だけ） */
 .mapwrap{position:relative;min-height:0;background:var(--sea)}
@@ -180,11 +180,9 @@ svg:not(.explore) .region-line{display:none}
 .eye svg{width:34px;height:34px}
 .eye.on{background:var(--brand);color:var(--on-brand);transform:translateY(4px);box-shadow:none}
 .eye .cap{position:absolute;right:0;bottom:-26px;font-size:var(--fs12);font-weight:700;color:var(--ink);white-space:nowrap;background:var(--paper);border:1.5px solid var(--ink);padding:1px var(--s8);border-radius:var(--r-pill)}
-/* ぜんこく：枠なしで地図の上に白い文字（縁どりで海の上でも読める） */
-.zoomreset{position:absolute;left:calc(var(--s8) + env(safe-area-inset-left,0px));top:var(--s4);padding:0 var(--s8);font-size:var(--fs16);border:0;background:none;box-shadow:none;color:#fff;text-shadow:0 0 2px #282727,0 0 2px #282727,0 1px 3px rgba(0,0,0,.6)}
 .combo{position:absolute;left:50%;top:var(--s16);transform:translateX(-50%);font-family:var(--display);font-size:var(--fs20);color:var(--on-brand);background:var(--brand);border:var(--bw) solid var(--on-brand);padding:var(--s4) var(--s16);border-radius:var(--r-pill);pointer-events:none}
 .combo.pop{animation:pop .3s ease-out 1}
-/* 雨温図の札：地図の上（「ぜんこく」の下）に出す。棒＝降水量（川の青）、折れ線＝平均気温（赤） */
+/* 雨温図の札：地図の上に出す。棒＝降水量（川の青）、折れ線＝平均気温（赤） */
 .chart{position:absolute;left:50%;top:60px;transform:translateX(-50%);width:min(340px,calc(100% - var(--s32)));box-sizing:border-box;background:var(--paper);color:var(--ink);border:var(--bw) solid var(--ink);border-radius:var(--r-btn);padding:var(--s8) var(--s8) var(--s4);pointer-events:none;z-index:1}
 .chart[hidden]{display:none}
 .chart svg{display:block;width:100%;height:auto}
@@ -352,7 +350,6 @@ svg:not(.explore) .region-line{display:none}
     <div class="combo" id="combo" hidden></div>
     <div class="clearmsg" id="clearmsg" hidden><span></span></div>
     <div class="toast" id="toast" role="status" hidden></div>
-    <button class="zoomreset" id="zoomreset" type="button">ぜんこく</button>
     <button class="eye" id="eye" type="button" aria-label="押している間だけ県名を表示">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
       <span class="cap">おしてる間だけ</span>
@@ -441,7 +438,7 @@ const QUIZ_TYPES = {
     })
   },
   capital: {
-    title: "県庁所在地 4択", kind: "choice",
+    title: "県庁所在地", kind: "choice",
     make: codes => codes.map(c => {
       const p = byCode(c), [ans] = CITIES.capitals[c];
       return { key: c, prefs: [c], focus: c, pin: c, sub: c === 13 ? "とうきょうとちょう" : p.kana, choices: CITIES.capitals[c], correct: ans[0],
@@ -497,7 +494,7 @@ const QUIZ_TYPES = {
   designated: {
     title: "政令指定都市", kind: "tap",
     make: codes => CITIES.designated.map((d, i) => [d, i]).filter(([d]) => codes.includes(d[2])).map(([[name, kana, c], i]) => (
-      { key: i, prefs: [c], text: `<em>${name}</em>がある都道府県は？`, sub: kana, answers: [c],
+      { key: i, prefs: [c], pinLL: DESIGNATED_LL[name], text: `<em>${name}</em>がある都道府県は？`, sub: kana, answers: [c],
         explain: `${name}（${kana}）は ${byCode(c).name}の政令指定都市` }))
   }
 };
@@ -760,7 +757,7 @@ const COURSES = [
    rules:["全国の挑戦：47都道府県を1回ずつ、順番はランダム", "完了：全国47問を最後まで解く",
           "👑マスター：ヒントなしで全国47問すべて正解 → 県庁所在地コースが開く",
           "全国の挑戦がまだでも、地方ごとの練習を7地方すべてヒントなしで全問正解（パーフェクト）すれば、県庁所在地コースが開く"]},
-  {id:"capital", name:"県庁所在地 4択", master:"県庁所在地マスター", from:"g4", ready:true, stages:true, unlock:{course:"prefName", need:"master"},
+  {id:"capital", name:"県庁所在地", master:"県庁所在地マスター", from:"g4", ready:true, stages:true, unlock:{course:"prefName", need:"master"},
    rules:["地方ごとの7ステージ（4〜9問）。選択肢の並びは毎回ランダム", "ステージ👑：そのステージをヒントなしで全問正解",
           "👑県庁所在地マスター：7ステージすべて👑", "完了：7ステージすべてを最後まで解く（→ 政令指定都市コースが開く）",
           "東京都は「都庁がある区」を答える"]},
@@ -1069,15 +1066,22 @@ const CAPITAL_LL = {1:[43.0642,141.3469],2:[40.8244,140.7400],3:[39.7036,141.152
   35:[34.1859,131.4714],36:[34.0658,134.5593],37:[34.3401,134.0434],38:[33.8416,132.7657],39:[33.5597,133.5311],40:[33.6064,130.4182],41:[33.2494,130.2988],
   42:[32.7448,129.8737],43:[32.7898,130.7417],44:[33.2382,131.6126],45:[31.9111,131.4239],46:[31.5602,130.5581],47:[26.2124,127.6809]};
 const capPin = document.getElementById("capPin");
-let pinCode = null;
+let pinCode = null, pinLL = null;
 function placePin() {
-  if (!pinCode) { capPin.style.display = "none"; return; }
-  let [x, y] = toXY(...CAPITAL_LL[pinCode]);
+  if (!pinLL) { capPin.style.display = "none"; return; }
+  let [x, y] = toXY(...pinLL);
   if (pinCode === 47 && insetShown) { x += OKI.li[0] - OKI.l[0]; y += OKI.li[1] - OKI.l[1]; }   // 枠内の沖縄に合わせる
   capPin.style.display = "";
   capPin.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(view.w / box().w).toFixed(4)})`);
 }
-const showPin = code => { pinCode = code || null; placePin(); };
+const showPin = code => { pinCode = code || null; pinLL = code ? CAPITAL_LL[code] : null; placePin(); };
+// 緯度経度で直接置く（政令指定都市の市役所など）。pref は沖縄の枠に合わせるため
+const showPinAt = (ll, pref) => { pinCode = pref || null; pinLL = ll || null; placePin(); };
+/* 政令指定都市の位置（市役所の緯度・経度）。相模原市だけは、簡略化した地図で東京都側に出てしまうため約1.8km南に寄せている */
+const DESIGNATED_LL = {"札幌市":[43.0621,141.3544],"仙台市":[38.2682,140.8694],"さいたま市":[35.8617,139.6455],"千葉市":[35.6073,140.1063],"横浜市":[35.4437,139.6380],
+  "川崎市":[35.5309,139.7030],"相模原市":[35.555,139.372],"新潟市":[37.9161,139.0364],"静岡市":[34.9756,138.3828],"浜松市":[34.7108,137.7261],"名古屋市":[35.1815,136.9066],
+  "京都市":[35.0116,135.7681],"大阪市":[34.6937,135.5023],"堺市":[34.5733,135.4831],"神戸市":[34.6901,135.1955],"岡山市":[34.6551,133.9195],"広島市":[34.3853,132.4553],
+  "北九州市":[33.8834,130.8752],"福岡市":[33.5902,130.4017],"熊本市":[32.8031,130.7079]};
 
 /* 地方の虫眼鏡（緯度・経度で置く。タップでその地方へズーム） */
 const toXY = (lat, lon) => [(lon - 128) * Math.cos(36 * Math.PI / 180) * 60, (45.8 - lat) * 60];
@@ -1136,7 +1140,6 @@ function fitBox(bb, animate=true) {
 }
 const unionBox = codes => codes.reduce((a,c) => { const b = boxOf[c]; return [Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[2],b[2]),Math.max(a[3],b[3])]; }, [1e9,1e9,-1e9,-1e9]);
 let homeBox = FULL;
-document.getElementById("zoomreset").onclick = () => fitBox(FULL);
 function zoomArea(id){ fitBox(unionBox(AREAS.find(a => a.id === id).codes)); }
 
 /* ---------- ページ全体の拡大を止める ----------
@@ -1688,6 +1691,7 @@ function handleTap(code) {
   logAnswer(ok);
   if (quiz.course.id === "prefName" && !ok) { store.miss[ans.code] = (store.miss[ans.code] || 0) + 1; save(); }
   renderProgress();   // 出題文と枠はそのまま。枠の中だけ正誤に入れかえる
+  if (q.pinLL) showPinAt(q.pinLL, q.prefs[0]);   // 政令指定都市：答えたら、その市の場所をピンクの光で示す
   if (ok) {
     pathEl[code].classList.add("flash-ok");
     quizTimeout(() => { pathEl[code].classList.remove("flash-ok"); pathEl[code].classList.add("ok"); }, 450);
