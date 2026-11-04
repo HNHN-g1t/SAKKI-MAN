@@ -1911,16 +1911,26 @@ function gameRound() {
     <div class="gtarget" id="gmsg">答えのフーセンをぜんぶ割れ！ のこり <b id="gleft"></b> こ</div>
     <div class="gbar" id="gbar"><i></i></div>`;
   // 数は、地図のふち1周に入る数まで（真ん中の地図をあけておく）
-  const n = Math.min(maxLen <= 4 ? 22 : maxLen <= 5 ? 18 : 14, ringCap(balloonW(maxLen))), nt = Math.max(3, Math.round(n * 0.2));
+  const n = Math.min(maxLen <= 4 ? 22 : maxLen <= 5 ? 18 : 14, ringCap(balloonW(maxLen))), nt = 3;   // 答えのフーセンはいつも3こ
   const dec = [], farPick = shuffle(far);
   for (let i = 0; dec.length < n - nt; i++) dec.push(i % 2 === 0 && near.length ? near[(i / 2) % near.length] : (farPick.length ? farPick[i % farPick.length] : near[i % Math.max(1, near.length)]));
   const labels = shuffle([...Array(nt).fill(it.label), ...dec.slice(0, n - nt)]);
   g.cur = {it, left: nt, t0: performance.now(), sec: GAME_SEC, done: false};
   byId("gleft").textContent = nt;
   g.all += nt;
-  placeBalloons(labels, it.label);
+  g.balls = placeBalloons(labels, it.label);
+  // 当たり判定をつけるのは、光っている場所（県・地形・気候区・雨温図）だけ。フーセンはそこで跳ね返る
+  const obs = q.chart ? [chartEl] : q.zone ? q.zone.map(x => pathEl[x]) : q.feature ? featEls[q.feature] : [it.pref === 47 && insetShown ? okiCopy : pathEl[it.pref]];
+  g.cur.obstacle = () => {
+    const w = byId("mapwrap").getBoundingClientRect(); let r = null;
+    obs.forEach(el => { const b = el.getBoundingClientRect(); if (!b.width) return;
+      r = r ? {l: Math.min(r.l, b.left), t: Math.min(r.t, b.top), r: Math.max(r.r, b.right), b: Math.max(r.b, b.bottom)} : {l: b.left, t: b.top, r: b.right, b: b.bottom}; });
+    return r && {l: r.l - w.left - 4, t: r.t - w.top - 4, r: r.r - w.left + 4, b: r.b - w.top + 4};
+  };
+  let last = performance.now();
   const tick = now => {
     if (G !== g || g.cur.done) return;
+    stepBalloons(g, Math.min(0.05, (now - last) / 1000)); last = now;
     const rest = g.cur.sec - (now - g.cur.t0) / 1000, bar = byId("gbar");
     bar.firstChild.style.transform = `scaleX(${Math.max(0, rest / GAME_SEC)})`; bar.classList.toggle("low", rest < 3);
     if (rest <= 0) return roundEnd(false);
@@ -1961,7 +1971,7 @@ function placeBalloons(labels, answer) {
   let list = labels;
   if (list.length > cap) { const ans = list.filter(t => t === answer), dec = list.filter(t => t !== answer); list = shuffle([...ans, ...dec.slice(0, Math.max(0, cap - ans.length))]); }
   // 置き場所が余るときは、1周に均等にばらして使う
-  const off = Math.floor(Math.random() * cap), slots = list.map((_, i) => all[(off + Math.floor(i * cap / list.length)) % cap]);
+  const off = Math.floor(Math.random() * cap), slots = list.map((_, i) => all[(off + Math.floor(i * cap / list.length)) % cap]), balls = [];
   list.forEach((t, i) => {
     const [x, y] = slots[i], sz = {w: D, h: D};
     const b = document.createElement("button");
@@ -1969,7 +1979,57 @@ function placeBalloons(labels, answer) {
     b.style.cssText = `left:${(x - sz.w / 2).toFixed(0)}px;top:${(y - sz.h / 2).toFixed(0)}px;width:${sz.w}px;height:${sz.h}px;--bc:${BALLOON_COLS[i % BALLOON_COLS.length]};animation-delay:${(-Math.random() * 3).toFixed(2)}s`;
     b.onclick = () => gameTap(b);
     ov.appendChild(b);
+    const a = Math.random() * Math.PI * 2, sp = 14 + Math.random() * 14;
+    balls.push({el: b, x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: D / 2});
   });
+  return balls;
+}
+// フーセンがゆったり漂う：かべ・ほかのフーセン・光っている場所で跳ね返る
+function stepBalloons(g, dt) {
+  if (!g.balls || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const wrap = byId("mapwrap"), W = wrap.clientWidth, H = wrap.clientHeight - 24 - 16, ob = g.cur.obstacle && g.cur.obstacle();
+  const bs = g.balls = g.balls.filter(o => o.el.isConnected && !o.el.disabled);
+  bs.forEach(o => {
+    // 向きを少しずつ変えて、ふらふら漂わせる。速さは 12〜30px/秒
+    const turn = (Math.random() - 0.5) * 0.6 * dt, c = Math.cos(turn), sn = Math.sin(turn);
+    [o.vx, o.vy] = [o.vx * c - o.vy * sn, o.vx * sn + o.vy * c];
+    const sp = Math.hypot(o.vx, o.vy) || 1, k = Math.min(30, Math.max(12, sp)) / sp; o.vx *= k; o.vy *= k;
+    o.x += o.vx * dt; o.y += o.vy * dt;
+    if (o.x < o.r + 4) { o.x = o.r + 4; o.vx = Math.abs(o.vx); } if (o.x > W - o.r - 4) { o.x = W - o.r - 4; o.vx = -Math.abs(o.vx); }
+    if (o.y < o.r + 4) { o.y = o.r + 4; o.vy = Math.abs(o.vy); } if (o.y > H - o.r) { o.y = H - o.r; o.vy = -Math.abs(o.vy); }
+    if (ob) {
+      // 光っている場所の四角との当たり判定：中に入っていたらいちばん近い辺の外へ、ふれていたら押し出して向きを反射
+      const inside = o.x > ob.l && o.x < ob.r && o.y > ob.t && o.y < ob.b;
+      if (inside) {
+        // 押し出した先が画面の外になる辺は選ばない（光る場所と画面のふちにはさまれたとき）
+        const fits = ([dist, sx, sy]) => { const x = o.x + sx * (dist + o.r), y = o.y + sy * (dist + o.r); return x >= o.r + 4 && x <= W - o.r - 4 && y >= o.r + 4 && y <= H - o.r; };
+        const cand = [[o.x - ob.l, -1, 0], [ob.r - o.x, 1, 0], [o.y - ob.t, 0, -1], [ob.b - o.y, 0, 1]].sort((p, q) => p[0] - q[0]);
+        const e = cand.find(fits) || cand[0];
+        o.x += e[1] * (e[0] + o.r); o.y += e[2] * (e[0] + o.r);
+        if (e[1]) o.vx = e[1] * Math.abs(o.vx); else o.vy = e[2] * Math.abs(o.vy);
+      } else {
+        const nx = Math.max(ob.l, Math.min(o.x, ob.r)), ny = Math.max(ob.t, Math.min(o.y, ob.b)), dx = o.x - nx, dy = o.y - ny, d = Math.hypot(dx, dy);
+        if (d < o.r && d > 0) {
+          const ux = dx / d, uy = dy / d; o.x += ux * (o.r - d); o.y += uy * (o.r - d);
+          const dot = o.vx * ux + o.vy * uy; if (dot < 0) { o.vx -= 2 * dot * ux; o.vy -= 2 * dot * uy; }
+        }
+      }
+      // 画面のふちを優先（はさまれたら、光る場所に少しかかっても画面の中に残す）
+      o.x = Math.min(W - o.r - 4, Math.max(o.r + 4, o.x)); o.y = Math.min(H - o.r, Math.max(o.r + 9, o.y));
+    }
+  });
+  // フーセンどうし：重なったら押しのけて、ぶつかった向きの速さを入れかえる
+  for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) {
+    const a = bs[i], b = bs[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), m = a.r + b.r + 2;
+    if (d > 0 && d < m) {
+      const ux = dx / d, uy = dy / d, o = (m - d) / 2;
+      a.x -= ux * o; a.y -= uy * o; b.x += ux * o; b.y += uy * o;
+      const va = a.vx * ux + a.vy * uy, vb = b.vx * ux + b.vy * uy;
+      if (va - vb > 0) { a.vx += (vb - va) * ux; a.vy += (vb - va) * uy; b.vx += (va - vb) * ux; b.vy += (va - vb) * uy; }
+    }
+  }
+  bs.forEach(o => { o.x = Math.min(W - o.r - 4, Math.max(o.r + 4, o.x)); o.y = Math.min(H - o.r, Math.max(o.r + 9, o.y)); });
+  bs.forEach(o => { o.el.style.left = `${(o.x - o.r).toFixed(1)}px`; o.el.style.top = `${(o.y - o.r).toFixed(1)}px`; });
 }
 function gameTap(b) {
   const g = G; if (!g || g.cur.done || b.disabled) return;
