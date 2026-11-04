@@ -18,7 +18,7 @@
    --brand と --on-brand はダークでも変えない（黄色の上の文字は常に墨。白やクリームの上に黄色の文字は置かない） */
 :root{
   --brand:#FED003; --on-brand:#282727; --pin:#FF4FA3;
-  --tri-edge:#4A4745;   /* つぎへの三角：グレーのふちと文字（地は --brand。ダークでも同じ） */
+  --tri-edge:#4A4745; --tri-shine:#D9D4C7;   /* つぎへの三角：グレーのふちと文字（地は --brand。ダークでも同じ） */
   --ink:#282727; --paper:#EEEDEA; --cream:#F4EBDF; --sea:#D3DDE2; --bg:#E2E1DD;   /* ライトは真っ白をやめ、目にやさしいライトグレー */
   --muted:#5A5654; --line-soft:#C7C4C0; --off:#DAD9D5;
   --ok:#1E7B45; --ng:#C23A2B; --on-strong:#FFFFFF; --ok-soft:#CBEBD6; --ng-soft:#F9D4CD;
@@ -375,16 +375,19 @@ svg:not(.explore) .region-line{display:none}
 /* 正解の花火（canvas を画面にかぶせる。さわれない） */
 /* つぎへの三角（地図の上・問題文ウインドウのすぐ上・まん中） */
 .nexttri{position:absolute;left:50%;bottom:calc(var(--r-sheet) + var(--s8));transform:translateX(-50%);width:105px;height:119px;padding:0;border:0;background:none;cursor:pointer;z-index:3;
-  pointer-events:none;-webkit-tap-highlight-color:transparent;animation:triBlink 1.6s ease-in-out infinite}
+  pointer-events:none;-webkit-tap-highlight-color:transparent}
 .nexttri .hit{fill:transparent;pointer-events:all;cursor:pointer}
 .nexttri svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.nexttri .tri-bg{fill:var(--brand);stroke:var(--tri-edge);stroke-width:6;stroke-linejoin:round;filter:drop-shadow(0 0 4px var(--brand))}   /* 地は黄色、ふちはグレー。うっすら黄色に光る */
-.nexttri .tri{display:none}
+.nexttri .tri-fill{fill:var(--brand)}   /* 地は不透明な黄色（半透明・点滅はやめた） */
+.nexttri .tri-line{fill:none;stroke:var(--tri-edge);stroke-width:6;stroke-linejoin:round}
+.nexttri .shine rect{fill:var(--tri-shine)}
+.nexttri .shine{animation:triShine 2.4s cubic-bezier(.5,0,.3,1) infinite}
 .nexttri span{position:absolute;left:0;width:66%;top:50%;transform:translateY(-50%);text-align:center;font:700 19px/1 var(--body);color:var(--tri-edge);
   white-space:nowrap;padding-left:6px;pointer-events:none}
 .nexttri:active{transform:translateX(-50%) scale(.94)}
-@keyframes triBlink{0%,100%{opacity:1}50%{opacity:.6}}
-@media (prefers-reduced-motion:reduce){.nexttri{animation:none}}
+/* キラッ：帯が左から右へ横切ったあと、少し間をあけてくり返す */
+@keyframes triShine{0%{transform:translateX(0)}45%,100%{transform:translateX(130px)}}
+@media (prefers-reduced-motion:reduce){.nexttri .shine{animation:none;transform:translateX(60px)}}
 .fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
 .choice{min-height:64px;font-size:var(--fs20);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:var(--s4) var(--s8);line-height:1.2}
 .choice small{font-size:var(--fs12);color:var(--muted);font-weight:700}
@@ -1746,7 +1749,11 @@ function showNextTri() {
   clearNextTri();
   const b = document.createElement("button");
   b.type = "button"; b.id = "next"; b.className = "nexttri"; b.setAttribute("aria-label", "つぎへ");
-  b.innerHTML = `<svg viewBox="0 0 92 104" aria-hidden="true"><path class="tri-bg" d="M6 6 L86 52 L6 98 Z"/><path class="tri" d="M6 6 L86 52 L6 98 Z"/><path class="hit" d="M0 0 L92 52 L0 104 Z"/></svg><span>つぎへ</span>`;
+  // 黄色の地に、ななめのグレーの帯（太・細の2本）が三角の中を横切ってキラッと光る。帯は三角の形で切りぬく
+  b.innerHTML = `<svg viewBox="0 0 92 104" aria-hidden="true"><defs><clipPath id="triClip"><path d="M6 6 L86 52 L6 98 Z"/></clipPath></defs>
+    <path class="tri-fill" d="M6 6 L86 52 L6 98 Z"/>
+    <g clip-path="url(#triClip)"><g class="shine"><rect x="-26" y="-30" width="14" height="170" transform="rotate(22 -19 52)"/><rect x="-6" y="-30" width="5" height="170" transform="rotate(22 -3 52)"/></g></g>
+    <path class="tri-line" d="M6 6 L86 52 L6 98 Z"/><path class="hit" d="M0 0 L92 52 L0 104 Z"/></svg><span>つぎへ</span>`;
   byId("mapwrap").appendChild(b);
 }
 
