@@ -70,7 +70,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .top .meta .num{display:block;font-size:var(--fs16);color:var(--ink);white-space:nowrap}
 .ask .q{font-family:var(--body);font-weight:700;font-size:var(--fs28);line-height:1.5}
 /* ふりがなは漢字の上（ruby） */
-.ask .q rt{font-size:.42em;font-weight:700;color:var(--muted);letter-spacing:0}
+.ask .q rt{font-size:min(.42em, calc(var(--fit, 1) * 1em));font-weight:700;color:var(--muted);letter-spacing:0}
 .ask .q.long{font-size:var(--fs20)}
 .ask .q.shout{font-family:var(--display);font-weight:400;font-size:var(--fs20)}
 /* 県名だけ黄色のマーカー線（下半分） */
@@ -398,7 +398,7 @@ svg:not(.explore) .region-line{display:none}
 .choice{word-break:keep-all;overflow-wrap:anywhere}
 .ansrow .choice{font-size:12px;padding:2px}
 .choice small{font-size:var(--fs12);color:var(--muted);font-weight:700}
-.choice rt,.fb rt{font-size:.5em;color:var(--muted);font-weight:700}
+.choice rt,.fb rt{font-size:min(.5em, calc(var(--fit, 1) * 1em));color:var(--muted);font-weight:700}
 .choice.right rt,.choice.wrong rt{color:var(--on-strong)}
 .choice:disabled{cursor:default}
 .choice.right{background:var(--ok);border-color:var(--ok);color:var(--on-strong)} .choice.right small{color:var(--on-strong)}
@@ -1786,9 +1786,28 @@ const brkDot = t => t.replace(/・/g, "・<wbr>");
 const rubySeg = (w, k) => {
   if (!k) return brkDot(w);
   const ws = w.split("・"), ks = k.split("・");
-  if (ws.length > 1 && ws.length === ks.length) return ws.map((p, i) => `<ruby>${p}<rt>${ks[i]}</rt></ruby>`).join("・<wbr>");
-  return `<ruby>${w}<rt>${k}</rt></ruby>`;
+  if (ws.length > 1 && ws.length === ks.length) return ws.map((p, i) => rubyKanji(p, ks[i])).join("・<wbr>");
+  return rubyKanji(w, k);
 };
+// ふりがなは漢字の部分だけに付ける（ひらがな・カタカナには付けない）。
+//   原爆ドーム／げんばくドーム → 原爆［げんばく］ドーム、壇ノ浦の戦い → 壇［だん］ノ浦［うら］の戦［たたか］い
+//   ヶ・ケ・々 は漢字のなかまとして扱う（関ケ原 → せきがはら）。よみと合わないときは全体に1つ付ける
+const toHira = t => t.replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+const isKanji = c => /[一-鿿々ヶケ〆]/.test(c);
+function rubyKanji(w, k) {
+  const runs = [];
+  for (const c of w) { const kj = isKanji(c); if (runs.length && runs[runs.length - 1].kj === kj) runs[runs.length - 1].t += c; else runs.push({kj, t: c}); }
+  if (!runs.some(r => r.kj)) return w;                       // 漢字がなければふりがなは付けない
+  if (runs.length === 1) return rubyOne(w, k);
+  const esc = t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // 前の漢字にできるだけ長くよみを割りあてる（長篠の戦い → ながしの｜の｜たたか）
+  const m = toHira(k).match(new RegExp("^" + runs.map(r => r.kj ? "(.+)" : esc(toHira(r.t))).join("") + "$"));
+  if (!m) return rubyOne(w, k);
+  let g = 1;
+  return runs.map(r => r.kj ? rubyOne(r.t, m[g++]) : r.t).join("");
+}
+// 1つのふりがな：よみが漢字の幅より長いときは、ふりがなの字を小さくして漢字の幅に収める（--fit＝漢字の字数÷よみの字数）
+const rubyOne = (b, k) => `<ruby>${b}<rt${k.length > b.length * 2 ? ` style="--fit:${(b.length / k.length).toFixed(3)}"` : ""}>${k}</rt></ruby>`;
 // 「元寇（博多湾）」のようにかっこの補足がある名前は、ふりがなを本体（元寇）だけに付け、補足はそのあとに出す
 // （よみにもかっこがあれば、補足にもふりがなを付ける）。br:true（4択のボタン）では補足を次の行に小さく出す
 const rb = (w, k, br = false) => {
