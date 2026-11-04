@@ -171,6 +171,19 @@ svg:not(.explore) .region-line{display:none}
 .chart[hidden]{display:none}
 .chart svg{display:block;width:100%;height:auto}
 .chart p{margin:0;text-align:center;font-size:var(--fs12);font-weight:700;color:var(--muted)}
+/* 雨温図の読みとり：黄色の帯（降水量）・点線の円（気温）・矢印（気温の差）・黄色の下線（年降水量）と、番号つきの説明 */
+.chart .cband{fill:var(--brand);fill-opacity:.45}
+.chart .cring{fill:none;stroke:var(--ink);stroke-width:2;stroke-dasharray:4 3}
+.chart .cgap{stroke:var(--ink);stroke-width:2}
+.chart .cguide{stroke:var(--ink);stroke-width:1;stroke-dasharray:3 3}
+.chart .carrow{fill:var(--ink)}
+.chart .cn circle{fill:var(--brand);stroke:var(--on-brand);stroke-width:1.5}
+.chart .cn text{fill:var(--on-brand);font-size:10px;font-weight:700;font-family:var(--body)}
+.chart .cunder{box-shadow:inset 0 -.5em 0 var(--brand);color:var(--ink)}
+.chart .cnum{color:var(--ink);margin-left:2px}
+.chart .cpts{margin:var(--s4) 0 0;padding:0;list-style:none;font-size:var(--fs12);line-height:1.45;color:var(--ink);font-weight:700}
+.chart .cpts li{display:flex;gap:var(--s4)}
+.chart .cpts b{flex:none;color:var(--ink)}
 .chart .cg{stroke:var(--line-soft);stroke-width:1}
 .chart .cl{fill:var(--muted);font-size:10px;font-family:var(--body)}
 .chart .cb{fill:var(--river)}
@@ -626,18 +639,70 @@ const CLIMATE_CITIES = [
    rain:[101.6, 114.5, 142.8, 161.0, 245.3, 284.4, 188.1, 240.0, 275.2, 179.2, 119.1, 110.0], temp:[17.3, 17.5, 19.1, 21.5, 24.2, 27.2, 29.1, 29.0, 27.9, 25.5, 22.5, 19.0], year:[2161.0, 23.3]},
 ];
 const zoneOf = id => CLIMATE_ZONES.find(z => z.id === id);
-// 雨温図（棒＝降水量 0〜500mm、折れ線＝平均気温 -10〜30℃。教材と同じ向き）
-function climateChart(c) {
+/* 雨温図の読みとり（答えたあと、正解・不正解にかかわらず雨温図に印と説明を出す）
+   marks：図の上の印。番号は points の①②と対応
+     {n, type:"band", what:"rain", months:[…]}  … その月の降水量に黄色の帯
+     {n, type:"ring", what:"temp", months:[…]}  … その月の気温の点を点線の円でかこむ
+     {n, type:"gap",  months:[a, b]}              … a月とb月の気温の差を縦の矢印で
+     {n, type:"under", what:"year-rain"}          … 下の「年降水量」に黄色の下線
+   points(c)：説明の文。数字は c（気象庁の平年値）から計算して入れる */
+const r0 = v => Math.round(v);
+const CLIMATE_NOTES = {
+  sapporo: {marks: [{n: 1, type: "ring", months: [12, 1, 2]}, {n: 2, type: "band", months: [6]}],
+    points: c => [`冬（12〜2月）の平均気温が0℃より低い（1月 ${c.temp[0]}℃）`, `6月（梅雨の時期）も降水量が少ない（${r0(c.rain[5])}mm）。北海道には梅雨がほとんどない`]},
+  niigata: {marks: [{n: 1, type: "band", months: [11, 12, 1]}, {n: 2, type: "ring", months: [8]}],
+    points: c => [`冬（11〜1月）の降水量が多い（12月 ${r0(c.rain[11])}mm）。北西の季節風で雪が多い`, `夏は気温が高い（8月 ${c.temp[7]}℃）`]},
+  tokyo: {marks: [{n: 1, type: "band", months: [6, 7, 8, 9, 10]}, {n: 2, type: "band", months: [12, 1, 2]}],
+    points: c => [`夏〜秋（6〜10月）の降水量が多い（10月 ${r0(c.rain[9])}mm）。梅雨や台風の影響`, `冬（12〜2月）は降水量が少なく乾燥する（1月 ${r0(c.rain[0])}mm）`]},
+  matsumoto: {marks: [{n: 1, type: "under"}, {n: 2, type: "gap", months: [1, 8]}],
+    points: c => [`1年を通して降水量が少ない（年 ${r0(c.year[0])}mm）`, `夏と冬の気温差が大きい（1月 ${c.temp[0]}℃、8月 ${c.temp[7]}℃で約${r0(c.temp[7] - c.temp[0])}℃の差）`]},
+  takamatsu: {marks: [{n: 1, type: "under"}, {n: 2, type: "ring", months: [1]}],
+    points: c => [`1年を通して降水量が少ない（年 ${r0(c.year[0])}mm）。冬は月${r0(Math.min(c.rain[11], c.rain[0], c.rain[1]))}〜${r0(Math.max(c.rain[11], c.rain[0], c.rain[1]))}mmほど`, `冬もあたたかい（1月 ${c.temp[0]}℃）`]},
+  naha: {marks: [{n: 1, type: "ring", months: [1]}, {n: 2, type: "band", months: [5, 6, 8, 9]}],
+    points: c => [`1年中気温が高い（いちばん低い1月でも ${c.temp[0]}℃）`, `5〜6月（梅雨）と8〜9月（台風）の降水量が多い（6月 ${r0(c.rain[5])}mm）`]},
+};
+// 月のならびを、となり合う月ごとのまとまりに分ける（[12,1,2] → [[12],[1,2]]。図の左右の端をまたがないように）
+function monthRuns(ms) {
+  const sorted = [...ms].sort((x, y) => x - y), runs = [];
+  sorted.forEach(m => { const last = runs[runs.length - 1]; if (last && m === last[last.length - 1] + 1) last.push(m); else runs.push([m]); });
+  return runs;
+}
+// 雨温図（棒＝降水量 0〜500mm、折れ線＝平均気温 -10〜30℃。教材と同じ向き）。note があれば印と説明をつける
+function climateChart(c, note) {
   const W = 320, H = 190, L = 36, R = 40, T = 22, B = 24, w = W - L - R, h = H - T - B, bw = w / 12;
-  const yT = v => T + h * (30 - v) / 40, yR = v => T + h * (500 - Math.min(v, 500)) / 500;
+  const yT = v => T + h * (30 - v) / 40, yR = v => T + h * (500 - Math.min(v, 500)) / 500, xm = m => L + (m - 1) * bw + bw / 2;
   const grid = [-10, 0, 10, 20, 30].map(v => `<line x1="${L}" x2="${L + w}" y1="${yT(v)}" y2="${yT(v)}" class="cg"/><text x="${L - 4}" y="${yT(v) + 4}" class="cl" text-anchor="end">${v}</text>`).join("");
   const right = [0, 100, 200, 300, 400, 500].map(v => `<text x="${L + w + 4}" y="${yR(v) + 4}" class="cl">${v}</text>`).join("");
   const bars = c.rain.map((v, i) => `<rect x="${L + i * bw + bw * 0.18}" y="${yR(v)}" width="${bw * 0.64}" height="${T + h - yR(v)}" class="cb"/>`).join("");
-  const pts = c.temp.map((v, i) => `${L + i * bw + bw / 2},${yT(v)}`).join(" ");
-  const months = c.temp.map((_, i) => `<text x="${L + i * bw + bw / 2}" y="${H - 8}" class="cl" text-anchor="middle">${i + 1}</text>`).join("");
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="雨温図"><text x="${L - 4}" y="12" class="cl" text-anchor="end">℃</text><text x="${L + w + 4}" y="12" class="cl">mm</text>
-    ${grid}${right}${bars}<polyline points="${pts}" class="ct"/>${c.temp.map((v, i) => `<circle cx="${L + i * bw + bw / 2}" cy="${yT(v)}" r="2.6" class="cd"/>`).join("")}${months}</svg>
-    <p>年平均気温 ${c.year[1]}℃・年降水量 ${Math.round(c.year[0])}mm</p>`;
+  const pts = c.temp.map((v, i) => `${xm(i + 1)},${yT(v)}`).join(" ");
+  const months = c.temp.map((_, i) => `<text x="${xm(i + 1)}" y="${H - 8}" class="cl" text-anchor="middle">${i + 1}</text>`).join("");
+  const badge = (x, y, n) => `<g class="cn"><circle cx="${x}" cy="${y}" r="8"/><text x="${x}" y="${y + 3.5}" text-anchor="middle">${n}</text></g>`;
+  let back = "", front = "", under = 0;
+  (note ? note.marks : []).forEach(mk => {
+    if (mk.type === "band") monthRuns(mk.months).forEach((run, k) => {
+      const x0 = L + (run[0] - 1) * bw, x1 = L + run[run.length - 1] * bw, top = Math.min(...run.map(m => yR(c.rain[m - 1]))) - 6;
+      back += `<rect x="${x0}" y="${top}" width="${x1 - x0}" height="${T + h - top}" class="cband"/>`;
+      if (k === 0) front += badge((x0 + x1) / 2, top - 9, mk.n);
+    });
+    if (mk.type === "ring") monthRuns(mk.months).forEach((run, k) => {
+      const cx = (xm(run[0]) + xm(run[run.length - 1])) / 2, cy = run.reduce((t, m) => t + yT(c.temp[m - 1]), 0) / run.length;
+      const rx = (xm(run[run.length - 1]) - xm(run[0])) / 2 + 9;
+      front += `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="11" class="cring"/>`;
+      if (k === 0) front += badge(cx + rx + 2, cy - 13, mk.n);
+    });
+    if (mk.type === "gap") {
+      const [a, b] = mk.months, x = xm(b) + bw * 0.55, ya = yT(c.temp[a - 1]), yb = yT(c.temp[b - 1]);
+      front += `<line x1="${xm(a)}" x2="${x}" y1="${ya}" y2="${ya}" class="cguide"/><line x1="${x}" x2="${x}" y1="${yb + 3}" y2="${ya - 3}" class="cgap" marker-start="url(#cArrow)" marker-end="url(#cArrow)"/>`;
+      front += badge(x + 11, (ya + yb) / 2, mk.n);
+    }
+    if (mk.type === "under") under = mk.n;
+  });
+  const defs = `<defs><marker id="cArrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="carrow"/></marker></defs>`;
+  const rainYear = `年降水量 ${Math.round(c.year[0])}mm`;
+  const list = note ? `<ol class="cpts">${note.points(c).map((p, i) => `<li><b>${"①②③"[i]}</b>${p}</li>`).join("")}</ol>` : "";
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="雨温図">${defs}<text x="${L - 4}" y="12" class="cl" text-anchor="end">℃</text><text x="${L + w + 4}" y="12" class="cl">mm</text>
+    ${grid}${right}${back}${bars}<polyline points="${pts}" class="ct"/>${c.temp.map((v, i) => `<circle cx="${xm(i + 1)}" cy="${yT(v)}" r="2.6" class="cd"/>`).join("")}${months}${front}</svg>
+    <p>年平均気温 ${c.year[1]}℃・${under ? `<span class="cunder">${rainYear}</span><span class="cnum">${"①②③"[under - 1]}</span>` : rainYear}</p>${list}`;
 }
 /* ---------- コース（地理）。出題数・完了・マスターの条件はここで管理 ----------
    from：このコースを出す最初のモード（仮設定）／unlock：前のコースで何を満たせば開くか
@@ -925,7 +990,8 @@ TERRAIN.forEach(f => {
   featEls[f.id] = els.map(cls => { const p = document.createElementNS(NS, "path"); p.setAttribute("d", f.d); p.setAttribute("class", cls); gTerrain.appendChild(p); return p; });
 });
 const chartEl = document.getElementById("chart");
-const showChart = id => { const c = id && CLIMATE_CITIES.find(x => x.id === id); chartEl.hidden = !c; chartEl.innerHTML = c ? climateChart(c) : ""; };
+// withNote：答えたあとは雨温図に印と説明をつける
+const showChart = (id, withNote) => { const c = id && CLIMATE_CITIES.find(x => x.id === id); chartEl.hidden = !c; chartEl.innerHTML = c ? climateChart(c, withNote && CLIMATE_NOTES[c.id]) : ""; };
 const showFeature = id => Object.entries(featEls).forEach(([k, els]) => els.forEach(p => p.classList.toggle("show", k === id)));
 let insetShown = true;
 
@@ -1509,7 +1575,8 @@ function answerChoice(j) {
   });
   renderProgress();
   // 雨温図の問題は、答えたら雨温図を閉じて、その都市の県を黄色にして地方へ寄せる（札に隠れないように）
-  if (q.chart) { showChart(null); pathEl[q.prefs[0]].classList.add("sel"); toFront(q.prefs[0]); fitLater(unionBox(areaOfPref(q.prefs[0]).codes)); }
+  // 雨温図の問題は、正解・不正解にかかわらず雨温図に読みとりの印と説明を出し、その都市の県を黄色にする
+  if (q.chart) { showChart(q.chart, true); pathEl[q.prefs[0]].classList.add("sel"); toFront(q.prefs[0]); }
   // 4択の解説は答えの名前とよみのくり返しなので、右の枠には出さない（県の補足 GEO_NOTES だけ出す）
   const ans = q.choices[0];
   afterAnswer(ok, ok
