@@ -236,6 +236,8 @@ svg:not(.explore) .region-line{display:none}
 /* 見出しは黄色の帯にダークグレーの文字（ダークテーマでも同じ配色） */
 .sheet h2{margin:0;font-size:var(--fs14);font-weight:700;background:var(--brand);color:var(--on-brand);padding:var(--s4) var(--s12);border-radius:6px}
 .motto{margin:0;text-align:center;font-weight:700;font-size:13px;line-height:1.4;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn.resetbtn{flex:none;align-self:center;min-height:40px;padding:0 var(--s24);font-size:var(--fs14);margin-top:var(--s4)}
+.btn.resetbtn .ic{margin-right:var(--s4)}
 .btn.backbtn{flex:none;min-height:40px;font-size:var(--fs14);padding:0 var(--s12)}
 .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:var(--s8)}
 .chip .cnm{word-break:keep-all;overflow-wrap:anywhere}
@@ -840,7 +842,9 @@ function rec(modeId, courseId) {
   const root = recRoot(), m = root[modeId] = root[modeId] || {};
   return m[courseId] = Object.assign({best:{}, got:{}, clean:{}, miss:{}, stage:{}, complete:false, master:null}, m[courseId] || {});
 }
-const curMode = () => modeOf(store.mode) || MODES[MODES.length - 1];
+// モードは「中学受験」だけ（4〜6年生モードはなくした。前のモードの記録は lowerModes() で引きつづき使う）
+store.mode = "exam";
+const curMode = () => modeOf("exam") || MODES[MODES.length - 1];
 const lowerModes = () => MODES.filter(m => m.rank <= curMode().rank);
 const recsOf = courseId => lowerModes().map(m => (recRoot()[m.id] || {})[courseId]).filter(Boolean);
 const inMode = c => modeOf(c.from).rank <= curMode().rank;
@@ -1295,7 +1299,7 @@ const byId = id => document.getElementById(id);
    「テスト」で今いる画面の単位を初めての状態に戻して遊べる。本当の記録には書かない。OFF は1タップ。保存はせず再読み込みで OFF */
 const DEBUG_PIN = "8282";
 let screenNow = {kind: "title"};   // 今いるホーム系の画面（テスト・切り替え後の描き直しに使う）
-function titleBtn(){ return `<button class="iconbtn" id="toTitle" type="button" aria-label="タイトル画面へ戻る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg><span>タイトル</span></button>`; }
+function titleBtn(){ return `<button class="iconbtn" id="toTitle" type="button" aria-label="ホーム（コース一覧）へ戻る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg><span>ホーム</span></button>`; }
 function debugBtn(){
   return `<span class="dbgbox" id="dbgbox"><button class="iconbtn${debug ? " dbg-on" : ""}" id="dbg" type="button" aria-pressed="${debug}" aria-label="デバッグモード">DBG</button>${debug ? `<button class="iconbtn" id="dbgTest" type="button" aria-label="この画面を初めての状態にする">テスト</button>` : ""}</span>`;
 }
@@ -1424,19 +1428,8 @@ function toHomeScreen(box = FULL) {
 }
 
 /* OP：モード選択 */
-function modeSelect() {
-  toHomeScreen(); screenNow = {kind: "title"};
-  top_.innerHTML = `<div class="brand">日本地図タップクイズ<small>サッ記マン・中学受験 社会</small></div>${debugBtn()}${muteBtn()}`;
-  bindBar();
-  sheet.innerHTML = `
-    <h2>モードをえらんでね</h2>
-    <div class="chips modes">${MODES.map(m => `<button class="chip${m.id === store.mode ? " now" : ""}" type="button" data-mode="${m.id}">${m.name}</button>`).join("")}</div>
-    <p class="hint">上のモードほど学べるコースがふえるよ（下のモードの内容もぜんぶ入っている）。学年ごとの範囲は仮の設定です。</p>
-    <button class="btn restart" id="restart" type="button">${ic("refresh")}アプリを再起動</button>`;
-  // 再起動：ページを読みこみ直す。記録はこの端末に保存してあるので消えない
-  byId("restart").onclick = () => { bgmStop(); location.reload(); };
-  sheet.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { store.mode = b.dataset.mode; save(); home(); });
-}
+// タイトル画面（モード選択）はなくした。タイトルへ戻るボタンはコース一覧（ホーム）へ
+function modeSelect() { home(); }
 
 // マスター済みのコース名の先頭に付ける王冠（とがった3つの山＋濃い黄の帯＋白い宝石）
 const CROWN_SVG = `<svg class="crown" viewBox="0 0 24 24" aria-hidden="true"><path class="cr-body" d="M2.5 7.5 7.5 12 12 4l4.5 8 5-4.5-1.8 11H4.3z"/><rect class="cr-band" x="4.3" y="17" width="15.4" height="2.6" rx="1"/><circle class="cr-gem" cx="12" cy="13.2" r="1.5"/></svg>`;
@@ -1456,13 +1449,11 @@ function courseStatus(c) {
 
 /* コース一覧（モードごと） */
 function home() {
-  if (!modeOf(store.mode)) return modeSelect();
   const lv = toHomeScreen(); screenNow = {kind: "home"};
   const colored = Object.values(lv).filter(n => n > 0).length;
-  top_.innerHTML = `${titleBtn()}<div class="brand">日本地図タップクイズ<small>${curMode().name}</small></div>${debugBtn()}${muteBtn()}`;
+  top_.innerHTML = `<div class="brand">日本地図タップクイズ<small>サッ記マン・中学受験 社会</small></div>${debugBtn()}${muteBtn()}`;
   bindBar();
   sheet.innerHTML = `
-    <div class="modebar"><span class="badge">${curMode().name}</span><button class="linkbtn" id="chgMode" type="button">モードをかえる</button></div>
     <div class="info" id="info"><span class="hint">色がついた県 ${colored} / 47。正解した県から地図に色がつくよ。</span></div>
     <h2>${TRACKS[0].name}</h2>
     <div class="courses">${COURSES.map((c, i) => {
@@ -1470,17 +1461,31 @@ function home() {
       return `<button class="course${s.done ? " done" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${s.done ? CROWN_SVG : ""}${c.name}${s.done ? `<em class="mastered">マスター！</em>` : `<small>${s.text}</small>`}</span></button>`;
     }).join("")}</div>
     <h2>${TRACKS[1].name}</h2><p class="hint">${TRACKS[1].note}</p>
-    <h2>ごほうび</h2><p class="hint">新しいタップゲーム：準備中</p>
-    <h2>リセット</h2><div class="row" id="resetRow"><button class="btn" id="reset" type="button">進捗をぜんぶ消す</button></div>`;
-  byId("chgMode").onclick = modeSelect;
-  // 進捗の全初期化（すべてのモードの記録・👑・地図の色、v4 の記録も消す）。モードと音の設定は残す。押しまちがい防止に2段階
-  byId("reset").onclick = () => {
-    byId("resetRow").innerHTML = `<p class="hint" style="flex-basis:100%">すべてのモードの記録・マスター・地図の色が消えて、最初の状態にもどります。</p>
-      <button class="btn primary" id="resetYes" type="button">消す</button><button class="btn" id="resetNo" type="button">やめる</button>`;
-    byId("resetYes").onclick = () => { store.rec = {}; store.best = {}; store.miss = {}; save(); home(); };
-    byId("resetNo").onclick = home;
-  };
+    <button class="btn resetbtn" id="reset" type="button">${ic("refresh")}リセット</button>`;
+  byId("reset").onclick = openReset;
   sheet.querySelectorAll("[data-course]").forEach(b => b.onclick = () => coursePage(courseOf(b.dataset.course)));
+}
+
+// リセットの小窓：進捗をぜんぶ消す（押しまちがい防止に「消す」をもう一度押す）・アプリの再起動（記録は消えない）
+function openReset() {
+  if (document.querySelector(".pin")) return;
+  const ov = document.createElement("div");
+  ov.className = "pin";
+  ov.innerHTML = `<div class="pin-box" role="dialog" aria-modal="true" aria-labelledby="rsTitle">
+    <b id="rsTitle">リセット</b>
+    <p class="hint" style="text-align:center">すべての記録・マスター・地図の色が消えて、最初の状態にもどります。</p>
+    <div class="row" style="width:100%"><button class="btn primary" type="button" id="rsYes" style="flex:1 1 0">消す</button><button class="btn" type="button" id="rsNo" style="flex:1 1 0">やめる</button></div>
+    <button class="linkbtn" type="button" id="rsReload">${ic("refresh")}消さずにアプリを再起動する</button></div>`;
+  document.body.appendChild(ov);
+  const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); };
+  const onKey = e => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  ov.onclick = e => { if (e.target === ov) close(); };
+  ov.querySelector("#rsNo").onclick = close;
+  // 進捗の全初期化（記録・👑・地図の色、v4 の記録も消す）。音の設定は残す
+  ov.querySelector("#rsYes").onclick = () => { store.rec = {}; store.best = {}; store.miss = {}; save(); close(); home(); };
+  ov.querySelector("#rsReload").onclick = () => { bgmStop(); location.reload(); };
+  ov.querySelector("#rsNo").focus();
 }
 
 /* コース：全国の挑戦（マスター判定あり）と、地方ごとの練習 */
@@ -1488,7 +1493,7 @@ function coursePage(c) {
   toHomeScreen(); screenNow = {kind: "course", c};
   const type = QUIZ_TYPES[c.id], total = fullCount(c.id), m = masterOf(c.id), zen = AREAS.find(a => a.wide);
   const best = Object.assign({}, ...recsOf(c.id).map(r => r.best));
-  top_.innerHTML = `${titleBtn()}<div class="brand">${c.name}<small>${curMode().name}</small></div>${debugBtn()}${muteBtn()}`;
+  top_.innerHTML = `${titleBtn()}<div class="brand">${c.name}<small>中学受験 社会</small></div>${debugBtn()}${muteBtn()}`;
   bindBar();
   const regions = (c.stages ? stagesOf(c) : STAGES).map(a => ({a, n: type.make(a.codes, a).length})).filter(x => x.n > 0);
   sheet.innerHTML = `
