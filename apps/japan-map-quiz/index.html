@@ -18,7 +18,7 @@
    --brand と --on-brand はダークでも変えない（黄色の上の文字は常に墨。白やクリームの上に黄色の文字は置かない） */
 :root{
   --brand:#FED003; --on-brand:#282727; --pin:#FF4FA3;
-  --tri-edge:#4A4745; --tri-shine:#FFF6B0;   /* つぎへの三角：グレーのふちと文字（地は --brand。ダークでも同じ） */
+  --tri-edge:#4A4745; --tri-shine:#FFF47E;   /* つぎへの三角：グレーのふちと文字（地は --brand。ダークでも同じ） */
   --ink:#282727; --paper:#EEEDEA; --cream:#F4EBDF; --sea:#D3DDE2; --bg:#E2E1DD;   /* ライトは真っ白をやめ、目にやさしいライトグレー */
   --muted:#5A5654; --line-soft:#C7C4C0; --off:#DAD9D5;
   --ok:#1E7B45; --ng:#C23A2B; --on-strong:#FFFFFF; --ok-soft:#CBEBD6; --ng-soft:#F9D4CD;
@@ -381,12 +381,13 @@ svg:not(.explore) .region-line{display:none}
 .nexttri .tri-fill{fill:var(--brand)}   /* 地は不透明な黄色（半透明・点滅はやめた） */
 .nexttri .tri-line{fill:none;stroke:var(--tri-edge);stroke-width:6;stroke-linejoin:round}
 .nexttri .shine rect{fill:var(--tri-shine);shape-rendering:crispEdges}   /* ぼかさず、くっきりした帯 */
-.nexttri .shine{animation:triShine 2.6s cubic-bezier(.65,0,.35,1) infinite}
+.nexttri .shine{animation:triShine 1.73s cubic-bezier(.25,.1,.4,1) infinite}
 .nexttri span{position:absolute;left:0;width:66%;top:50%;transform:translateY(-50%);text-align:center;font:700 19px/1 var(--body);color:var(--tri-edge);
   white-space:nowrap;padding-left:6px;pointer-events:none}
 .nexttri:active{transform:translateX(-50%) scale(.94)}
 /* キラッ：帯が左から右へ横切ったあと、少し間をあけてくり返す */
-@keyframes triShine{0%,20%{transform:translateX(0)}60%,100%{transform:translateX(140px)}}
+/* 帯は三角の左の外から出てすぐ右の外へ抜ける（左はしに見えたまま止まらない）。抜けたあとは外で待つ */
+@keyframes triShine{0%{transform:translateX(-12px)}55%,100%{transform:translateX(140px)}}
 @media (prefers-reduced-motion:reduce){.nexttri .shine{animation:none;transform:translateX(60px)}}
 .fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
 .choice{min-height:64px;font-size:var(--fs20);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:var(--s4) var(--s8);line-height:1.2}
