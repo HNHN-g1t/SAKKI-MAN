@@ -108,6 +108,15 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .sndpair .sndbtn:first-child{border-radius:var(--r-btn) 0 0 var(--r-btn)}
 .sndpair .sndbtn:last-child{border-radius:0 var(--r-btn) var(--r-btn) 0;margin-left:calc(-1 * var(--bw))}
 .sndbtn.off{color:var(--muted);background:var(--off)}
+/* DBG：地図の上のまん中にうすく（押すとき・ON のときは少し濃く） */
+.dbgdock{position:absolute;left:50%;top:var(--s8);transform:translateX(-50%);z-index:2;display:flex;gap:4px;opacity:.38}
+.dbgdock:hover,.dbgdock:has(.dbg-on){opacity:.7}
+.dbgdock .dbgbox{display:flex;gap:4px}
+.dbgdock .iconbtn{height:26px;min-height:0;min-width:44px;padding:0 8px;font-size:11px;border-width:1.5px;border-radius:8px}
+/* ダーク・ライトの切りかえボタン */
+.top .themebtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;line-height:1;min-width:46px;padding:0 4px}
+.top .themebtn svg{width:18px;height:18px}
+.top .themebtn span{font-size:10px;font-weight:700;margin-top:2px}
 .iconbtn.dbg-on{background:var(--brand);color:var(--on-brand)}
 .dbgbox{display:contents}
 /* 上部バーの DBG・テストは小さな札を縦に重ねて、見出しの幅をあける */
@@ -191,8 +200,10 @@ svg:not(.explore) .region-line{display:none}
 /* 目ボタン：墨の丸に黄色の目。押している間は黄色の丸に墨の目で4px沈む */
 .eye{position:absolute;right:calc(var(--s16) + env(safe-area-inset-right,0px));bottom:calc(var(--r-sheet) + var(--s32) + var(--s8));width:64px;height:64px;border-radius:50%;border:var(--bw) solid var(--ink);background:var(--on-brand);color:var(--brand);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 0 var(--ink);touch-action:none;padding:0}
 .eye svg{width:34px;height:34px}
+/* 「おしてる間だけ」は押している間だけ、ボタンの上に出す */
+.eye.on .cap{display:block}
 .eye.on{background:var(--brand);color:var(--on-brand);transform:translateY(4px);box-shadow:none}
-.eye .cap{position:absolute;right:0;bottom:-26px;font-size:var(--fs12);font-weight:700;color:var(--ink);white-space:nowrap;background:var(--paper);border:1.5px solid var(--ink);padding:1px var(--s8);border-radius:var(--r-pill)}
+.eye .cap{display:none;position:absolute;right:0;bottom:calc(100% + 8px);font-size:var(--fs12);font-weight:700;color:var(--ink);white-space:nowrap;background:var(--paper);border:1.5px solid var(--ink);padding:1px var(--s8);border-radius:var(--r-pill)}
 .combo{position:absolute;left:50%;top:var(--s16);transform:translateX(-50%);font-family:var(--display);font-size:var(--fs20);color:var(--on-brand);background:var(--brand);border:var(--bw) solid var(--on-brand);padding:var(--s4) var(--s16);border-radius:var(--r-pill);pointer-events:none}
 .combo.pop{animation:pop .3s ease-out 1}
 /* 雨温図の札：地図の上に出す。棒＝降水量（川の青）、折れ線＝平均気温（赤） */
@@ -384,6 +395,7 @@ svg:not(.explore) .region-line{display:none}
     <div class="combo" id="combo" hidden></div>
     <div class="clearmsg" id="clearmsg" hidden><span></span></div>
     <div class="toast" id="toast" role="status" hidden></div>
+    <div class="dbgdock" id="dbgdock"></div>
     <button class="eye" id="eye" type="button" aria-label="押している間だけ県名を表示">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
       <span class="cap">おしてる間だけ</span>
@@ -852,6 +864,7 @@ try { Object.values(store.rec || {}).forEach(m => Object.values(m || {}).forEach
 if ("mute" in store) { if (store.mute) { store.bgmOff = true; store.sfxOff = true; } delete store.mute; }
 const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); if (debug && dbgRec) localStorage.setItem(DBG_KEY, JSON.stringify(dbgRec)); } catch(e){} };
 const DBG_ON_KEY = "jmq-dbg-on";
+if (store.theme) document.documentElement.dataset.theme = store.theme;   // 保存したダーク・ライト
 const loadDbg = () => { try { return JSON.parse(localStorage.getItem(DBG_KEY) || "null"); } catch(e){ return null; } };
 // DBG ON の間は、本当の記録（store.rec）ではなくお試し用の記録（dbgRec。保存しない）を読み書きする
 let debug = false, dbgRec = null;
@@ -1352,7 +1365,7 @@ function fullRecs() {
 }
 // 切り替え・テストのあとに今の画面を描き直す。クイズ中と結果はボタンだけ差し替える
 function rerender() {
-  if (mode === "quiz" || mode === "result") { byId("dbgbox").outerHTML = debugBtn(); return bindDbg(); }
+  if (mode === "quiz" || mode === "result") return placeDbg();
   if (screenNow.kind === "course") coursePage(screenNow.c); else if (screenNow.kind === "home") home(); else modeSelect();
 }
 // テスト：今いる画面の単位だけを「まったく未達成」に戻して保存する（お試し記録だけ。本当の記録は変えない）
@@ -1446,6 +1459,25 @@ function askPin(onOk) {
 function bindBar() {
   bindMute();
   const t = byId("toTitle"); if (t) t.onclick = modeSelect;
+  bindTheme(); placeDbg();
+}
+// ダーク・ライトの切りかえ（上部バーの DBG があった場所）。選んだほうを保存し、端末の設定より優先する
+const curTheme = () => document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+function applyTheme() { if (store.theme) document.documentElement.dataset.theme = store.theme; else delete document.documentElement.dataset.theme; }
+function themeBtn() {
+  const dark = curTheme() === "dark";
+  return `<button class="iconbtn themebtn" id="themeBtn" type="button" aria-label="${dark ? "ライト" : "ダーク"}にする"><svg viewBox="0 0 24 24" aria-hidden="true">${dark
+    ? `<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" fill="currentColor"/>`
+    : `<circle cx="12" cy="12" r="4.2" fill="currentColor"/><g stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></g>`}</svg><span>${dark ? "ダーク" : "ライト"}</span></button>`;
+}
+function bindTheme() {
+  const b = byId("themeBtn"); if (!b) return;
+  b.onclick = () => { store.theme = curTheme() === "dark" ? "light" : "dark"; save(); applyTheme(); b.outerHTML = themeBtn(); bindTheme(); };
+}
+// DBG は地図の上のまん中にうすく出す。問題中は出さない
+function placeDbg() {
+  const dock = byId("dbgdock"); if (!dock) return;
+  dock.innerHTML = mode === "quiz" ? "" : debugBtn();
   bindDbg();
 }
 
@@ -1486,7 +1518,7 @@ function courseStatus(c) {
 /* コース一覧（モードごと） */
 function home() {
   const lv = toHomeScreen(); screenNow = {kind: "home"};
-  top_.innerHTML = `<div class="brand">サッと記憶！サッ記マン<small>日本地図タップドリル</small></div>${debugBtn()}${muteBtn()}`;
+  top_.innerHTML = `<div class="brand">サッと記憶！サッ記マン<small>日本地図タップドリル</small></div>${themeBtn()}${muteBtn()}`;
   bindBar();
   sheet.innerHTML = `
     <div class="info" id="info"></div>
@@ -1529,7 +1561,7 @@ function coursePage(c) {
   toHomeScreen(); screenNow = {kind: "course", c};
   const type = QUIZ_TYPES[c.id], total = fullCount(c.id), m = masterOf(c.id), zen = AREAS.find(a => a.wide);
   const best = Object.assign({}, ...recsOf(c.id).map(r => r.best));
-  top_.innerHTML = `${titleBtn()}<div class="brand">${c.name}<small>中学受験 社会</small></div>${debugBtn()}${muteBtn()}`;
+  top_.innerHTML = `${titleBtn()}<div class="brand">${c.name}<small>中学受験 社会</small></div>${themeBtn()}${muteBtn()}`;
   bindBar();
   const regions = (c.stages ? stagesOf(c) : STAGES).map(a => ({a, n: type.make(a.codes, a).length})).filter(x => x.n > 0);
   sheet.innerHTML = `
@@ -1599,7 +1631,7 @@ function nextQ() {
   const q = quiz.q = quiz.qs[quiz.i]; q.hint = false; quiz.answered = false;
   // 出題文はどのコースも下段（シート）に置き、上のバーには進み具合だけを出す。4択は出題文のすぐ下に選択肢
   // 上の帯：左端に✕（やめる）、小さい文字で「関東　3 / 7」、右に DBG とタイトルへ戻る家のボタン
-  top_.innerHTML = `<button class="iconbtn" id="quit" type="button" aria-label="やめる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><div class="ask"><span class="meta"><span class="nm">${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">${quiz.i+1} / ${quiz.qs.length}</span></span></div>${debugBtn()}${muteBtn()}${titleBtn()}`;
+  top_.innerHTML = `<button class="iconbtn" id="quit" type="button" aria-label="やめる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><div class="ask"><span class="meta"><span class="nm">${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">${quiz.i+1} / ${quiz.qs.length}</span></span></div>${themeBtn()}${muteBtn()}${titleBtn()}`;
   renderProgress();
   bindBar();
   // 問題中に ✕・タイトルを押したら、すぐには出ずに確認する（続けるならそのまま）
@@ -1811,7 +1843,7 @@ function result() {
   const msg = newMaster ? `${crown(course)}！` : newStage ? `${ic("crown")}${quiz.area.name}ステージ クリア！` : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしでマスター" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
   const nextStage = quiz.stage ? stagesOf(course)[stagesOf(course).indexOf(quiz.area) + 1] : null;
   const label = l => course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? TERRAIN.find(f => f.id === l.key).name : course.id === "industry" ? `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）` : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
-  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta"><span class="nm">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">けっか</span></span></div>${debugBtn()}${muteBtn()}`;
+  top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta"><span class="nm">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">けっか</span></span></div>${themeBtn()}${muteBtn()}`;
   bindBar();
   // 文の最初のすきま（タグの外）で改行する。王冠はSVGなので innerHTML で入れる
   clearmsg.firstChild.innerHTML = msg.replace(/^((?:<[^>]*>|[^ <])*) /, "$1\n"); clearmsg.hidden = false;
