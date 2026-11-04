@@ -1483,7 +1483,8 @@ function openReset() {
   ov.onclick = e => { if (e.target === ov) close(); };
   ov.querySelector("#rsNo").onclick = close;
   // 進捗の全初期化（記録・👑・地図の色、v4 の記録も消す）。音の設定は残す
-  ov.querySelector("#rsYes").onclick = () => { store.rec = {}; store.best = {}; store.miss = {}; save(); close(); home(); };
+  // DBG ON のときは、画面に出ているお試し記録（dbgRec）も消す（本当の記録といっしょに）
+  ov.querySelector("#rsYes").onclick = () => { store.rec = {}; store.best = {}; store.miss = {}; if (debug) dbgRec = {}; save(); close(); home(); };
   ov.querySelector("#rsReload").onclick = () => { bgmStop(); location.reload(); };
   ov.querySelector("#rsNo").focus();
 }
