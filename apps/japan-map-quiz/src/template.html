@@ -17,7 +17,7 @@
    色はこの3か所（:root／ダーク2か所）の変数でだけ定義する。ほかの場所に色コードを書かない。
    --brand と --on-brand はダークでも変えない（黄色の上の文字は常に墨。白やクリームの上に黄色の文字は置かない） */
 :root{
-  --brand:#FED003; --on-brand:#282727;
+  --brand:#FED003; --on-brand:#282727; --pin:#FF4FA3;
   --ink:#282727; --paper:#FFFFFF; --cream:#FEF3E6; --sea:#DCE6EA; --bg:#ECEBE9;
   --muted:#5E5A58; --line-soft:#CFCCCA; --off:#E1E1DF;
   --ok:#1E7B45; --ng:#C23A2B; --on-strong:#FFFFFF; --ok-soft:#CBEBD6; --ng-soft:#F9D4CD;
@@ -146,6 +146,14 @@ svg:not(.explore) .region-line{display:none}
 .feat.river{fill:none;stroke:var(--river);stroke-width:4px}
 .feat.plain,.feat.peak{fill:var(--brand);stroke:var(--ink);stroke-width:2.5px}
 .feat.plain{fill-opacity:.75}
+/* 県庁所在地の位置：ピンクの円が光る（画面上で同じ大きさ。apply() で scale をかける） */
+.cap-pin{pointer-events:none}
+.cap-pin .dot{fill:var(--pin);stroke:#fff;stroke-width:2}
+.cap-pin .glow,.cap-pin .glow2{fill:var(--pin);transform-box:fill-box;transform-origin:center}
+.cap-pin .glow{opacity:.45;animation:pinGlow 1.6s ease-out infinite}
+.cap-pin .glow2{opacity:.25;animation:pinGlow 1.6s ease-out .8s infinite}
+@keyframes pinGlow{0%{transform:scale(.4);opacity:.6}100%{transform:scale(1.6);opacity:0}}
+@media (prefers-reduced-motion:reduce){.cap-pin .glow,.cap-pin .glow2{animation:none}}
 .zoom{cursor:pointer}
 .zoom circle{fill:var(--paper);stroke:var(--ink);stroke-width:2.5;vector-effect:non-scaling-stroke}
 .zoom path{fill:none;stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;vector-effect:non-scaling-stroke}
@@ -317,6 +325,7 @@ svg:not(.explore) .region-line{display:none}
       <g id="insetg"><polyline class="inset" points="-100000,712 -11,712 -11,800 52,884 52,100000"></polyline></g>
       <g class="labels" id="labels"></g>
       <g id="zooms"></g>
+      <g id="capPin" class="cap-pin" style="display:none"><circle class="glow2" r="22"/><circle class="glow" r="15"/><circle class="dot" r="5.5"/></g>
       <g class="tag" id="tag"></g>
     </svg>
     <div class="chart" id="chart" hidden></div>
@@ -415,7 +424,7 @@ const QUIZ_TYPES = {
     title: "県庁所在地 4択", kind: "choice",
     make: codes => codes.map(c => {
       const p = byCode(c), [ans] = CITIES.capitals[c];
-      return { key: c, prefs: [c], focus: c, sub: c === 13 ? "とうきょうとちょう" : p.kana, choices: CITIES.capitals[c], correct: ans[0],
+      return { key: c, prefs: [c], focus: c, pin: c, sub: c === 13 ? "とうきょうとちょう" : p.kana, choices: CITIES.capitals[c], correct: ans[0],
         text: c === 13 ? `<em>東京都庁</em>がある区は？` : `<em>${p.name}</em>の${p.office}所在地は？`,
         explain: c === 13 ? `東京都庁は ${ans[0]}（${ans[1]}）にあります` : `${p.name}の${p.office}所在地は ${ans[0]}（${ans[1]}）` };
     })
@@ -1008,6 +1017,25 @@ const showChart = (id, withNote) => { const c = id && CLIMATE_CITIES.find(x => x
 const showFeature = id => Object.entries(featEls).forEach(([k, els]) => els.forEach(p => p.classList.toggle("show", k === id)));
 let insetShown = true;
 
+/* 県庁所在地の位置（都道府県庁の緯度・経度。東京は都庁＝新宿区） */
+const CAPITAL_LL = {1:[43.0642,141.3469],2:[40.8244,140.7400],3:[39.7036,141.1527],4:[38.2688,140.8721],5:[39.7186,140.1024],6:[38.2404,140.3633],
+  7:[37.7503,140.4676],8:[36.3418,140.4468],9:[36.5657,139.8836],10:[36.3911,139.0608],11:[35.8570,139.6489],12:[35.6051,140.1233],13:[35.6895,139.6917],
+  14:[35.4478,139.6425],15:[37.9026,139.0236],16:[36.6953,137.2113],17:[36.5947,136.6256],18:[36.0652,136.2216],19:[35.6642,138.5684],20:[36.6513,138.1810],
+  21:[35.3912,136.7223],22:[34.9769,138.3831],23:[35.1802,136.9066],24:[34.7303,136.5086],25:[35.0045,135.8686],26:[35.0214,135.7556],27:[34.6863,135.5200],
+  28:[34.6913,135.1830],29:[34.6851,135.8329],30:[34.2260,135.1675],31:[35.5039,134.2383],32:[35.4723,133.0505],33:[34.6618,133.9344],34:[34.3966,132.4596],
+  35:[34.1859,131.4714],36:[34.0658,134.5593],37:[34.3401,134.0434],38:[33.8416,132.7657],39:[33.5597,133.5311],40:[33.6064,130.4182],41:[33.2494,130.2988],
+  42:[32.7448,129.8737],43:[32.7898,130.7417],44:[33.2382,131.6126],45:[31.9111,131.4239],46:[31.5602,130.5581],47:[26.2124,127.6809]};
+const capPin = document.getElementById("capPin");
+let pinCode = null;
+function placePin() {
+  if (!pinCode) { capPin.style.display = "none"; return; }
+  let [x, y] = toXY(...CAPITAL_LL[pinCode]);
+  if (pinCode === 47 && insetShown) { x += OKI.li[0] - OKI.l[0]; y += OKI.li[1] - OKI.l[1]; }   // 枠内の沖縄に合わせる
+  capPin.style.display = "";
+  capPin.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(view.w / box().w).toFixed(4)})`);
+}
+const showPin = code => { pinCode = code || null; placePin(); };
+
 /* 地方の虫眼鏡（緯度・経度で置く。タップでその地方へズーム） */
 const toXY = (lat, lon) => [(lon - 128) * Math.cos(36 * Math.PI / 180) * 60, (45.8 - lat) * 60];
 const ZOOM_SPOTS = { tohoku:[39.75,140.78], kanto:[36.15,139.75], chubu:[36.1,137.6], kinki:[34.85,135.75], chugoku:[34.95,132.55], shikoku:[33.8,133.55], kyushu:[32.75,131.15] };
@@ -1038,6 +1066,7 @@ function apply() {
   const s = view.w / box().w;
   svg.classList.toggle("zooms-off", view.w < 330);
   zoomEls.forEach(g => g.setAttribute("transform", `translate(${g.dataset.x} ${g.dataset.y}) scale(${s})`));
+  if (typeof placePin === "function") placePin();
 }
 function setView(x, y, w) {
   const b = box(); w = Math.max(70, Math.min(1400, w));
@@ -1314,7 +1343,7 @@ function bindBar() {
 // ホーム系の画面（モード選択・コース一覧・コース）に共通：地図をコレクションの色で見せ、県をさわると名前を出す
 function toHomeScreen(box = FULL) {
   cancelQuizTimers(); eyeOff();
-  mode = "home"; bgmStop(); quiz = null; selected = null; clearTag(); combo.hidden = true; clearmsg.hidden = true; pbar.innerHTML = ""; showFeature(null); showChart(null);
+  mode = "home"; bgmStop(); quiz = null; selected = null; clearTag(); combo.hidden = true; clearmsg.hidden = true; pbar.innerHTML = ""; showFeature(null); showChart(null); showPin(null);
   JapanMap.resetColors(); svg.classList.add("explore"); svg.classList.remove("region-quiz");
   Object.values(labelEl).forEach(t => t.classList.remove("off"));
   const lv = prefLevels();
@@ -1468,6 +1497,7 @@ function nextQ() {
   byId("quit").onclick = () => confirmQuit(home);
   const tt = byId("toTitle"); if (tt) tt.onclick = () => confirmQuit(modeSelect);
   showChart(null);
+  showPin(null);
   // 前の問題で黄色にした県は消す（総合問題では4択のあとにタップの問題が来る）
   Object.values(pathEl).forEach(p => p.classList.remove("sel"));
   if (kindOf(q) === "choice") {
@@ -1485,6 +1515,7 @@ function nextQ() {
       fitLater([cx - h, cy - h, cx + h, cy + h]);
     } else {
       pathEl[q.focus].classList.add("sel");
+      showPin(q.pin);   // 県庁所在地の問題：県庁のある場所をピンクの光で示す
       if (quiz.area.wide) fitLater(unionBox(areaOfPref(q.focus).codes));
     }
     q.order = shuffle(q.choices);
@@ -1634,7 +1665,7 @@ function generalLabel(l) {
 function result() {
   cancelQuizTimers(); eyeOff();
   Object.values(pathEl).forEach(p => p.classList.remove("flash-ok", "flash-ng", "reveal"));
-  pbar.innerHTML = ""; showFeature(null); showChart(null);
+  pbar.innerHTML = ""; showFeature(null); showChart(null); showPin(null);
   // 正解した県の色は、途中の遅延処理が取り消されても結果画面で付けそろえる
   quiz.log.forEach(l => l.ok && l.tap && pathEl[l.pref].classList.add("ok"));
   mode = "result"; bgmStop(); combo.hidden = true; clearTag();
