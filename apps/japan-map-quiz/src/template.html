@@ -30,6 +30,7 @@
   --r-btn:14px; --r-sheet:20px; --r-pill:999px; --bw:2.5px; --tap:48px;
   --marker:.45em;   /* 県名マーカーの太さ（ダークは文字に重ならない細い下線にする） */
   --scrim:#282727B3;   /* 暗証番号の入力のうしろを暗くする幕 */
+  --shade:#0000004D; --glow-deep:#E0A800;   /* マスター表示：黄色の文字のグレーの影／王冠の帯の濃い黄 */
   --river:#1F6FB2;     /* 地形コースの川の線 */
   --temp-ink:#C23A2B; --rain-ink:#1F6FB2;   /* 雨温図の「℃」（気温の線と同じ赤）と「mm」（降水量の棒と同じ青）の文字 */
 }
@@ -255,8 +256,13 @@ svg:not(.explore) .region-line{display:none}
 .course span{flex:1;min-width:0}
 .course small{display:block;color:var(--muted);font-weight:700;font-size:var(--fs12)}
 /* 👑マスター済みのコース名の横：キーカラーの黄色。白地でも読めるよう墨の細いふちどりをつける */
-.course .mastered{font-style:normal;font-size:inherit;font-weight:700;color:var(--brand);margin-left:var(--s8);white-space:nowrap;
-  text-shadow:1px 0 0 var(--on-brand),-1px 0 0 var(--on-brand),0 1px 0 var(--on-brand),0 -1px 0 var(--on-brand),1px 1px 0 var(--on-brand),-1px -1px 0 var(--on-brand),1px -1px 0 var(--on-brand),-1px 1px 0 var(--on-brand)}
+/* 👑マスター済みのコース：名前の先頭に王冠（黄色・ふわっと発光）、名前の横に「マスター！」（黄色・グレーの影） */
+.course .crown{display:inline-block;width:1.15em;height:1.15em;margin-right:var(--s4);vertical-align:-.18em;overflow:visible;
+  filter:drop-shadow(0 0 2px var(--brand)) drop-shadow(0 0 6px var(--brand))}
+.course .crown .cr-body{fill:var(--brand)}
+.course .crown .cr-band{fill:var(--glow-deep)}
+.course .crown .cr-gem{fill:var(--paper)}
+.course .mastered{font-style:normal;font-size:inherit;font-weight:700;color:var(--brand);margin-left:var(--s8);white-space:nowrap;text-shadow:0 1px 2px var(--shade),0 0 1px var(--shade)}
 .course.done .no{background:var(--ok);color:var(--on-strong)}
 .course:disabled{opacity:.5;cursor:default}
 .rules{margin:0;padding-left:1.2em;font-size:var(--fs14);color:var(--muted);font-weight:700;line-height:1.5}
@@ -1334,6 +1340,8 @@ function modeSelect() {
   sheet.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { store.mode = b.dataset.mode; save(); home(); });
 }
 
+// マスター済みのコース名の先頭に付ける王冠（とがった3つの山＋濃い黄の帯＋白い宝石）
+const CROWN_SVG = `<svg class="crown" viewBox="0 0 24 24" aria-hidden="true"><path class="cr-body" d="M2.5 7.5 7.5 12 12 4l4.5 8 5-4.5-1.8 11H4.3z"/><rect class="cr-band" x="4.3" y="17" width="15.4" height="2.6" rx="1"/><circle class="cr-gem" cx="12" cy="13.2" r="1.5"/></svg>`;
 function courseStatus(c) {
   if (!c.ready) return {text: "準備中", off: true};
   if (!inMode(c)) return {text: `${modeOf(c.from).name}から`, off: true};
@@ -1361,7 +1369,7 @@ function home() {
     <h2>${TRACKS[0].name}</h2>
     <div class="courses">${COURSES.map((c, i) => {
       const s = courseStatus(c);
-      return `<button class="course${s.done ? " done" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${s.done ? "👑" : i+1}</b><span>${c.name}${s.done ? `<em class="mastered">🎖✓マスター！</em>` : ""}<small>${s.text}</small></span></button>`;
+      return `<button class="course${s.done ? " done" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${s.done ? CROWN_SVG : ""}${c.name}${s.done ? `<em class="mastered">マスター！</em>` : `<small>${s.text}</small>`}</span></button>`;
     }).join("")}</div>
     <h2>${TRACKS[1].name}</h2><p class="hint">${TRACKS[1].note}</p>
     <h2>ごほうび</h2><p class="hint">新しいタップゲーム：準備中</p>
