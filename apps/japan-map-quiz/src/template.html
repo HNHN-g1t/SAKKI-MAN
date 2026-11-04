@@ -1911,7 +1911,8 @@ function gameRound() {
     <div class="gtarget" id="gmsg">答えのフーセンをぜんぶ割れ！ のこり <b id="gleft"></b> こ</div>
     <div class="gbar" id="gbar"><i></i></div>`;
   // 数は、地図のふち1周に入る数まで（真ん中の地図をあけておく）
-  const n = Math.min(maxLen <= 4 ? 22 : maxLen <= 5 ? 18 : 14, ringCap(balloonW(maxLen))), nt = 3;   // 答えのフーセンはいつも3こ
+  // 答えのフーセンはいつも3こ。ひっかけは、ふち1周に入る数から さらに4こ減らす
+  const n = Math.max(7, Math.min(maxLen <= 4 ? 22 : maxLen <= 5 ? 18 : 14, ringCap(Math.round(balloonW(maxLen) * 1.1))) - 4), nt = 3;
   const dec = [], farPick = shuffle(far);
   for (let i = 0; dec.length < n - nt; i++) dec.push(i % 2 === 0 && near.length ? near[(i / 2) % near.length] : (farPick.length ? farPick[i % farPick.length] : near[i % Math.max(1, near.length)]));
   const labels = shuffle([...Array(nt).fill(it.label), ...dec.slice(0, n - nt)]);
@@ -1965,22 +1966,23 @@ function placeBalloons(labels, answer) {
   clearBalloons();
   const wrap = byId("mapwrap");
   const ov = document.createElement("div"); ov.className = "balloons"; ov.id = "balloons"; wrap.appendChild(ov);
+  // 大きさは ±10％（いちばん大きいのと小さいので約2割の差）。置き場所は大きいほうに合わせて取る
   const D = balloonW(Math.max(...labels.map(t => t.length)));
-  const all = ringSlots(D), cap = all.length;
+  const all = ringSlots(Math.round(D * 1.1)), cap = all.length;
   // 答えのフーセンは必ず残し、入りきらないひっかけを減らす
   let list = labels;
   if (list.length > cap) { const ans = list.filter(t => t === answer), dec = list.filter(t => t !== answer); list = shuffle([...ans, ...dec.slice(0, Math.max(0, cap - ans.length))]); }
   // 置き場所が余るときは、1周に均等にばらして使う
   const off = Math.floor(Math.random() * cap), slots = list.map((_, i) => all[(off + Math.floor(i * cap / list.length)) % cap]), balls = [];
   list.forEach((t, i) => {
-    const [x, y] = slots[i], sz = {w: D, h: D};
+    const k = 0.9 + Math.random() * 0.2, d = Math.round(D * k), [x, y] = slots[i], sz = {w: d, h: d};
     const b = document.createElement("button");
     b.type = "button"; b.className = "balloon"; b.dataset.t = t === answer ? 1 : 0; b.innerHTML = balloonText(t);
-    b.style.cssText = `left:${(x - sz.w / 2).toFixed(0)}px;top:${(y - sz.h / 2).toFixed(0)}px;width:${sz.w}px;height:${sz.h}px;--bc:${BALLOON_COLS[i % BALLOON_COLS.length]};animation-delay:${(-Math.random() * 3).toFixed(2)}s`;
+    b.style.cssText = `left:${(x - sz.w / 2).toFixed(0)}px;top:${(y - sz.h / 2).toFixed(0)}px;width:${sz.w}px;height:${sz.h}px;font-size:${(14 * k).toFixed(1)}px;--bc:${BALLOON_COLS[i % BALLOON_COLS.length]};animation-delay:${(-Math.random() * 3).toFixed(2)}s`;
     b.onclick = () => gameTap(b);
     ov.appendChild(b);
     const a = Math.random() * Math.PI * 2, sp = 14 + Math.random() * 14;
-    balls.push({el: b, x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: D / 2});
+    balls.push({el: b, x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: d / 2});
   });
   return balls;
 }
