@@ -123,6 +123,23 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .gbar{height:8px;border-radius:var(--r-pill);background:var(--off);overflow:hidden}
 .gbar i{display:block;height:100%;background:var(--brand);transform-origin:left;transition:background .2s}
 .gbar.low i{background:var(--ng)}
+/* フーセン：地図のふちにぐるっと。ふわふわ揺れて、タップで割れる */
+.gaming #eye,.gaming #zoomreset,.gaming #zooms{display:none}
+.gaming .chart{top:50%;transform:translate(-50%,-50%) scale(.6)}
+.balloons{position:absolute;inset:0;pointer-events:none;z-index:3}
+.balloon{position:absolute;height:50px;pointer-events:auto;border:0;padding:0 6px;cursor:pointer;touch-action:manipulation;
+  border-radius:50% 50% 46% 46% / 55% 55% 45% 45%;background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.75) 0 10%,transparent 26%),var(--bc);
+  color:#282727;font:700 14px/1 var(--body);white-space:nowrap;box-shadow:inset -4px -6px 10px rgba(0,0,0,.18),0 3px 6px rgba(0,0,0,.25);animation:bob 3s ease-in-out infinite}
+.balloon::after{content:"";position:absolute;left:50%;top:100%;width:1.5px;height:16px;background:rgba(40,39,39,.55);transform:translateX(-50%)}
+.balloon::before{content:"";position:absolute;left:50%;top:calc(100% - 3px);border:5px solid transparent;border-top:6px solid var(--bc);transform:translateX(-50%)}
+.balloon.pop{animation:popB .26s ease-out forwards}
+.balloon.miss{animation:shakeB .42s 1}
+.balloon.show{animation:none;box-shadow:0 0 0 4px var(--ok),0 0 18px var(--ok)}
+.balloon.fade{opacity:.35;animation:none}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-6px) rotate(2deg)}}
+@keyframes popB{0%{transform:scale(1)}40%{transform:scale(1.35);opacity:.9}100%{transform:scale(1.6);opacity:0}}
+@keyframes shakeB{20%{transform:translateX(-6px) rotate(-8deg)}40%{transform:translateX(6px) rotate(8deg)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@media (prefers-reduced-motion:reduce){.balloon{animation:none}}
 .ggrid{display:grid;gap:4px}
 .gtile{box-sizing:border-box;min-height:40px;border:2px solid var(--ink);border-radius:8px;background:var(--paper);color:var(--ink);font:700 1em/1.15 var(--body);padding:2px;cursor:pointer;touch-action:manipulation;white-space:nowrap;overflow:hidden;text-overflow:clip}
 .gtile:active{transform:translateY(1px)}
@@ -1837,7 +1854,7 @@ function sndFanfare() {
 const GAME_ROUNDS = 5, GAME_SEC = 10;
 let G = null;
 const gameBest = courseId => Math.max(0, ...recsOf(courseId).map(r => r.gameBest || 0));
-function stopGame() { if (G) { cancelAnimationFrame(G.raf); clearTimeout(G.wait); G = null; } try { speechSynthesis.cancel(); } catch(e){} }
+function stopGame() { if (G) { cancelAnimationFrame(G.raf); clearTimeout(G.wait); G = null; } clearBalloons(); byId("app").classList.remove("gaming"); try { speechSynthesis.cancel(); } catch(e){} }
 function gameItems(c) {
   const type = QUIZ_TYPES[c.id];
   const qs = c.stages ? stagesOf(c).flatMap(a => type.make(a.codes || range(1, 47), a)) : type.make(range(1, 47));
@@ -1860,42 +1877,44 @@ function startGame(c) {
   G = {c, items, rounds: order.slice(0, GAME_ROUNDS), r: -1, score: 0, combo: 0, maxCombo: 0, found: 0, all: 0, raf: 0, wait: 0};
   top_.innerHTML = `<button class="iconbtn" id="gquit" type="button" aria-label="やめる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><div class="ask"><span class="meta"><span class="nm">${c.name}・ご褒美ゲーム</span><span class="num" id="gnum"></span></span></div>${muteBtn()}`;
   bindMute(); byId("gquit").onclick = () => coursePage(c);
-  sheet.classList.remove("home"); sheet.classList.add("game");
+  sheet.classList.remove("home"); sheet.classList.add("game"); byId("app").classList.add("gaming");
   gameRound();
 }
 function gameRound() {
   const g = G; if (!g) return;
   g.r++;
+  clearBalloons();
   if (g.r >= g.rounds.length) return gameEnd();
   const it = g.rounds[g.r], q = it.q;
   byId("gnum").textContent = `ラウンド ${g.r + 1} / ${g.rounds.length}`;
-  // 地図：答えの場所を光らせる（4択の問題は本編と同じ見せ方）
+  // 地図：答えの場所を光らせ、まわりにフーセンを置けるよう広めに見せて真ん中に置く
   JapanMap.resetColors(); Object.values(pathEl).forEach(p => p.classList.remove("sel", "ok", "miss"));
   showFeature(null); showChart(null); showPin(null);
-  if (q.chart) { showChart(q.chart); fitLater(FULL); }
-  else if (q.zone) { q.zone.forEach(x => pathEl[x].classList.add("sel")); fitLater(unionBox(q.zone)); }
-  else if (q.feature) { showFeature(q.feature); const b = TERRAIN.find(f => f.id === q.feature).b, cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2, h = Math.max(b[2] - b[0], b[3] - b[1], 160) / 2; fitLater([cx - h, cy - h, cx + h, cy + h]); }
-  else { pathEl[it.pref].classList.add("sel"); toFront(it.pref); if (q.pin) showPin(q.pin); fitLater(unionBox((areaOfPref(it.pref) || AREAS[0]).codes)); }
-  // お題の文：県名の問題（答えが問題文に入っている）は「光っている都道府県は？」にする
+  let bb;
+  if (q.chart) { showChart(q.chart); bb = FULL; }
+  else if (q.zone) { q.zone.forEach(x => pathEl[x].classList.add("sel")); bb = unionBox(q.zone); }
+  else if (q.feature) { showFeature(q.feature); bb = TERRAIN.find(f => f.id === q.feature).b; }
+  else { pathEl[it.pref].classList.add("sel"); toFront(it.pref); if (q.pin) showPin(q.pin); bb = boxOf[it.pref]; }
+  if (bb !== FULL) { const cx = (bb[0] + bb[2]) / 2, cy = (bb[1] + bb[3]) / 2, h = Math.max(bb[2] - bb[0], bb[3] - bb[1], 70) * 1.15; bb = [cx - h, cy - h, cx + h, cy + h]; }
+  fitLater(bb);
+  // お題の文（答えは出さない）。県名タップは問題文に答えが入るので「地図で光っているのは？」
   const plain = q.text.replace(/<[^>]+>/g, "");
   const prompt = plain.includes(it.label) ? "地図で光っているのは？" : askText(q).html;
-  // 札：答えを7枚前後、残りは同じ問題の選択肢・同じ地方の県・ほかのお題の答え（まぎらわしいものを多めに）
+  // フーセン：今までの札の6割ほど（20〜22こ）。答えは約2割、ひっかけは同じ問題の選択肢を半分、残りは同じ仲間の答え
   const near = it.others.filter(o => o !== it.label), maxLen = Math.max(it.label.length, ...near.map(o => o.length));
-  // ほかのお題の答えは、答え・選択肢より長くないものだけ（札の幅をそろえる）
   const far = [...new Set(g.items.filter(x => x.grp === it.grp).map(x => x.label))].filter(o => o !== it.label && !near.includes(o) && o.length <= maxLen);
-  // 札の数は名前の長さで決める（折り返さずに1行で読める幅）：3字まで6列36枚／4字5列30枚／5字以上4列24枚
-  const cols = maxLen <= 3 ? 6 : maxLen <= 4 ? 5 : 4, n = cols * 6, nt = Math.round(n * 0.2);
+  sheet.innerHTML = `<div class="ghead"><span class="gq">${prompt}</span><span class="gs" id="gscore">${g.score}</span></div>
+    <div class="gtarget" id="gmsg">答えのフーセンをぜんぶ割れ！ のこり <b id="gleft"></b> こ</div>
+    <div class="gbar" id="gbar"><i></i></div>`;
+  // 数は、地図のふち1周に入る数まで（真ん中の地図をあけておく）
+  const n = Math.min(maxLen <= 4 ? 22 : maxLen <= 5 ? 18 : 14, ringCap(balloonW(maxLen))), nt = Math.max(3, Math.round(n * 0.2));
   const dec = [], farPick = shuffle(far);
   for (let i = 0; dec.length < n - nt; i++) dec.push(i % 2 === 0 && near.length ? near[(i / 2) % near.length] : (farPick.length ? farPick[i % farPick.length] : near[i % Math.max(1, near.length)]));
-  const tiles = shuffle([...Array(nt).fill(it.label), ...dec.slice(0, n - nt)]);
-  const tileW = (Math.min(innerWidth, 900) - 32 - (cols - 1) * 4) / cols - 8, fs = Math.max(10, Math.min(14, Math.floor(tileW / Math.max(...tiles.map(t => t.length)))));
+  const labels = shuffle([...Array(nt).fill(it.label), ...dec.slice(0, n - nt)]);
   g.cur = {it, left: nt, t0: performance.now(), sec: GAME_SEC, done: false};
-  sheet.innerHTML = `<div class="ghead"><span class="gq">${prompt}</span><span class="gs" id="gscore">${g.score}</span></div>
-    <div class="gtarget">答えは <b class="gans">${rb(it.label, it.kana)}</b>！ ぜんぶタップ　のこり <b id="gleft">${nt}</b> 枚</div>
-    <div class="gbar" id="gbar"><i></i></div>
-    <div class="ggrid" style="grid-template-columns:repeat(${cols},minmax(0,1fr));font-size:${fs}px">${tiles.map(t => `<button class="gtile" type="button" data-t="${t === it.label ? 1 : 0}">${t}</button>`).join("")}</div>`;
+  byId("gleft").textContent = nt;
   g.all += nt;
-  sheet.querySelectorAll(".gtile").forEach(b => b.onclick = () => gameTap(b));
+  placeBalloons(labels, it.label);
   const tick = now => {
     if (G !== g || g.cur.done) return;
     const rest = g.cur.sec - (now - g.cur.t0) / 1000, bar = byId("gbar");
@@ -1905,36 +1924,87 @@ function gameRound() {
   };
   g.raf = requestAnimationFrame(tick);
 }
+// フーセンを地図のふちにぐるっと並べる（真ん中の答えの場所はあけておく）
+const BALLOON_COLS = ["#FF6B9A", "#FFB347", "#7BD389", "#6EC6FF", "#B39DFF", "#FFD84D", "#FF8A65", "#4DD0C8"];
+const balloonW = len => Math.max(58, len * 14 + 22);
+function ringRect(bw, inset = 6) {
+  const wrap = byId("mapwrap"), W = wrap.clientWidth, H = wrap.clientHeight - 24;
+  const x0 = inset + bw / 2, y0 = inset + 30, x1 = W - inset - bw / 2, y1 = H - inset - 36;
+  return {W, H, x0, y0, x1, y1, per: 2 * ((x1 - x0) + (y1 - y0))};
+}
+const ringCap = bw => Math.max(6, Math.floor(ringRect(bw).per / (bw + 8)));
+function clearBalloons() { const o = byId("balloons"); if (o) o.remove(); }
+function placeBalloons(labels, answer) {
+  clearBalloons();
+  const wrap = byId("mapwrap");
+  const ov = document.createElement("div"); ov.className = "balloons"; ov.id = "balloons"; wrap.appendChild(ov);
+  const sizes = labels.map(t => ({w: Math.max(58, t.length * 14 + 22), h: 50})), bw = Math.max(...sizes.map(z => z.w));
+  // ふちに沿った長方形（外周）を等間隔に区切る。入りきらなければ内側にもう1周
+  const slots = [];
+  let inset = 6, ring = 0;
+  const {W, H} = ringRect(bw);   // 下はシートの角のぶん少しあける
+  while (slots.length < labels.length && ring < 3) {
+    const {x0, y0, x1, y1, per} = ringRect(bw, inset), cap = Math.max(4, Math.floor(per / (bw + 8))), need = Math.min(cap, labels.length - slots.length);
+    const off = Math.random();
+    for (let i = 0; i < need; i++) {
+      let d = ((i + off) / need) * per, x, y;
+      if (d < x1 - x0) { x = x0 + d; y = y0; } else if ((d -= x1 - x0) < y1 - y0) { x = x1; y = y0 + d; }
+      else if ((d -= y1 - y0) < x1 - x0) { x = x1 - d; y = y1; } else { d -= x1 - x0; x = x0; y = y1 - d; }
+      slots.push([x + (Math.random() - 0.5) * 8, y + (Math.random() - 0.5) * 8]);
+    }
+    inset += Math.max(62, bw * 0.75); ring++;
+  }
+  labels.forEach((t, i) => {
+    let [x, y] = slots[i] || [W / 2, 40]; const sz = sizes[i];
+    x = Math.min(W - sz.w / 2 - 4, Math.max(sz.w / 2 + 4, x)); y = Math.min(H - sz.h / 2 - 14, Math.max(sz.h / 2 + 4, y));   // 画面からはみ出さない
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "balloon"; b.dataset.t = t === answer ? 1 : 0; b.textContent = t;
+    b.style.cssText = `left:${(x - sz.w / 2).toFixed(0)}px;top:${(y - sz.h / 2).toFixed(0)}px;width:${sz.w}px;--bc:${BALLOON_COLS[i % BALLOON_COLS.length]};animation-delay:${(-Math.random() * 3).toFixed(2)}s`;
+    b.onclick = () => gameTap(b);
+    ov.appendChild(b);
+  });
+}
 function gameTap(b) {
   const g = G; if (!g || g.cur.done || b.disabled) return;
   if (b.dataset.t === "1") {
-    b.disabled = true; b.classList.add("hit");
+    b.disabled = true; b.classList.add("pop");
+    const r = b.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2);
+    setTimeout(() => b.remove(), 260);
     g.combo++; g.maxCombo = Math.max(g.maxCombo, g.combo); g.found++;
     g.score += 10 + Math.min(10, (g.combo - 1) * 2);
     g.cur.left--; byId("gleft").textContent = g.cur.left; byId("gscore").textContent = g.score;
-    sndTap(g.combo); say(g.cur.it.kana || g.cur.it.label);
+    sndPop(); sndTap(g.combo); say(g.cur.it.kana || g.cur.it.label);
     if (g.cur.left === 0) roundEnd(true);
   } else {
     b.classList.remove("miss"); void b.offsetWidth; b.classList.add("miss");
-    setTimeout(() => b.classList.remove("miss"), 320);
+    setTimeout(() => b.classList.remove("miss"), 420);
     g.combo = 0; g.cur.sec -= 1; sndNg();
   }
 }
 function roundEnd(clear) {
   const g = G; g.cur.done = true; cancelAnimationFrame(g.raf);
-  sheet.querySelectorAll(".gtile").forEach(b => { b.disabled = true; if (b.dataset.t === "1" && !b.classList.contains("hit")) b.classList.add("show"); });
+  document.querySelectorAll(".balloon").forEach(b => { b.disabled = true; if (b.dataset.t === "1") b.classList.add("show"); else b.classList.add("fade"); });
   if (clear) {
     const rest = Math.max(0, g.cur.sec - (performance.now() - g.cur.t0) / 1000), bonus = Math.round(rest * 5);
     g.score += bonus; byId("gscore").textContent = g.score;
-    byId("gleft").parentNode.innerHTML = `ぜんぶ見つけた！ <b>ボーナス +${bonus}</b>`;   // 答えの名前の行を入れかえる
-    sndOk(); const r = sheet.querySelector(".ggrid").getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2);
-  } else byId("gleft").parentNode.innerHTML = `時間切れ！ 答えは <b>${g.cur.it.label}</b>`;
-  g.wait = setTimeout(gameRound, clear ? 1100 : 1600);
+    byId("gmsg").innerHTML = `ぜんぶ割った！ <b>ボーナス +${bonus}</b>`;
+    sndOk();
+  } else byId("gmsg").innerHTML = `時間切れ！`;
+  g.wait = setTimeout(gameRound, clear ? 1000 : 1500);
+}
+// フーセンが割れる音：短い「パン」
+function sndPop() {
+  const a = audio(); if (!a) return;
+  const t = a.currentTime + 0.002, len = Math.floor(a.sampleRate * 0.08), nb = a.createBuffer(1, len, a.sampleRate), d = nb.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 4);
+  const src = a.createBufferSource(), hp = a.createBiquadFilter(), g = a.createGain();
+  src.buffer = nb; hp.type = "highpass"; hp.frequency.value = 900; g.gain.value = 0.5;
+  src.connect(hp); hp.connect(g); g.connect(out); src.start(t);
 }
 function gameEnd() {
   const g = G, r = rec(curMode().id, g.c.id), prev = gameBest(g.c.id), isBest = g.score > prev;
   if (isBest) { r.gameBest = g.score; save(); }
-  cancelAnimationFrame(g.raf); bgmStop();
+  cancelAnimationFrame(g.raf); bgmStop(); clearBalloons(); byId("app").classList.remove("gaming");
   JapanMap.resetColors(); showFeature(null); showChart(null); showPin(null);
   byId("gnum").textContent = "けっか";
   sheet.innerHTML = `<div class="score"><span class="big">${g.score}<small style="font-size:1.2rem"> 点</small></span><span class="msg">見つけた札 ${g.found} / ${g.all}・最高 ${g.maxCombo}れんぞく</span></div>
