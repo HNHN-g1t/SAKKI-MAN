@@ -6,6 +6,8 @@
 <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#232222" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <!-- ファビコンは公開サイトの直下（site/ から tools/build_site.py で配置）。?v= はスマホの覚え込み対策で、差し替えたら上げる -->
 <link rel="icon" href="../favicon.ico?v=2" sizes="any">
 <link rel="icon" href="../favicon-32.png?v=2" type="image/png" sizes="32x32">
@@ -66,6 +68,13 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .ask .meta{font-size:var(--fs14);color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
 /* 上部バーの見出し：1行目＝コース・ステージ名（入りきらなければ…で省略）、2行目＝何問目か／けっか */
 .top .ask{gap:0}
+/* iPhone の Safari（ブラウザで開いたとき）は、画面のいちばん上から少し下まで中身をぼかして見せる（iOS 26 の仕様）。
+   その範囲には何も置かないよう、上の余白をさらに 40px 広げる。ホーム画面から開いたとき（standalone）はぼかしがないので広げない */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: browser) {
+    .top{padding-top:calc(env(safe-area-inset-top,0px) + 52px);min-height:calc(112px + env(safe-area-inset-top,0px))}
+  }
+}
 .top .meta .nm{display:block;font-size:var(--fs12);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top .meta .num{display:block;font-size:var(--fs16);color:var(--ink);white-space:nowrap}
 .ask .q{font-family:var(--body);font-weight:700;font-size:var(--fs28);line-height:1.5}

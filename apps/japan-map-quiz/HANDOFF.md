@@ -486,3 +486,4 @@ Codex の `quizTimeout` に加え、4択のボタン・「つぎへ」は押し�
 - iPhone では画面の一番上（時計・電池の帯）にかかったページがぼかされる。上部バー `.top` の上の余白を `env(safe-area-inset-top) + 12px` にして、中身をその帯の下に置いた。バーの高さも 64px → 72px（＋帯のぶん）
 - `theme-color`（ライト #FFFFFF・ダーク #232222＝`--paper`）を指定して、帯の色を上部バーとそろえた
 - ホームのバーの見出しを「サッと記憶！サッ記マン／日本地図タップドリル」に。ページのタイトルも「サッ記マン 日本地図タップドリル」
+- 2026-11-04 追記（まだぼやけるとの報告を受けて）：iOS 26 の Safari は、時計の帯の下もしばらく中身をぼかす。iPhone の Safari でブラウザ表示のとき（`@supports (-webkit-touch-callout:none)` かつ `display-mode: browser`）だけ、上部バーの上の余白を 52px（＋帯）に広げた。あわせて `site/manifest.webmanifest` の display を browser → standalone にし、`apple-mobile-web-app-capable` を付けた（ホーム画面から開くと Safari の枠なしで開き、ぼかしが出ない）。実機での確認はまだ

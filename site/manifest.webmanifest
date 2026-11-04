@@ -2,7 +2,7 @@
   "name": "サッ記マン",
   "short_name": "サッ記マン",
   "start_url": "./",
-  "display": "browser",
+  "display": "standalone",
   "background_color": "#ffe600",
   "theme_color": "#ffe600",
   "icons": [
