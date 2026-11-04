@@ -237,6 +237,8 @@ svg:not(.explore) .region-line{display:none}
 .motto{margin:0;text-align:center;font-weight:700;font-size:13px;line-height:1.4;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .btn.backbtn{flex:none;min-height:40px;font-size:var(--fs14);padding:0 var(--s12)}
 .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:var(--s8)}
+.chip .cnm{word-break:keep-all;overflow-wrap:anywhere}
+.chip .cnm.tight{font-size:12px;letter-spacing:-.02em}   /* ・のない長い名前（伝統工芸品など）は1行に収める */
 .chip{font-size:var(--fs16);white-space:nowrap;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:var(--s4) var(--s8)}
 .chip small{font-size:var(--fs12);color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
 .chip.wide{grid-column:1/-1}
@@ -1478,7 +1480,7 @@ function coursePage(c) {
       // 県名タップは v4 の地方ベスト（store.best）も参考に出す
       const b = Math.max(best[a.id] ?? -1, c.id === "prefName" ? (store.best[a.id] ?? -1) : -1);
       const cr = c.stages && stageDone(c.id, a.id, "master") ? "👑" : "";
-      return `<button class="chip" type="button" data-area="${a.id}">${a.name}<small>${cr}${b >= 0 ? `ベスト ${b}/${n}` : `${n}問`}</small></button>`;
+      return `<button class="chip" type="button" data-area="${a.id}"><span class="cnm${!a.name.includes("・") && a.name.length >= 5 ? " tight" : ""}">${brkDot(a.name)}</span><small>${cr}${b >= 0 ? `ベスト ${b}/${n}` : `${n}問`}</small></button>`;
     }).join("")}</div>
     <p class="motto">県名なしの日本地図でノーミスクリアをめざそう！</p>`;   // くわしい条件は COURSES[].rules（画面には出さない）
   byId("back").onclick = home;
@@ -1584,6 +1586,8 @@ function logAnswer(ok) {
   save();
 }
 
+// 「・」のうしろでだけ改行する（言葉の途中では切らない。・は行の頭に置かない）
+const brkDot = t => t.replace(/・/g, "・<wbr>");
 // ふりがな（よみ）を漢字の上に付ける
 const rb = (w, k) => k ? `<ruby>${w}<rt>${k}</rt></ruby>` : w;
 // 解説が答えの名前で始まるとき（「静岡県。…」）は、上の行と重ならないようにその部分を省く
