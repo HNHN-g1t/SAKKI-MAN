@@ -254,6 +254,9 @@ svg:not(.explore) .region-line{display:none}
 .course .no{flex:none;width:32px;height:32px;border-radius:50%;background:var(--cream);color:var(--ink);display:grid;place-items:center;font-family:var(--display);font-weight:400;font-size:var(--fs14)}
 .course span{flex:1;min-width:0}
 .course small{display:block;color:var(--muted);font-weight:700;font-size:var(--fs12)}
+/* 👑マスター済みのコース名の横：キーカラーの黄色。白地でも読めるよう墨の細いふちどりをつける */
+.course .mastered{font-style:normal;font-size:inherit;font-weight:700;color:var(--brand);margin-left:var(--s8);white-space:nowrap;
+  text-shadow:1px 0 0 var(--on-brand),-1px 0 0 var(--on-brand),0 1px 0 var(--on-brand),0 -1px 0 var(--on-brand),1px 1px 0 var(--on-brand),-1px -1px 0 var(--on-brand),1px -1px 0 var(--on-brand),-1px 1px 0 var(--on-brand)}
 .course.done .no{background:var(--ok);color:var(--on-strong)}
 .course:disabled{opacity:.5;cursor:default}
 .rules{margin:0;padding-left:1.2em;font-size:var(--fs14);color:var(--muted);font-weight:700;line-height:1.5}
@@ -1358,7 +1361,7 @@ function home() {
     <h2>${TRACKS[0].name}</h2>
     <div class="courses">${COURSES.map((c, i) => {
       const s = courseStatus(c);
-      return `<button class="course${s.done ? " done" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${s.done ? "👑" : i+1}</b><span>${c.name}<small>${s.text}</small></span></button>`;
+      return `<button class="course${s.done ? " done" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${s.done ? "👑" : i+1}</b><span>${c.name}${s.done ? `<em class="mastered">🎖✓マスター！</em>` : ""}<small>${s.text}</small></span></button>`;
     }).join("")}</div>
     <h2>${TRACKS[1].name}</h2><p class="hint">${TRACKS[1].note}</p>
     <h2>ごほうび</h2><p class="hint">新しいタップゲーム：準備中</p>
