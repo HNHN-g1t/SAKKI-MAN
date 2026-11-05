@@ -576,6 +576,16 @@ const QUIZ_TYPES = {
         text: HISTORY_KINDS[h.kind], explain: h.note };
     })
   },
+  treasure: {
+    title: "国宝・世界遺産", kind: "choice",
+    // ステージ（area.cat）の場所を出題。光る印の場所が何かを4択。選択肢は同じステージから（足りなければほかから）
+    make: (codes, area) => TREASURE.filter(t => !area || !area.cat || t.stage === area.cat).map(t => {
+      const same = shuffle(TREASURE.filter(o => o.id !== t.id && o.stage === t.stage)), other = shuffle(TREASURE.filter(o => o.id !== t.id && o.stage !== t.stage));
+      const pool = [...same, ...other].slice(0, 3);
+      return { key: t.id, prefs: [t.pref], focus: t.pref, pinLL: t.ll, sub: "", choices: [[t.name, t.kana], ...pool.map(o => [o.name, o.kana])], correct: t.name,
+        text: TREASURE_STAGES[t.stage].ask, explain: t.note };
+    })
+  },
   designated: {
     title: "政令指定都市", kind: "tap",
     make: codes => CITIES.designated.map((d, i) => [d, i]).filter(([d]) => codes.includes(d[2])).map(([[name, kana, c], i]) => (
@@ -783,6 +793,47 @@ const HISTORY = [
 ].map(([id, era, kind, name, kana, pref, lat, lon, note]) => ({id, era, kind, name, kana, pref, ll: [lat, lon], note}));
 const historyOf = id => HISTORY.find(h => h.id === id);
 
+/* ---------- 国宝・世界遺産（歴史の場所と同じく、光る場所が何かを4択） ----------
+   [id, ステージ, 名前, よみ, 県コード, 緯度, 経度, 解説]。ステージごとに問い方が決まる（TREASURE_STAGES の ask）
+   犬山城（県ざかいの木曽川ぎわ）と軍艦島（地図に描いていない小さな島）は、簡略化した地図で県の外に出るため、表示用にいちばん近い陸へ寄せている（約2km・約5km） */
+const TREASURE_STAGES = {
+  temple:   {name: "国宝の寺社", ask: "光る場所の<em>寺・神社</em>は？"},
+  castle:   {name: "国宝の城", ask: "光る場所の<em>国宝の城</em>は？"},
+  heritage: {name: "世界遺産", ask: "光る場所の<em>世界遺産</em>は？"},
+  meiji:    {name: "産業革命遺産", ask: "光る場所の<em>産業遺産</em>は？"},   // 問題文は1行に入るよう短く
+  mania:    {name: "マニアな国宝", ask: "光る場所ゆかりの<em>国宝</em>は？"},
+};
+const TREASURE = [
+  ["koryuji","temple","広隆寺","こうりゅうじ",26,35.0154,135.7067,"京都府（京都市）。国宝の弥勒菩薩半跏思惟像がある。聖徳太子ゆかりの寺"],
+  ["kofukuji","temple","興福寺","こうふくじ",29,34.6830,135.8317,"奈良県（奈良市）。国宝の阿修羅像がある。藤原氏の寺"],
+  ["yakushiji","temple","薬師寺","やくしじ",29,34.6684,135.7843,"奈良県（奈良市）。国宝の東塔がある"],
+  ["toshodaiji","temple","唐招提寺","とうしょうだいじ",29,34.6754,135.7849,"奈良県（奈良市）。唐から来た鑑真が開いた寺。鑑真和上像は国宝"],
+  ["sanjusangen","temple","三十三間堂","さんじゅうさんげんどう",26,34.9879,135.7718,"京都府（京都市）。1001体の千手観音像がならぶ。本堂は国宝"],
+  ["izumo","temple","出雲大社","いずもたいしゃ",32,35.4019,132.6855,"島根県（出雲市）。縁結びの神社。本殿は国宝"],
+  ["zuiryuji","temple","瑞龍寺","ずいりゅうじ",16,36.7376,137.0173,"富山県（高岡市）。仏殿・法堂・山門が国宝"],
+  ["himeji","castle","姫路城","ひめじじょう",28,34.8394,134.6939,"兵庫県（姫路市）。白い天守が国宝。世界遺産でもある"],
+  ["matsumoto","castle","松本城","まつもとじょう",20,36.2384,137.9690,"長野県（松本市）。黒い天守が国宝"],
+  ["inuyama","castle","犬山城","いぬやまじょう",23,35.3700,136.9786,"愛知県（犬山市）。木曽川のほとりに立つ天守が国宝"],
+  ["hikone","castle","彦根城","ひこねじょう",25,35.2764,136.2518,"滋賀県（彦根市）。井伊家の城。天守が国宝"],
+  ["matsue","castle","松江城","まつえじょう",32,35.4750,133.0507,"島根県（松江市）。2015年に天守が国宝になった。国宝の天守は5つだけ"],
+  ["shirakawago","heritage","白川郷","しらかわごう",21,36.2577,136.9060,"岐阜県（白川村）。合掌造りの集落。世界遺産"],
+  ["iwami","heritage","石見銀山","いわみぎんざん",32,35.1110,132.4370,"島根県（大田市）。戦国〜江戸時代に多くの銀をほり出した。世界遺産"],
+  ["kumano","heritage","熊野古道","くまのこどう",30,33.8402,135.7735,"和歌山県。熊野本宮大社などへお参りする道。世界遺産「紀伊山地の霊場と参詣道」"],
+  ["shuri","heritage","首里城跡","しゅりじょうあと",47,26.2170,127.7195,"沖縄県（那覇市）。琉球王国の城のあと。世界遺産「琉球王国のグスク」"],
+  ["shiretoko","heritage","知床","しれとこ",1,44.08,145.05,"北海道。流氷がやってくる半島の自然。世界遺産"],
+  ["munakata","heritage","宗像大社","むなかたたいしゃ",40,33.8312,130.5139,"福岡県（宗像市）。沖ノ島とともに世界遺産「神宿る島」"],
+  ["gunkanjima","meiji","軍艦島","ぐんかんじま",42,32.6118,129.8122,"長崎県（長崎市）。端島炭坑の島。軍艦のような形。世界遺産「明治日本の産業革命遺産」"],
+  ["nirayama","meiji","韮山反射炉","にらやまはんしゃろ",22,35.0396,138.9614,"静岡県（伊豆の国市）。大砲をつくるための炉。世界遺産「明治日本の産業革命遺産」"],
+  ["shokason","meiji","松下村塾","しょうかそんじゅく",35,34.4083,131.4102,"山口県（萩市）。吉田松陰が教えた塾。世界遺産「明治日本の産業革命遺産」"],
+  ["glover","meiji","旧グラバー住宅","きゅうグラバーじゅうたく",42,32.7340,129.8690,"長崎県（長崎市）。いま残る日本でいちばん古い木造の洋館。世界遺産「明治日本の産業革命遺産」"],
+  ["kinin","mania","金印","きんいん",40,33.6800,130.3000,"福岡県（福岡市の志賀島）。「漢委奴国王」ときざまれた金印が見つかった。国宝"],
+  ["venus","mania","縄文のビーナス","じょうもんのビーナス",20,35.9930,138.2120,"長野県（茅野市）。縄文時代の土偶。国宝"],
+  ["kaen","mania","火焔型土器","かえんがたどき",15,37.1270,138.7570,"新潟県（十日町市）。炎のような形の縄文土器。国宝"],
+  ["nageire","mania","投入堂","なげいれどう",31,35.3960,133.8790,"鳥取県（三朝町）。三佛寺の、がけに建つお堂。国宝"],
+  ["usuki","mania","臼杵磨崖仏","うすきまがいぶつ",44,33.0870,131.7766,"大分県（臼杵市）。岩にほられた仏像。国宝"],
+].map(([id, stage, name, kana, pref, lat, lon, note]) => ({id, stage, name, kana, pref, ll: [lat, lon], note}));
+const treasureOf = id => TREASURE.find(t => t.id === id);
+
 const TERRAIN_CATS = { mount: "山地・山脈・山", river: "川", plain: "平野" };
 
 /* ---------- 気候（気候区分・雨温図） ----------
@@ -919,6 +970,10 @@ const COURSES = [
    stageList:Object.entries(HISTORY_ERAS).map(([id, name]) => ({id, cat:id, name, codes:range(1,47)})),
    rules:[`時代ごとの${Object.keys(HISTORY_ERAS).length}ステージ（全${HISTORY.length}か所）。地図の光る場所が何かを4択で答える`, "ステージ👑：そのステージをヒントなしで全問正解",
           "👑マスター：すべてのステージ👑", "完了：すべてのステージを最後まで解く"]},
+  {id:"treasure", track:"history", name:"国宝・世界遺産", master:"国宝・世界遺産マスター", from:"g5", ready:true, stages:true,
+   stageList:Object.entries(TREASURE_STAGES).map(([id, st]) => ({id, cat:id, name:st.name, codes:range(1,47)})),
+   rules:[`${Object.keys(TREASURE_STAGES).length}ステージ（全${TREASURE.length}か所）。地図の光る場所が何かを4択で答える`, "ステージ👑：そのステージをヒントなしで全問正解",
+          "👑マスター：すべてのステージ👑", "完了：すべてのステージを最後まで解く"]},
   {id:"general", name:"総合問題", master:"総合マスター", from:"g5", ready:true, stages:true, unlock:{course:"industry", need:"complete"},
    rules:["地方ごとの7ステージ。県庁所在地・河川など地形・農林水産業・工業と伝統工芸を、その地方の中からまぜて出す（毎回えらび直す）",
           "ステージ👑：そのステージをヒントなしで全問正解", "👑総合マスター：7ステージすべて👑", "完了：7ステージすべてを最後まで解く",
@@ -1003,7 +1058,7 @@ const STAGES = AREAS.filter(a => !a.wide);
 const stagesOf = c => c.stageList || STAGES;
 const stageDone = (courseId, areaId, need) => recsOf(courseId).some(r => { const s = (r.stage || {})[areaId]; return s && (need === "master" ? !!s.master : s.complete); });
 const stageCrowns = courseId => stagesOf(courseOf(courseId)).filter(a => stageDone(courseId, a.id, "master")).length;
-const prefOfKey = (courseId, key) => courseId === "history" ? (historyOf(key) || {}).pref : courseId === "general" ? prefOfKey({cap: "capital", ter: "terrain", ind: "industry"}[String(key).split(":")[0]], String(key).split(":")[1])
+const prefOfKey = (courseId, key) => courseId === "treasure" ? (treasureOf(key) || {}).pref : courseId === "history" ? (historyOf(key) || {}).pref : courseId === "general" ? prefOfKey({cap: "capital", ter: "terrain", ind: "industry"}[String(key).split(":")[0]], String(key).split(":")[1])
   : courseId === "climate" ? (String(key).startsWith("zone:") ? zoneOf(key.slice(5)).codes[0] : (CLIMATE_CITIES.find(c => "city:" + c.id === key) || {}).pref)
   : courseId === "designated" ? CITIES.designated[key][2] : courseId === "terrain" ? (TERRAIN.find(f => f.id === key) || {}).pref : courseId === "industry" ? (industryOf(key) || {}).pref : +key;
 const fullCount = courseId => QUIZ_TYPES[courseId].make(range(1,47)).length;
@@ -1977,7 +2032,7 @@ function result() {
   const retry = !!quiz.opts.keys;
   const msg = newMaster ? `${crown(course)}！` : newStage ? `${ic("crown")}${quiz.area.name}ステージ パーフェクト！` : retry && correct === total ? "クリア！" : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしでマスター" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
   const nextStage = quiz.stage ? stagesOf(course)[stagesOf(course).indexOf(quiz.area) + 1] : null;
-  const label = l => course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? TERRAIN.find(f => f.id === l.key).name : course.id === "industry" ? `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）` : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
+  const label = l => course.id === "treasure" ? treasureOf(l.key).name : course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? TERRAIN.find(f => f.id === l.key).name : course.id === "industry" ? `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）` : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
   top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta"><span class="nm">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">けっか</span></span></div>${themeBtn()}${muteBtn()}`;
   bindBar();
   // 文の最初のすきま（タグの外）で改行する。王冠はSVGなので innerHTML で入れる
