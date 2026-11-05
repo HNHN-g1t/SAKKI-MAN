@@ -1086,60 +1086,42 @@ function sndOk(){
 }
 const sndNg = () => tone([330,247], 0.14, "square");
 
-// 問題中のBGM：低いベースとこもったパッドだけの、さりげないループ。Am7 → Fmaj7 → C → G（1小節ずつ、84BPM）
-const BGM = {timer: null, next: 0, step: 0};
-const BGM_BEAT = 60/84;
-const BGM_CHORDS = [
-  {bass: 55.00, pad: [220.00, 261.63, 329.63, 392.00]},  // Am7
-  {bass: 43.65, pad: [174.61, 220.00, 261.63, 329.63]},  // Fmaj7
-  {bass: 65.41, pad: [196.00, 261.63, 329.63]},          // C
-  {bass: 49.00, pad: [196.00, 246.94, 293.66]},          // G
-];
-function bgmNote(f, t, len, type, vol, cutoff){
-  const o = ac.createOscillator(), g = ac.createGain(), lp = ac.createBiquadFilter();
-  o.type = type; o.frequency.value = f; lp.type = "lowpass"; lp.frequency.value = cutoff;
-  o.connect(lp); lp.connect(g); g.connect(bgmBus);
-  return {o, g, t, len, vol};
+// 問題中のBGM：bgm/ の2曲（A＝bgm-a.mp3、B＝bgm-b.mp3）をループ。問題を始めるたびに A→B→A… と交互に選ぶ
+// （続けて次の問題へ進んだときも、同じ問題を最初からやり直したときも、前と違う曲になる。前の曲は store.bgmLast に残す）
+const BGM_FILES = {a: "bgm/bgm-a.mp3", b: "bgm/bgm-b.mp3"};
+const BGM_VOL = 0.2;   // bgmBus の音量（このあと全体の master 0.25 を通る）。mp3 の平均の大きさ約0.13×0.2×0.25≒0.0067で、前の合成BGM（0.0059）とほぼ同じ
+const BGM = {track: null, src: null, buf: {}, loading: {}, want: false};
+function bgmLoad(k){
+  if (!BGM.loading[k]) BGM.loading[k] = fetch(BGM_FILES[k]).then(r => r.arrayBuffer())
+    .then(d => new Promise((ok, ng) => ac.decodeAudioData(d, ok, ng)))
+    .then(buf => (BGM.buf[k] = buf)).catch(() => { BGM.loading[k] = null; return null; });
+  return BGM.loading[k];
 }
-function bgmSchedule(){
-  while (BGM.next < ac.currentTime + 0.4) {
-    const t = BGM.next, beat = BGM.step % 4, ch = BGM_CHORDS[Math.floor(BGM.step / 4) % 4];
-    // ベース：1拍目と3拍目に根音、4拍目の裏に5度を軽く
-    if (beat === 0 || beat === 2) {
-      const n = bgmNote(ch.bass * 2, t, BGM_BEAT*0.9, "triangle", 0.5, 500);
-      n.g.gain.setValueAtTime(0.0001, t); n.g.gain.exponentialRampToValueAtTime(n.vol, t+0.02); n.g.gain.exponentialRampToValueAtTime(0.0001, t+n.len);
-      n.o.start(t); n.o.stop(t+n.len+0.05);
-    }
-    if (beat === 3) {
-      const tt = t + BGM_BEAT/2, n = bgmNote(ch.bass * 3, tt, BGM_BEAT*0.4, "triangle", 0.28, 500);
-      n.g.gain.setValueAtTime(0.0001, tt); n.g.gain.exponentialRampToValueAtTime(n.vol, tt+0.02); n.g.gain.exponentialRampToValueAtTime(0.0001, tt+n.len);
-      n.o.start(tt); n.o.stop(tt+n.len+0.05);
-    }
-    // パッド：小節の頭で和音を1小節ぶん、ゆっくり立ち上げてゆっくり消す
-    if (beat === 0) {
-      const len = BGM_BEAT*4;
-      ch.pad.forEach(f => {
-        const n = bgmNote(f, t, len, "sawtooth", 0.035, 650);
-        n.g.gain.setValueAtTime(0.0001, t); n.g.gain.linearRampToValueAtTime(n.vol, t+0.6);
-        n.g.gain.setValueAtTime(n.vol, t+len-0.5); n.g.gain.linearRampToValueAtTime(0.0001, t+len+0.3);
-        n.o.detune.value = (Math.random()-0.5) * 10; n.o.start(t); n.o.stop(t+len+0.35);
-      });
-    }
-    BGM.next += BGM_BEAT; BGM.step++;
-  }
+// 問題を始めるときに呼ぶ：前と違う曲を選んで覚える
+function bgmPick(){
+  BGM.track = store.bgmLast === "a" ? "b" : "a";
+  store.bgmLast = BGM.track; save();
 }
 function bgmStart(){
-  if (BGM.timer || !audio("bgm")) return;
-  BGM.next = ac.currentTime + 0.1; BGM.step = 0;
-  bgmBus.gain.cancelScheduledValues(ac.currentTime);
-  bgmBus.gain.setValueAtTime(0.0001, ac.currentTime); bgmBus.gain.linearRampToValueAtTime(0.3, ac.currentTime + 1.5);
-  bgmSchedule(); BGM.timer = setInterval(bgmSchedule, 100);
+  BGM.want = true;
+  if (BGM.src || !audio("bgm")) return;
+  const k = BGM.track || "a";
+  bgmLoad(k === "a" ? "b" : "a");   // 次の曲も先に読みこんでおく
+  bgmLoad(k).then(buf => {
+    if (!buf || !BGM.want || BGM.src || k !== (BGM.track || "a")) return;
+    const src = ac.createBufferSource(); src.buffer = buf; src.loop = true; src.connect(bgmBus);
+    const t = ac.currentTime; bgmBus.gain.cancelScheduledValues(t);
+    bgmBus.gain.setValueAtTime(0.0001, t); bgmBus.gain.linearRampToValueAtTime(BGM_VOL, t + 1.0);
+    src.start(t + 0.05); BGM.src = src;
+  });
 }
 function bgmStop(){
-  if (!BGM.timer) return;
-  clearInterval(BGM.timer); BGM.timer = null;
+  BGM.want = false;
+  if (!BGM.src) return;
+  const src = BGM.src; BGM.src = null;
   const t = ac.currentTime; bgmBus.gain.cancelScheduledValues(t);
   bgmBus.gain.setValueAtTime(bgmBus.gain.value, t); bgmBus.gain.linearRampToValueAtTime(0.0001, t + 0.6);
+  src.stop(t + 0.65);
 }
 // アプリを裏に回したら止め、戻ったら問題中なら再開
 document.addEventListener("visibilitychange", () => { if (document.hidden) bgmStop(); else if (typeof mode !== "undefined" && mode === "quiz") bgmStart(); });
@@ -1692,7 +1674,7 @@ function startQuiz(course, area, codes, opts={}) {
   cancelQuizTimers(); eyeOff();
   const type = QUIZ_TYPES[course.id];
   sheet.classList.remove("home"); showFeature(null);
-  mode = "quiz"; selected = null; clearTag(); clearmsg.hidden = true; bgmStart(); JapanMap.resetColors(); svg.classList.remove("explore");
+  mode = "quiz"; selected = null; clearTag(); clearmsg.hidden = true; bgmStop(); bgmPick(); bgmStart(); JapanMap.resetColors(); svg.classList.remove("explore");
   const inArea = new Set(area.codes);
   PREFS.forEach(p => { pathEl[p.code].classList.toggle("off", !inArea.has(p.code)); labelEl[p.code].classList.toggle("off", !inArea.has(p.code)); });
   homeBox = area.wide ? FULL : unionBox(area.codes); fitLater(homeBox);
