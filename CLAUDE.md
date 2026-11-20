@@ -41,4 +41,4 @@ main に push すると、Vercel（`vercel.json`）と GitHub Actions（`.github
 
 ## アプリを増やすとき
 
-`apps/<名前>/` に置き、`tools/build_site.py` の `APPS` と `site/index.html` のリンクに1行ずつ足す。
+`apps/<名前>/` に置き、`tools/build_site.py` の `APPS` に1行足す。入口ページ `site/index.html` は今はタイトル画面（絵＋「はじめる」で日本地図タップドリルへ）なので、アプリを増やすときは入口の作りを相談する。
