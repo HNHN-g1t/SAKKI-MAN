@@ -118,6 +118,11 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .sndpair .sndbtn:last-child{border-radius:0 var(--r-btn) var(--r-btn) 0;margin-left:calc(-1 * var(--bw))}
 .sndbtn.off{color:var(--muted);background:var(--off)}
 /* DBG：地図の上のまん中にうすく（押すとき・ON のときは少し濃く） */
+/* 地図の左上（海の上）：サッ記マンの7つの表情を1秒ごとにランダムに切りかえる（フェードなし）。問題を解いている間は出さない。
+   7枚はヘルメットの形で位置と大きさをそろえて書き出してあるので、切りかえても顔が動かない */
+.rotface{position:absolute;left:calc(var(--s16) + env(safe-area-inset-left,0px));top:44px;width:calc(84px * 191 / 216);height:84px;z-index:1;pointer-events:none}
+.rotface[hidden]{display:none}
+.rotface img{display:block;width:100%;height:100%}
 .dbgdock{position:absolute;left:50%;top:var(--s8);transform:translateX(-50%);z-index:2;display:flex;gap:4px;opacity:.38}
 .dbgdock:hover,.dbgdock:has(.dbg-on){opacity:.7}
 .dbgdock .dbgbox{display:flex;gap:4px}
@@ -340,6 +345,8 @@ svg:not(.explore) .region-line{display:none}
 .course .crown .cr-band{fill:var(--glow-deep)}
 .course .crown .cr-gem{fill:var(--paper)}
 .course .mastered{font-style:normal;font-size:inherit;font-weight:700;color:var(--brand);margin-left:var(--s8);white-space:nowrap;text-shadow:0 1px 2px var(--shade),0 0 1px var(--shade)}
+/* マスター！のコースだけ、行の右はしに超笑顔 */
+.course .mface{flex:none;height:44px;width:auto;margin:-4px -2px -4px 0}
 .course.done .no{background:var(--ok);color:var(--on-strong)}
 .course:disabled{opacity:.5;cursor:default}
 .rules{margin:0;padding-left:1.2em;font-size:var(--fs14);color:var(--muted);font-weight:700;line-height:1.5}
@@ -432,6 +439,7 @@ svg:not(.explore) .region-line{display:none}
     <div class="combo" id="combo" hidden></div>
     <div class="clearmsg" id="clearmsg" hidden><span></span></div>
     <div class="toast" id="toast" role="status" hidden></div>
+    <div class="rotface" id="rotface" aria-hidden="true"><img alt=""></div>
     <div class="dbgdock" id="dbgdock"></div>
     <button class="eye" id="eye" type="button" aria-label="押している間だけ県名を表示">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
@@ -1448,6 +1456,16 @@ function showTag(code, text) {
 const clearTag = () => gTag.innerHTML = "";
 
 /* ---------- 画面 ---------- */
+// 地図の左上で表情を1秒ごとに切りかえる（同じ顔が続かないように、いまの顔以外から選ぶ）
+const ROT_FACES = ["majime","egao","super","niyari","odoroki","gakkari","ikari"].map(n => `img/fx-${n}.webp?v=1`);
+ROT_FACES.forEach(u => { const i = new Image(); i.src = u; });
+const rotEl = document.getElementById("rotface"), rotImg = rotEl.querySelector("img");
+let rotNow = -1, rotTimer = 0;
+function rotStep() { let k; do k = Math.floor(Math.random() * ROT_FACES.length); while (k === rotNow); rotNow = k; rotImg.src = ROT_FACES[k]; }
+function rotFace(on) {
+  rotEl.hidden = !on; clearInterval(rotTimer); rotTimer = 0;
+  if (on) { if (rotNow < 0) rotStep(); rotTimer = setInterval(rotStep, 1000); }
+}
 const top_ = document.getElementById("top"), sheet = document.getElementById("sheet"), combo = document.getElementById("combo"), clearmsg = document.getElementById("clearmsg");
 let mode = "home", quiz = null, selected = null;
 
@@ -1629,7 +1647,7 @@ function toHomeScreen(box = FULL) {
   PREFS.forEach(p => pathEl[p.code].dataset.lv = lv[p.code]);
   okiCopy.dataset.lv = lv[47];
   homeBox = box; fitLater(box);
-  sheet.classList.remove("inquiz"); sheet.classList.add("home");
+  sheet.classList.remove("inquiz"); sheet.classList.add("home"); rotFace(true);
   return lv;
 }
 
@@ -1663,12 +1681,12 @@ function home() {
     <h2>${TRACKS[0].name}</h2>
     <div class="courses">${COURSES.filter(c => c.track !== "history").map((c, i) => {
       const s = courseStatus(c);
-      return `<button class="course${s.done ? " done" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${s.done ? CROWN_SVG : ""}${c.name}${s.done ? `<em class="mastered">マスター！</em>` : `<small>${s.text}</small>`}</span></button>`;
+      return `<button class="course${s.done ? " done" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${s.done ? CROWN_SVG : ""}${c.name}${s.done ? `<em class="mastered">マスター！</em>` : `<small>${s.text}</small>`}</span>${s.done ? `<img class="mface" src="img/fx-super.webp?v=1" alt="">` : ""}</button>`;
     }).join("")}</div>
     <h2>${TRACKS[1].name}</h2>
     <div class="courses">${COURSES.filter(c => c.track === "history").map((c, i) => {
       const s = courseStatus(c);
-      return `<button class="course${s.done ? " done" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${s.done ? CROWN_SVG : ""}${c.name}${s.done ? `<em class="mastered">マスター！</em>` : `<small>${s.text}</small>`}</span></button>`;
+      return `<button class="course${s.done ? " done" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${s.done ? CROWN_SVG : ""}${c.name}${s.done ? `<em class="mastered">マスター！</em>` : `<small>${s.text}</small>`}</span>${s.done ? `<img class="mface" src="img/fx-super.webp?v=1" alt="">` : ""}</button>`;
     }).join("")}</div>
     <button class="btn resetbtn" id="reset" type="button">${ic("refresh")}リセット</button>`;
   byId("reset").onclick = openReset;
@@ -1736,7 +1754,7 @@ function shuffle(a){ a = a.slice(); for (let i=a.length-1;i>0;i--){ const j = Ma
 function startQuiz(course, area, codes, opts={}) {
   cancelQuizTimers(); eyeOff();
   const type = QUIZ_TYPES[course.id];
-  sheet.classList.remove("home"); sheet.classList.add("inquiz"); showFeature(null);
+  sheet.classList.remove("home"); sheet.classList.add("inquiz"); rotFace(false); showFeature(null);
   mode = "quiz"; selected = null; clearTag(); clearmsg.hidden = true; bgmStop(); bgmPick(); bgmStart(); JapanMap.resetColors(); svg.classList.remove("explore");
   const inArea = new Set(area.codes);
   PREFS.forEach(p => { pathEl[p.code].classList.toggle("off", !inArea.has(p.code)); labelEl[p.code].classList.toggle("off", !inArea.has(p.code)); });
@@ -2009,7 +2027,7 @@ function generalLabel(l) {
 }
 
 function result() {
-  sheet.classList.remove("inquiz");
+  sheet.classList.remove("inquiz"); rotFace(true);
   cancelQuizTimers(); eyeOff(); clearNextTri();
   Object.values(pathEl).forEach(p => p.classList.remove("flash-ok", "flash-ng", "reveal"));
   pbar.innerHTML = ""; showFeature(null); showChart(null); showPin(null);
