@@ -71,6 +71,10 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .ask .q{font-family:var(--body);font-weight:700;font-size:var(--fs28);line-height:1.5}
 /* ふりがなは漢字の上（ruby） */
 .ask .q rt{font-size:min(.42em, calc(var(--fit, 1) * 1em));font-weight:700;color:var(--muted);letter-spacing:0}
+/* 正解のときの顔：問題文の「？」のすぐ右に、文字より少し大きく。ぽんと出る */
+.ask .q .qface{display:inline-block;height:1.5em;width:auto;margin-left:.15em;vertical-align:-.38em;animation:faceIn .35s cubic-bezier(.2,1.6,.4,1) 1}
+@keyframes faceIn{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.ask .q .qface{animation:none}}
 .ask .q.long{font-size:var(--fs20)}
 .ask .q.shout{font-family:var(--display);font-weight:400;font-size:var(--fs20)}
 /* 県名だけ黄色のマーカー線（下半分） */
@@ -1872,6 +1876,9 @@ function afterAnswer(ok, html, opt = {}) {
   const q = quiz.q;
   if (ok) {
     sndOk();
+    // 正解のときは、問題文の最後（？のすぐ右）にサッ記マンの超笑顔を小さく出す
+    const qEl = sheet.querySelector(".ask .q");
+    if (qEl && !qEl.querySelector(".qface")) qEl.insertAdjacentHTML("beforeend", `\u2060<img class="qface" src="img/face-super.webp?v=1" alt="" aria-hidden="true">`);
     if (q.hint) quiz.combo = 0; else { quiz.combo++; quiz.maxCombo = Math.max(quiz.maxCombo, quiz.combo); }
     if (quiz.combo >= 2) { combo.textContent = `${quiz.combo}れんぞく！`; combo.hidden = false; combo.classList.remove("pop"); void combo.offsetWidth; combo.classList.add("pop"); }
     else combo.hidden = true;

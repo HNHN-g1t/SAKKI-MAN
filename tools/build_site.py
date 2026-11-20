@@ -28,7 +28,7 @@ for name, src in APPS.items():
     (OUT / name).mkdir(exist_ok=True)
     shutil.copy(ROOT / src / "index.html", OUT / name / "index.html")
     # アプリが読みこむ素材フォルダ（BGM の mp3 など）もいっしょに公開する
-    for sub in ("bgm",):
+    for sub in ("bgm", "img"):   # BGM と画像（キャラクターの顔など）
         if (ROOT / src / sub).is_dir():
             shutil.copytree(ROOT / src / sub, OUT / name / sub, dirs_exist_ok=True)
 print(f"wrote {OUT}")
