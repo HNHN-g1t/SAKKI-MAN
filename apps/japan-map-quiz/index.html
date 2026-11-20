@@ -1462,6 +1462,8 @@ const faceUrl = n => `img/fx-${n}.webp?v=2`;
 const ROT_ALL = ["majime","egao","super","niyari","odoroki","ikari"], ROT_HAPPY = ["egao","super","niyari"];
 ROT_ALL.forEach(n => { const i = new Image(); i.src = faceUrl(n); });
 const rotEl = document.getElementById("rotface"), rotImg = rotEl.querySelector("img");
+// 画像が読めなかったときは「？」の絵を出さず、すぐ別の顔にする（古いページが残っていたときの保険）
+rotImg.addEventListener("error", () => { rotImg.removeAttribute("src"); if (!rotEl.hidden) setTimeout(rotStep, 0); });
 let rotSet = ROT_ALL, rotNow = "", rotTimer = 0;
 function rotStep() { let n; do n = rotSet[Math.floor(Math.random() * rotSet.length)]; while (n === rotNow); rotNow = n; rotImg.src = faceUrl(n); }
 // 正解のとき「？」の右に出す顔：うれしい3つ（笑顔・超笑顔・ニヤリ）。1つの正解には1つの顔を出したまま（切りかえない）。

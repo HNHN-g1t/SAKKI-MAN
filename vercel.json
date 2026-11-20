@@ -2,5 +2,8 @@
   "buildCommand": "python3 tools/build_site.py",
   "outputDirectory": "_site",
   "installCommand": "",
-  "framework": null
+  "framework": null,
+  "headers": [
+    { "source": "/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+  ]
 }
