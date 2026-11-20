@@ -1,12 +1,12 @@
 # 農林水産業・工業コース 問題データの出典一覧
 
-`src/template.html` の `INDUSTRY` から作った一覧（最終確認日 2026-11-02、九州の10問は 2026-11-20 に追加）。データを直したら作り直す。
+`src/template.html` の `INDUSTRY` から作った一覧（最終確認日 2026-11-20）。データを直したら作り直す。
 
 - 確認済み：答え・統計年・出典を国や県などの公式資料で確認した（出題する）
 - 要確認：答えは確認済みだが、最新の年次などに確認が残る（出題する）
 - 出題停止：根拠が足りないので出さない
 
-確認は、公式資料の内容を検索で見る方法で行った（作業環境から官公庁のサイトを直接開けなかったため）。毎年の更新のときは、各URLの原本で数値を確かめ直すこと。
+2026-11-20 から、作業環境で農林水産省・e-Stat・経済産業省のサイトを直接開けるようになった（環境「SAKKI-MAN（統計サイト許可）」）。毎年の更新のときは、各URLの原本で数値を確かめ直すこと。
 
 
 ## 農業（米・野菜・花）
@@ -15,8 +15,6 @@
 |---|---|---|---|---|---|---|
 | rice | 米の収穫量が全国一の都道府県は？ | 新潟県 | 水稲の収穫量（主食用） | 令和7年産 | [農林水産省「作物統計調査 令和7年産水陸稲の収穫量」](https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kome/pdf/syukaku_suiriku_25.pdf) | 確認済み |
 | potato | じゃがいもの収穫量が全国一の都道府県は？ | 北海道 | 春植えばれいしょの収穫量 | 令和7年産 | [農林水産省「作物統計調査 令和7年産春植えばれいしょの作付面積、収穫量及び出荷量」](https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_yasai/pdf/syukaku_barei_25.pdf) | 確認済み |
-| onion | たまねぎの収穫量が全国一の都道府県は？ | 北海道 | たまねぎの収穫量 | 令和5年産（令和6・7年産の都道府県別は未確認） | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-01.pdf) | 要確認 |
-| lettuce | レタスの収穫量が全国一の都道府県は？ | 長野県 | レタスの収穫量 | 令和5年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-20.pdf) | 確認済み |
 | pepper | ピーマンの収穫量が全国一の都道府県は？ | 茨城県 | ピーマンの収穫量 | 令和5年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-08.pdf) | 確認済み |
 | strawberry | いちごの収穫量が全国一の都道府県は？ | 栃木県 | いちごの収穫量 | 令和5年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-09.pdf) | 確認済み |
 | peanut | 落花生の収穫量が全国一の都道府県は？ | 千葉県 | らっかせいの収穫量 | 未確認（令和7年版の概要に掲載の年次） | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-12.pdf) | 要確認 |
@@ -27,8 +25,8 @@
 | suika | すいかの収穫量が全国一の都道府県は？ | 熊本県 | すいかの収穫量 | 令和5年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-43.pdf) | 確認済み |
 | igusa | たたみ表の原料、い草の収穫量が全国一の都道府県は？ | 熊本県 | い（い草）の収穫量 | 令和5年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-43.pdf) | 確認済み |
 | cucumber | きゅうりの収穫量が全国一の都道府県は？ | 宮崎県 | きゅうりの収穫量 | 令和6年産 | [九州農政局宮崎県拠点「てげ がんばっちょる 宮崎の農業」（令和8年4月）](https://www.maff.go.jp/kyusyu/miyazaki/attach/pdf/250528_tege-3.pdf) | 確認済み |
-| satsumaimo | さつまいもの収穫量が全国一の都道府県は？ | 鹿児島県 | かんしょ（さつまいも）の収穫量 | 令和6年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-46.pdf) | 確認済み |
-| tea | 茶（荒茶）の生産量が全国一の都道府県は？（令和6年産） | 鹿児島県 | 荒茶の生産量 | 令和6年産（それまでは静岡県が1位） | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-46.pdf) | 確認済み |
+| satsumaimo | さつまいもの収穫量が全国一の都道府県は？（令和7年産） | 鹿児島県 | かんしょ（さつまいも）の収穫量 | 令和7年産 | [農林水産省「都道府県の農林水産業の概要（2026年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/2026PDF/todouhuken_gaiyou2026-46.pdf) | 確認済み |
+| tea | 茶（荒茶）の生産量が全国一の都道府県は？（令和7年産） | 鹿児島県 | 荒茶の生産量（主産県） | 令和7年産 | [農林水産省「都道府県の農林水産業の概要（2026年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/2026PDF/todouhuken_gaiyou2026-46.pdf) | 確認済み |
 
 ## くだもの
 
@@ -43,16 +41,47 @@
 | ume | うめの収穫量が全国一の都道府県は？ | 和歌山県 | うめの収穫量 | 令和7年産 | [農林水産省「作物統計調査 令和7年産びわ、おうとう、うめの栽培面積、結果樹面積、収穫量及び出荷量」](https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_biwa_25.pdf) | 確認済み |
 | melon | メロンの収穫量が全国一の都道府県は？ | 茨城県 | メロンの収穫量 | 令和5年産 | [関東農政局茨城県拠点「茨城県のメロン生産」（令和7年10月）](https://www.maff.go.jp/kanto/chiikinet/ibaraki/ibarakitokei_bunnseki/attach/pdf/ibarakibunseki-3.pdf) | 確認済み |
 | pineapple | パイナップルの収穫量が全国一の都道府県は？ | 沖縄県 | パインアップルの収穫量 | 令和5年産 | [農林水産省「令和5年産パインアップルの収穫面積、収穫量及び出荷量（沖縄県）」](https://www.maff.go.jp/j/tokei/kekka_gaiyou/sakumotu/sakkyou_kajyu/paineapp/r5/index.html) | 確認済み |
-| dekopon | デコポン（不知火）の収穫量が全国一の都道府県は？ | 熊本県 | 不知火の収穫量 | 未確認（令和7年版の概要に掲載の年次） | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-43.pdf) | 要確認 |
+| dekopon | デコポン（不知火）の収穫量が全国一の都道府県は？ | 熊本県 | 不知火（しらぬい）の収穫量 | 未確認（令和7年版の概要に掲載の年次） | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-43.pdf) | 要確認 |
 | biwa | びわの収穫量が全国一の都道府県は？ | 長崎県 | びわの収穫量 | 令和7年産 | [農林水産省「作物統計調査 令和7年産びわ、おうとう、うめの栽培面積、結果樹面積、収穫量及び出荷量」](https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_biwa_25.pdf) | 確認済み |
 
-## 畜産・林業・水産業
+## ふえた野菜
 
 | ID | 問題 | 答え | 指標 | 統計年 | 出典 | 状態 |
 |---|---|---|---|---|---|---|
-| dairy | 乳牛（乳用牛）の飼育頭数が全国一の都道府県は？ | 北海道 | 乳用牛の飼養頭数 | 令和7年2月1日現在 | [農林水産省「畜産統計」（鹿児島県「鹿児島県畜産の概要」の全国表で確認）](http://www.pref.kagoshima.jp/ag07/sangyo-rodo/nogyo/tikusan/basic/gaiyou.html) | 確認済み |
-| pig | 豚の飼育頭数が全国一の都道府県は？ | 鹿児島県 | 豚の飼養頭数 | 令和7年2月1日現在 | [鹿児島県「豚に関する情報」（農林水産省「畜産統計」より）](https://www.pref.kagoshima.jp/ag07/sangyo-rodo/nogyo/tikusan/tokei/buta.html) | 確認済み |
-| broiler | ブロイラー（肉用の若鶏）の飼育羽数が全国一の都道府県は？ | 鹿児島県 | ブロイラーの飼養羽数 | 令和6年2月1日現在 | [鹿児島県「畜産の概要」（農林水産省「畜産統計」より）](https://www.pref.kagoshima.jp/ag07/sangyo-rodo/nogyo/tikusan/basic/gaiyou.html) | 確認済み |
+| lettuce | レタスの収穫量が全国一の都道府県は？ | 長野県 | レタスの収穫量 | 令和6年産 | [農林水産省「野菜生産出荷統計」品目別作付面積、収穫量及び出荷量累年統計（令和6年産まで）](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00500215&tstat=000001013427&cycle=0&tclass1=000001032286&tclass2=000001037845&layout=datalist&tclass3val=0) | 確認済み |
+| lettuce2 | レタスの収穫量が全国2位の都道府県は？ | 茨城県 | レタスの収穫量 | 令和6年産 | [農林水産省「野菜生産出荷統計」品目別作付面積、収穫量及び出荷量累年統計（令和6年産まで）](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00500215&tstat=000001013427&cycle=0&tclass1=000001032286&tclass2=000001037845&layout=datalist&tclass3val=0) | 確認済み |
+| lettuce3 | レタスの収穫量が全国3位の都道府県は？ | 群馬県 | レタスの収穫量 | 令和6年産 | [農林水産省「野菜生産出荷統計」品目別作付面積、収穫量及び出荷量累年統計（令和6年産まで）](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00500215&tstat=000001013427&cycle=0&tclass1=000001032286&tclass2=000001037845&layout=datalist&tclass3val=0) | 確認済み |
+| broccoli | ブロッコリーの収穫量が全国一の都道府県は？ | 北海道 | ブロッコリーの収穫量 | 令和6年産 | [農林水産省「野菜生産出荷統計」品目別作付面積、収穫量及び出荷量累年統計（令和6年産まで）](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00500215&tstat=000001013427&cycle=0&tclass1=000001032286&tclass2=000001037845&layout=datalist&tclass3val=0) | 確認済み |
+| broccoli2 | ブロッコリーの収穫量が全国2位の都道府県は？（令和6年産） | 埼玉県 | ブロッコリーの収穫量 | 令和6年産 | [農林水産省「野菜生産出荷統計」品目別作付面積、収穫量及び出荷量累年統計（令和6年産まで）](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00500215&tstat=000001013427&cycle=0&tclass1=000001032286&tclass2=000001037845&layout=datalist&tclass3val=0) | 確認済み |
+| broccoli3 | ブロッコリーの収穫量が全国3位の都道府県は？（令和6年産） | 香川県 | ブロッコリーの収穫量 | 令和6年産 | [農林水産省「野菜生産出荷統計」品目別作付面積、収穫量及び出荷量累年統計（令和6年産まで）](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00500215&tstat=000001013427&cycle=0&tclass1=000001032286&tclass2=000001037845&layout=datalist&tclass3val=0) | 確認済み |
+| onion | たまねぎの収穫量が全国一の都道府県は？ | 北海道 | たまねぎの収穫量 | 令和6年産 | [農林水産省「野菜生産出荷統計」品目別作付面積、収穫量及び出荷量累年統計（令和6年産まで）](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00500215&tstat=000001013427&cycle=0&tclass1=000001032286&tclass2=000001037845&layout=datalist&tclass3val=0) | 確認済み |
+| onion2 | たまねぎの収穫量が全国2位の都道府県は？（令和6年産） | 佐賀県 | たまねぎの収穫量 | 令和6年産 | [農林水産省「野菜生産出荷統計」品目別作付面積、収穫量及び出荷量累年統計（令和6年産まで）](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00500215&tstat=000001013427&cycle=0&tclass1=000001032286&tclass2=000001037845&layout=datalist&tclass3val=0) | 確認済み |
+| onion3 | たまねぎの収穫量が全国3位の都道府県は？（令和6年産） | 兵庫県 | たまねぎの収穫量 | 令和6年産 | [農林水産省「野菜生産出荷統計」品目別作付面積、収穫量及び出荷量累年統計（令和6年産まで）](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00500215&tstat=000001013427&cycle=0&tclass1=000001032286&tclass2=000001037845&layout=datalist&tclass3val=0) | 確認済み |
+| carrot | にんじんの収穫量が全国一の都道府県は？ | 北海道 | にんじんの収穫量 | 令和6年産 | [農林水産省「野菜生産出荷統計」品目別作付面積、収穫量及び出荷量累年統計（令和6年産まで）](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00500215&tstat=000001013427&cycle=0&tclass1=000001032286&tclass2=000001037845&layout=datalist&tclass3val=0) | 確認済み |
+| carrot2 | にんじんの収穫量が全国2位の都道府県は？ | 千葉県 | にんじんの収穫量 | 令和6年産 | [農林水産省「野菜生産出荷統計」品目別作付面積、収穫量及び出荷量累年統計（令和6年産まで）](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00500215&tstat=000001013427&cycle=0&tclass1=000001032286&tclass2=000001037845&layout=datalist&tclass3val=0) | 確認済み |
+| carrot3 | にんじんの収穫量が全国3位の都道府県は？ | 徳島県 | にんじんの収穫量 | 令和6年産 | [農林水産省「野菜生産出荷統計」品目別作付面積、収穫量及び出荷量累年統計（令和6年産まで）](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00500215&tstat=000001013427&cycle=0&tclass1=000001032286&tclass2=000001037845&layout=datalist&tclass3val=0) | 確認済み |
+
+## 畜産
+
+| ID | 問題 | 答え | 指標 | 統計年 | 出典 | 状態 |
+|---|---|---|---|---|---|---|
+| dairy | 乳用牛の飼育頭数が全国一の都道府県は？ | 北海道 | 乳用牛の飼養頭数 | 令和7年2月1日現在 | [東北農政局「家畜飼養頭羽数による全国順位」（農林水産省「畜産統計」より）](https://www.maff.go.jp/tohoku/seisan/tikusan/attach/pdf/index-93.pdf) | 確認済み |
+| dairy2 | 乳用牛の飼育頭数が全国2位の都道府県は？ | 栃木県 | 乳用牛の飼養頭数 | 令和7年2月1日現在 | [東北農政局「家畜飼養頭羽数による全国順位」（農林水産省「畜産統計」より）](https://www.maff.go.jp/tohoku/seisan/tikusan/attach/pdf/index-93.pdf) | 確認済み |
+| dairy3 | 乳用牛の飼育頭数が全国3位の都道府県は？ | 熊本県 | 乳用牛の飼養頭数 | 令和7年2月1日現在 | [東北農政局「家畜飼養頭羽数による全国順位」（農林水産省「畜産統計」より）](https://www.maff.go.jp/tohoku/seisan/tikusan/attach/pdf/index-93.pdf) | 確認済み |
+| beef | 肉用牛の飼育頭数が全国一の都道府県は？ | 北海道 | 肉用牛の飼養頭数 | 令和7年2月1日現在 | [東北農政局「家畜飼養頭羽数による全国順位」（農林水産省「畜産統計」より）](https://www.maff.go.jp/tohoku/seisan/tikusan/attach/pdf/index-93.pdf) | 確認済み |
+| beef2 | 肉用牛の飼育頭数が全国2位の都道府県は？ | 鹿児島県 | 肉用牛の飼養頭数 | 令和7年2月1日現在 | [東北農政局「家畜飼養頭羽数による全国順位」（農林水産省「畜産統計」より）](https://www.maff.go.jp/tohoku/seisan/tikusan/attach/pdf/index-93.pdf) | 確認済み |
+| beef3 | 肉用牛の飼育頭数が全国3位の都道府県は？ | 宮崎県 | 肉用牛の飼養頭数 | 令和7年2月1日現在 | [東北農政局「家畜飼養頭羽数による全国順位」（農林水産省「畜産統計」より）](https://www.maff.go.jp/tohoku/seisan/tikusan/attach/pdf/index-93.pdf) | 確認済み |
+| pig | 豚の飼育頭数が全国一の都道府県は？ | 鹿児島県 | 豚の飼養頭数 | 令和6年2月1日現在 | [東北農政局「家畜飼養頭羽数による全国順位」（農林水産省「畜産統計」より）](https://www.maff.go.jp/tohoku/seisan/tikusan/attach/pdf/index-93.pdf) | 確認済み |
+| pig2 | 豚の飼育頭数が全国2位の都道府県は？ | 北海道 | 豚の飼養頭数 | 令和6年2月1日現在 | [東北農政局「家畜飼養頭羽数による全国順位」（農林水産省「畜産統計」より）](https://www.maff.go.jp/tohoku/seisan/tikusan/attach/pdf/index-93.pdf) | 確認済み |
+| pig3 | 豚の飼育頭数が全国3位の都道府県は？ | 宮崎県 | 豚の飼養頭数 | 令和6年2月1日現在 | [東北農政局「家畜飼養頭羽数による全国順位」（農林水産省「畜産統計」より）](https://www.maff.go.jp/tohoku/seisan/tikusan/attach/pdf/index-93.pdf) | 確認済み |
+| broiler | 肉用若鶏（ブロイラー）の飼育羽数が全国一の都道府県は？ | 鹿児島県 | ブロイラーの飼養羽数 | 令和6年2月1日現在 | [東北農政局「家畜飼養頭羽数による全国順位」（農林水産省「畜産統計」より）](https://www.maff.go.jp/tohoku/seisan/tikusan/attach/pdf/index-93.pdf) | 確認済み |
+| broiler2 | 肉用若鶏（ブロイラー）の飼育羽数が全国2位の都道府県は？ | 宮崎県 | ブロイラーの飼養羽数 | 令和6年2月1日現在 | [東北農政局「家畜飼養頭羽数による全国順位」（農林水産省「畜産統計」より）](https://www.maff.go.jp/tohoku/seisan/tikusan/attach/pdf/index-93.pdf) | 確認済み |
+| broiler3 | 肉用若鶏（ブロイラー）の飼育羽数が全国3位の都道府県は？ | 岩手県 | ブロイラーの飼養羽数 | 令和6年2月1日現在 | [東北農政局「家畜飼養頭羽数による全国順位」（農林水産省「畜産統計」より）](https://www.maff.go.jp/tohoku/seisan/tikusan/attach/pdf/index-93.pdf) | 確認済み |
+
+## 林業・水産業
+
+| ID | 問題 | 答え | 指標 | 統計年 | 出典 | 状態 |
+|---|---|---|---|---|---|---|
 | kiso | 木曽ひのき（天然の三大美林）がある都道府県は？ | 長野県 | 日本三大美林（天然林） | ― | [林野庁東北森林管理局「日本三大美林について」](https://www.rinya.maff.go.jp/tohoku/keikaku/sandaibirin.html) | 確認済み |
 | akita | 秋田すぎ（天然の三大美林）がある都道府県は？ | 秋田県 | 日本三大美林（天然林） | ― | [林野庁東北森林管理局「日本三大美林について」](https://www.rinya.maff.go.jp/tohoku/keikaku/sandaibirin.html) | 確認済み |
 | yoshino | 吉野すぎ（人工の三大美林）がある都道府県は？ | 奈良県 | 日本三大人工美林 | ― | [奈良県川上村「川上村のプロフィール」](https://www.vill.kawakami.nara.jp/life/docs/2017013100120/) | 確認済み |
@@ -77,6 +106,17 @@
 | imabari | タオルの産地、今治市がある都道府県は？ | 愛媛県 | タオルの産地 | 2020年ごろ | [政府広報オンライン「Highlighting Japan」2020年9月号](https://www.gov-online.go.jp/eng/publicity/book/hlj/html/202009/202009_06_jp.html) | 確認済み |
 | tsubame | 金属洋食器の産地、燕市がある都道府県は？ | 新潟県 | 金属洋食器の産地 | ― | [燕市「金属洋食器」地域未来投資促進法 基本計画](https://www.cas.go.jp/jp/seisaku/chiikimirai2/sangyo-keikaku/pdf/c-keikaku/niigataken-tsubameshi_kinzokuyoshokki_2-1.pdf) | 確認済み |
 
+## 半導体
+
+| ID | 問題 | 答え | 指標 | 統計年 | 出典 | 状態 |
+|---|---|---|---|---|---|---|
+| tsmc | 台湾の半導体メーカーTSMCの工場（JASM、菊陽町）がある都道府県は？ | 熊本県 | 特定半導体生産施設整備等計画の認定（JASM） | 令和4年・6年認定 | [経済産業省「認定特定半導体生産施設整備等計画」](https://www.meti.go.jp/policy/mono_info_service/joho/laws/semiconductor/semiconductor_plan.html) | 確認済み |
+| rapidus | 最先端の半導体をつくるラピダスの工場（千歳市）がある都道府県は？ | 北海道 | ポスト5G基金事業での研究開発支援（Rapidus） | 令和4年〜 | [北海道経済産業局「Rapidusの取組」](https://www.hkd.meti.go.jp/hokcm/semiconductor/result/20240327/data04.pdf) | 確認済み |
+| kioxia4 | キオクシアのメモリ工場がある四日市市は、どの都道府県？ | 三重県 | 特定半導体生産施設整備等計画の認定（キオクシア四日市工場） | 令和4年認定 | [経済産業省「認定特定半導体生産施設整備等計画」](https://www.meti.go.jp/policy/mono_info_service/joho/laws/semiconductor/semiconductor_plan.html) | 確認済み |
+| kioxiak | キオクシアのメモリ工場がある北上市は、どの都道府県？ | 岩手県 | 特定半導体生産施設整備等計画の認定（キオクシア北上工場） | 令和6年認定 | [経済産業省「認定特定半導体生産施設整備等計画」](https://www.meti.go.jp/policy/mono_info_service/joho/laws/semiconductor/semiconductor_plan.html) | 確認済み |
+| micron | マイクロンのメモリ工場がある東広島市は、どの都道府県？ | 広島県 | 特定半導体生産施設整備等計画の認定（マイクロン広島工場） | 令和4年・5年・7年認定 | [経済産業省「認定特定半導体生産施設整備等計画」](https://www.meti.go.jp/policy/mono_info_service/joho/laws/semiconductor/semiconductor_plan.html) | 確認済み |
+| sonyisa | ソニーのイメージセンサー工場がある諫早市は、どの都道府県？ | 長崎県 | ソニーセミコンダクタマニュファクチャリング 長崎テクノロジーセンター | ― | [経済産業省「METI Journal」ソニーセミコンダクタマニュファクチャリング](https://journal.meti.go.jp/wp-content/uploads/2024/03/d36a28e43cb6c4e7f69e5784e5d8ffdc.pdf) | 確認済み |
+
 ## 伝統工芸品
 
 | ID | 問題 | 答え | 指標 | 統計年 | 出典 | 状態 |
@@ -91,4 +131,4 @@
 | bizen | 備前焼がつくられている都道府県は？ | 岡山県 | 伝統的工芸品の指定 | ― | [経済産業省「伝統的工芸品指定品目一覧［都道府県別］」（令和7年10月27日現在）](https://www.meti.go.jp/press/2025/10/20251027001/20251027001-b.pdf) | 確認済み |
 | arita | 伊万里・有田焼がつくられている都道府県は？ | 佐賀県 | 伝統的工芸品の指定 | ― | [九州経済産業局「九州の伝統的工芸品」](https://www.kyushu.meti.go.jp/seisaku/dento/210330pamphlet.pdf) | 確認済み |
 | hakata | 博多人形がつくられている都道府県は？ | 福岡県 | 伝統的工芸品の指定 | ― | [九州経済産業局「九州の伝統的工芸品」](https://www.kyushu.meti.go.jp/seisaku/dento/210330pamphlet.pdf) | 確認済み |
-| oshima | 本場大島紬がつくられている都道府県は？ | 鹿児島県 | 伝統的工芸品の指定 | ― | 経済産業省「伝統的工芸品指定品目一覧［都道府県別］」 | 確認済み |
+| oshima | 本場大島紬がつくられている都道府県は？ | 鹿児島県 | 伝統的工芸品の指定 | ― | [経済産業省「伝統的工芸品指定品目一覧［都道府県別］」（令和7年10月27日現在）](https://www.meti.go.jp/press/2025/10/20251027001/20251027001-b.pdf) | 確認済み |

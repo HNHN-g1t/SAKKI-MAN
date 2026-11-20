@@ -68,6 +68,93 @@ PLAINS = [
 ]
 
 
+# 地形の用語（小学校の教科書に出る地形）と、海岸・湾・半島。教材の略地図程度のおおまかな形
+#   area：楕円を陸地で切り抜く（台地・盆地など）／poly：多角形（緯度経度の点）を陸地で切り抜く／sea：楕円から陸地をのぞく（湾・海）／line：海岸線ぞいの線
+#   (id, cat, 名前, よみ, 代表の都道府県, 形, 中心または線の点, 東西の半径, 南北の半径, 回転, 解説)
+LANDFORMS = [
+    ("l_shirasu", "land", "シラス台地", "しらすだいち", 46, "area", (31.62, 130.78), 0.32, 0.36, 0,
+     "火山の灰や軽石が厚く積もってできた台地。鹿児島県から宮崎県南部に広がる。水はけがよすぎて米づくりに向かず、さつまいもや茶、畜産がさかん。"),
+    ("l_rias", "land", "リアス海岸", "りあすかいがん", 3, "line", [(40.2, 141.88), (39.95, 141.97), (39.6, 141.98), (39.27, 141.9), (38.95, 141.68), (38.7, 141.52)], 0, 0, 0,
+     "山地が海にしずんでできた、出入りの多いぎざぎざの海岸。三陸海岸の南部や若狭湾、志摩半島、宇和海など。湾の中は波がおだやかで養殖がさかん。"),
+    ("l_fan", "land", "扇状地", "せんじょうち", 19, "area", (35.7, 138.62), 0.13, 0.1, 0,
+     "川が山から平地に出る所に、すなやじゃりを積もらせてできた扇の形の土地。甲府盆地に多い。水はけがよく、ぶどうやももの果樹園に使われる。"),
+    ("l_delta", "land", "三角州", "さんかくす", 34, "area", (34.39, 132.45), 0.08, 0.07, 0,
+     "川が海に流れこむ所に、運ばれた土やすなが積もってできた低い土地。広島市は太田川の三角州の上に広がる。"),
+    ("l_dune", "land", "砂丘", "さきゅう", 31, "area", (35.53, 134.22), 0.14, 0.05, 0,
+     "風に運ばれたすなが積もってできた丘。鳥取砂丘が有名。かんがい設備を整え、らっきょうやながいもをつくっている。"),
+    ("l_caldera", "land", "カルデラ", "かるでら", 43, "area", (32.9, 131.06), 0.13, 0.16, 0,
+     "火山のふん火のあとにできた大きなくぼ地。熊本県の阿蘇山のカルデラは世界最大級で、中に町や田畑がある。"),
+    ("l_wajyu", "land", "輪中", "わじゅう", 21, "area", (35.2, 136.66), 0.08, 0.1, 0,
+     "まわりを堤防で囲んで水害から守った集落。木曽川・長良川・揖斐川（木曽三川）が流れる濃尾平野の西部に多い。"),
+    ("l_kantaku", "land", "干拓地", "かんたくち", 5, "area", (39.93, 140.02), 0.09, 0.11, 0,
+     "湖や海を堤防で区切り、水をぬいて陸地にした土地。秋田県の八郎潟は大規模な干拓地で、大型機械で米をつくる。有明海や児島湾でも干拓が行われた。"),
+    ("l_bonchi", "land", "盆地", "ぼんち", 6, "area", (38.3, 140.3), 0.12, 0.25, 0,
+     "まわりを山に囲まれた平らな土地。夏は暑く冬は寒い。山形盆地ではさくらんぼ、甲府盆地ではぶどうやももの栽培がさかん。"),
+    ("l_karst", "land", "カルスト地形", "かるすとちけい", 35, "area", (34.25, 131.3), 0.09, 0.07, 0,
+     "石灰岩が雨水にとけてできた地形。山口県の秋吉台が日本最大で、地下には秋芳洞という大きな鍾乳洞がある。"),
+    ("l_sandy", "land", "砂浜海岸", "すなはまかいがん", 12, "line", [(35.71, 140.86), (35.62, 140.66), (35.5, 140.5), (35.38, 140.43), (35.29, 140.41)], 0, 0, 0,
+     "すなが積もってできた、なだらかでまっすぐな海岸。千葉県の九十九里浜は約60kmも続く。"),
+    ("c_sanriku", "coast", "三陸海岸", "さんりくかいがん", 3, "line", [(40.5, 141.62), (40.2, 141.88), (39.95, 141.97), (39.6, 141.98), (39.27, 141.9), (38.95, 141.68), (38.7, 141.52), (38.42, 141.48)], 0, 0, 0,
+     "青森県・岩手県・宮城県の太平洋側の海岸。南部はリアス海岸で、わかめ・かき・ほたての養殖がさかん。"),
+    ("c_wakasa", "coast", "若狭湾", "わかさわん", 18, "sea", (35.62, 135.75), 0.45, 0.16, 0,
+     "福井県から京都府にかけての日本海側の湾。リアス海岸で、原子力発電所が多い。"),
+    ("c_shima", "coast", "志摩半島", "しまはんとう", 24, "area", (34.35, 136.78), 0.17, 0.11, 0,
+     "三重県の半島。リアス海岸の英虞湾で真珠の養殖が行われている。"),
+    ("c_uwa", "coast", "宇和海", "うわかい", 38, "sea", (33.2, 132.38), 0.12, 0.3, 0,
+     "愛媛県の西側の海。リアス海岸で、まだいや真珠の養殖がさかん。"),
+    ("c_kujukuri", "coast", "九十九里浜", "くじゅうくりはま", 12, "line", [(35.71, 140.86), (35.62, 140.66), (35.5, 140.5), (35.38, 140.43), (35.29, 140.41)], 0, 0, 0,
+     "千葉県の太平洋側に約60km続く砂浜海岸。いわし漁がさかんで、地引き網でも知られる。"),
+    ("c_noto", "coast", "能登半島", "のとはんとう", 17, "area", (37.2, 136.95), 0.32, 0.3, 0,
+     "石川県の日本海につき出た半島。輪島塗や、「能登の里山里海」として知られる。"),
+    ("c_boso", "coast", "房総半島", "ぼうそうはんとう", 12, "area", (35.15, 140.05), 0.27, 0.22, 0,
+     "千葉県の南部の半島。東京湾と太平洋にはさまれ、あたたかい気候を生かした花や野菜づくりがさかん。"),
+    ("c_izu", "coast", "伊豆半島", "いずはんとう", 22, "area", (34.85, 138.95), 0.14, 0.24, 0,
+     "静岡県の東部の半島。温泉が多く、観光がさかん。"),
+    ("c_shiretoko", "coast", "知床半島", "しれとこはんとう", 1, "poly", [(43.86, 144.95), (44.02, 144.72), (44.45, 145.3), (44.32, 145.48)], 0, 0, 0,
+     "北海道の東部の半島。流氷が届き、豊かな自然が世界自然遺産に登録されている。"),
+    ("c_ariake", "coast", "有明海", "ありあけかい", 41, "sea", (33.0, 130.3), 0.13, 0.27, 0,
+     "福岡県・佐賀県・長崎県・熊本県に囲まれた海。干満の差が大きく、のりの養殖や干拓が行われてきた。"),
+    ("c_mutsu", "coast", "陸奥湾", "むつわん", 2, "sea", (41.0, 140.95), 0.22, 0.13, 0,
+     "青森県の湾。ほたての養殖がさかん。"),
+    ("c_tokyo", "coast", "東京湾", "とうきょうわん", 13, "sea", (35.45, 139.85), 0.12, 0.22, 0,
+     "東京都・神奈川県・千葉県に面した湾。まわりに京浜工業地帯・京葉工業地域が広がる。"),
+    ("c_ise", "coast", "伊勢湾", "いせわん", 23, "sea", (34.85, 136.75), 0.16, 0.25, 0,
+     "愛知県と三重県に面した湾。まわりに中京工業地帯が広がる。"),
+    ("c_suruga", "coast", "駿河湾", "するがわん", 22, "sea", (34.85, 138.62), 0.13, 0.25, 0,
+     "静岡県の湾。日本でいちばん深い湾で、さくらえびが有名。焼津港がある。"),
+]
+
+
+def ellipse(lat, lon, rx, ry, rot):
+    a = math.radians(rot)
+    ring = []
+    for i in range(48):
+        t = 2 * math.pi * i / 48
+        dx, dy = rx * math.cos(t), ry * math.sin(t)
+        ring.append(proj(lat + (dx * math.sin(a) + dy * math.cos(a)), lon + (dx * math.cos(a) - dy * math.sin(a))))
+    return Polygon(ring)
+
+
+def landforms(L, Lraw):
+    out = []
+    for fid, cat, name, kana, pref, shape, geo, rx, ry, rot, note in LANDFORMS:
+        if shape == "line":
+            pts = [proj(*p) for p in geo]
+            out.append({"id": fid, "cat": cat, "kind": "range", "name": name, "kana": kana, "pref": pref, "d": path_d(pts), "b": bbox(pts), "note": note})
+            continue
+        e = Polygon([proj(*p) for p in geo]) if shape == "poly" else ellipse(geo[0], geo[1], rx, ry, rot)
+        g = e.difference(Lraw) if shape == "sea" else e.intersection(L)
+        polys = list(g.geoms) if isinstance(g, MultiPolygon) else [g]
+        polys = [p.simplify(0.3) for p in polys if not p.is_empty and p.area > 1.5]
+        polys.sort(key=lambda p: -p.area)
+        if shape == "sea":
+            polys = polys[:1]   # 湾・海は、楕円の中でいちばん大きな水面だけ
+        dd = "".join(path_d(list(p.exterior.coords)[:-1]) + "Z" for p in polys)
+        out.append({"id": fid, "cat": cat, "kind": "plain", "name": name, "kana": kana, "pref": pref, "d": dd,
+                    "b": bbox([c for p in polys for c in p.exterior.coords]), "note": note})
+    return out
+
+
 def path_d(pts):
     return "M" + "L".join(f"{x:.1f},{y:.1f}" for x, y in pts)
 
@@ -136,6 +223,10 @@ def main():
         dd = "".join(path_d(list(p.exterior.coords)[:-1]) + "Z" for p in polys)
         feats.append({"id": fid, "cat": "plain", "kind": "plain", "name": name, "kana": kana, "pref": pref, "d": dd,
                       "b": bbox([c for p in polys for c in p.exterior.coords])})
+    Lraw = unary_union([Polygon([tuple(map(float, q.split(","))) for q in part.split("L")]).buffer(0)
+                        for o in json.load(open(DATA / "paths.json", encoding="utf-8")) for part in re.findall(r"M([^Z]+)Z", o["d"])
+                        if len(part.split("L")) >= 3])
+    feats += landforms(L, Lraw)
     (DATA / "terrain.json").write_text(json.dumps(feats, ensure_ascii=False, separators=(",", ":")), encoding="utf-8", newline="\n")
     print("wrote terrain.json:", len(feats), "features")
 

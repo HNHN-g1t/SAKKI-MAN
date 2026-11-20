@@ -19,7 +19,7 @@ OKI_DX, OKI_DY = 1.6, 16.0
 
 def keep(code, poly):
     c = poly.centroid
-    if code == 13 and c.y < 33.0:  # Ogasawara
+    if code == 13 and c.x > 150:  # 南鳥島は除外。小笠原（父島・母島・硫黄島）は世界自然遺産のピンのため残す（全国表示の外の南の海）
         return False
     if code == 47 and (c.x < 126.5 or c.x > 129):  # Miyako, Yaeyama, Daito
         return False
@@ -30,14 +30,22 @@ def proj(x, y):
     return ((x - LON0) * K * S, (LAT1 - y) * S)
 
 
+# 県ごとの島（Polygon）を集める。
+# Natural Earth は奄美群島（奄美大島・加計呂麻島・喜界島・徳之島・沖永良部島・与論島、北緯27度より北）を沖縄県に入れているので、鹿児島県に移す
+by_code = {}
+for ft in d["features"]:
+    code = int(ft["properties"]["iso_3166_2"].split("-")[1])
+    g = shape(ft["geometry"])
+    for q in (list(g.geoms) if isinstance(g, MultiPolygon) else [g]):
+        c = code
+        if code == 47 and q.centroid.y > 26.95:
+            c = 46
+        by_code.setdefault(c, []).append(q)
+
 out = []
 proj_polys = {}   # 県コード -> 画面座標の Polygon（地方の外形線づくりに使う）
-for ft in d["features"]:
-    p = ft["properties"]
-    code = int(p["iso_3166_2"].split("-")[1])
-    g = shape(ft["geometry"])
-    polys = list(g.geoms) if isinstance(g, MultiPolygon) else [g]
-    polys = [q for q in polys if keep(code, q)]
+for code in sorted(by_code):
+    polys = [q for q in by_code[code] if keep(code, q)]
     biggest = max(polys, key=lambda q: q.area)
     # drop tiny islets except the main body
     polys = [q for q in polys if q is biggest or q.area > 0.0015]
@@ -59,7 +67,7 @@ for ft in d["features"]:
     extra = {}
     if code == 47:
         # inset copy: same scale, shifted so its box sits in the sea south of Kyushu/Shikoku
-        TX, TY = -94.0, 887.0
+        TX, TY = -94.0, 948.0   # 沖縄本島の上のはし（奄美群島を鹿児島県に移す前と同じ位置）
         sx, sy = TX - min(xs), TY - min(ys)
         def sh(dstr):
             import re

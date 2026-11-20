@@ -88,6 +88,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .ask .q.long{font-size:var(--fs20)}
 .ask .q.shout{font-family:var(--display);font-weight:400;font-size:var(--fs20)}
 /* 県名だけ黄色のマーカー線（下半分） */
+.ask .q .kb{word-break:keep-all;overflow-wrap:anywhere}
+.ask .q .kb em{white-space:nowrap}
 .ask .q em{font-style:normal;box-shadow:inset 0 calc(-1 * var(--marker)) 0 var(--brand)}
 .ask .kana{font-size:var(--fs14);color:var(--muted);font-weight:700}
 
@@ -601,7 +603,9 @@ const QUIZ_TYPES = {
     make: (codes, area) => TERRAIN.filter(f => !area || !area.cat || f.cat === area.cat).map(f => {
       const pool = shuffle(TERRAIN.filter(g => g.cat === f.cat && g.id !== f.id)).slice(0, 3);
       return { key: f.id, prefs: [f.pref], focus: f.pref, feature: f.id, sub: "", choices: [[f.name, f.kana], ...pool.map(g => [g.name, g.kana])], correct: f.name,
-        text: `この<em>${TERRAIN_CATS[f.cat]}</em>の名前は？`, explain: `${f.name}（${f.kana}）` };
+        // 地形の用語は「何という？」。解説（note）があれば出す
+        text: f.cat === "land" ? "色をつけた所の<em>地形</em>を何という？" : `この<em>${TERRAIN_CATS[f.cat]}</em>の名前は？`,
+        explain: f.note ? `${f.name}（${f.kana}）：${f.note}` : `${f.name}（${f.kana}）` };
     })
   },
   industry: {
@@ -609,7 +613,7 @@ const QUIZ_TYPES = {
     // area.cat（farm／fruit／sea／maker／craft）の問題。地図で答えの都道府県をタップ
     // 出題停止（status:"stop"）の問題は出さない。出題数・完了・👑の判定もこの数で行う
     make: (codes, area) => industryLive().filter(f => (!area || !area.cat || f.cat === area.cat) && codes.includes(f.pref)).map(f => (
-      { key: f.id, prefs: [f.pref], text: f.q || INDUSTRY_CATS[f.cat].ask(f.word), sub: f.kana, answers: [f.pref], explain: f.note }))
+      { key: f.id, prefs: [f.pref], text: phraseBreak(f.q || INDUSTRY_CATS[f.cat].ask(f.word)), sub: f.kana, answers: [f.pref], explain: f.note }))
   },
   climate: {
     title: "気候", kind: "choice",
@@ -636,7 +640,7 @@ const QUIZ_TYPES = {
       const ter = [...pick(ters.filter(q => TERRAIN.find(f => f.id === q.key).cat === "river"), 2), ...pick(ters.filter(q => TERRAIN.find(f => f.id === q.key).cat !== "river"), 2)].slice(0, 2)
         .map(q => Object.assign(q, {key: "ter:" + q.key, kind: "choice"}));
       const inds = QUIZ_TYPES.industry.make(codes, null).map(q => Object.assign(q, {cat: industryOf(q.key).cat, key: "ind:" + q.key, kind: "tap"}));
-      const agri = pick(inds.filter(q => ["farm", "fruit", "sea"].includes(q.cat)), 2), make = pick(inds.filter(q => ["maker", "craft"].includes(q.cat)), 2);
+      const agri = pick(inds.filter(q => ["farm", "fruit", "veg", "chiku", "sea"].includes(q.cat)), 2), make = pick(inds.filter(q => ["maker", "semi", "craft"].includes(q.cat)), 2);
       return [...cap, ...ter, ...agri, ...make];
     }
   },
@@ -681,17 +685,24 @@ const QUIZ_TYPES = {
      year    統計の対象年（公表日ではない）
      source  出典の正式名称 ／ url 出典URL ／ checked 最終確認日
      status  "ok"＝確認済み（出題する） "check"＝要確認（出題する。答えは確認済みだが、解説・年次などに確認が残る） "stop"＝出題停止（出題しない）
-   答えが1県に決まるものだけ入れる。僅差で入れかわる品目（茶・キャベツ・日本なし・さつまいも・ほたて・真珠など）は入れない */
+   答えが1県に決まるものだけ入れる。年によって入れかわりうる品目（茶・さつまいも、2・3位など）は問題文に統計の年を書く。僅差で入れかわる品目（キャベツ・日本なし・ほたて・真珠など）は入れない */
 const INDUSTRY_CATS = {
   farm:  {name:"農業（米・野菜・花）", ask: w => `<em>${w}</em>の収穫量が全国一の都道府県は？`},
   fruit: {name:"くだもの", ask: w => `<em>${w}</em>の収穫量が全国一の都道府県は？`},
-  sea:   {name:"畜産・林業・水産業", ask: w => w},
+  veg:   {name:"ふえた野菜", ask: w => w},
+  chiku: {name:"畜産", ask: w => w},
+  sea:   {name:"林業・水産業", ask: w => w},
   maker: {name:"工業地帯・地場産業", ask: w => w},
+  semi:  {name:"半導体", ask: w => w},
   craft: {name:"伝統工芸品", ask: w => `<em>${w}</em>がつくられている都道府県は？`},
 };
 const IND_CHECKED = "2026-11-02";
 const SRC = {
   gaiyou: n => ({source: "農林水産省「都道府県の農林水産業の概要（令和7年版）」", url: `https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-${String(n).padStart(2, "0")}.pdf`}),
+  gaiyou26: n => ({source: "農林水産省「都道府県の農林水産業の概要（2026年版）」", url: `https://www.maff.go.jp/j/kanbo/tiho/15sonota/2026PDF/todouhuken_gaiyou2026-${String(n).padStart(2, "0")}.pdf`}),
+  vegst: {source: "農林水産省「野菜生産出荷統計」品目別作付面積、収穫量及び出荷量累年統計（令和6年産まで）", url: "https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00500215&tstat=000001013427&cycle=0&tclass1=000001032286&tclass2=000001037845&layout=datalist&tclass3val=0"},
+  chiku: {source: "東北農政局「家畜飼養頭羽数による全国順位」（農林水産省「畜産統計」より）", url: "https://www.maff.go.jp/tohoku/seisan/tikusan/attach/pdf/index-93.pdf"},
+  semiplan: {source: "経済産業省「認定特定半導体生産施設整備等計画」", url: "https://www.meti.go.jp/policy/mono_info_service/joho/laws/semiconductor/semiconductor_plan.html"},
   meti: {source: "経済産業省「伝統的工芸品指定品目一覧［都道府県別］」（令和7年10月27日現在）", url: "https://www.meti.go.jp/press/2025/10/20251027001/20251027001-b.pdf"},
 };
 const INDUSTRY = [
@@ -700,10 +711,6 @@ const INDUSTRY = [
    basis:"水稲の収穫量（主食用）", year:"令和7年産", source:"農林水産省「作物統計調査 令和7年産水陸稲の収穫量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kome/pdf/syukaku_suiriku_25.pdf", status:"ok"},
   {id:"potato", cat:"farm", word:"じゃがいも", kana:"", pref:1, note:"北海道（令和7年産の春植えばれいしょで全国の82％）。2位は鹿児島県",
    basis:"春植えばれいしょの収穫量", year:"令和7年産", source:"農林水産省「作物統計調査 令和7年産春植えばれいしょの作付面積、収穫量及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_yasai/pdf/syukaku_barei_25.pdf", status:"ok"},
-  {id:"onion", cat:"farm", word:"たまねぎ", kana:"", pref:1, note:"北海道（令和5年産で全国の約64％）",
-   basis:"たまねぎの収穫量", year:"令和5年産（令和6・7年産の都道府県別は未確認）", ...SRC.gaiyou(1), status:"check"},
-  {id:"lettuce", cat:"farm", word:"レタス", kana:"", pref:20, note:"長野県（令和5年産で全国一）。夏もすずしい高原でつくる「高原野菜」の代表",
-   basis:"レタスの収穫量", year:"令和5年産", ...SRC.gaiyou(20), status:"ok"},
   {id:"pepper", cat:"farm", word:"ピーマン", kana:"", pref:8, note:"茨城県（令和5年産で全国一）",
    basis:"ピーマンの収穫量", year:"令和5年産", ...SRC.gaiyou(8), status:"ok"},
   {id:"strawberry", cat:"farm", word:"いちご", kana:"", pref:9, note:"栃木県（令和5年産で全国一。2位の福岡県の約1.5倍）。「とちおとめ」「とちあいか」などの品種がある",
@@ -725,10 +732,35 @@ const INDUSTRY = [
    basis:"い（い草）の収穫量", year:"令和5年産", ...SRC.gaiyou(43), status:"ok"},
   {id:"cucumber", cat:"farm", word:"きゅうり", kana:"", pref:45, note:"宮崎県（令和6年産で全国一）。あたたかい気候を生かし、冬から春にビニールハウスでつくる促成栽培がさかん",
    basis:"きゅうりの収穫量", year:"令和6年産", source:"九州農政局宮崎県拠点「てげ がんばっちょる 宮崎の農業」（令和8年4月）", url:"https://www.maff.go.jp/kyusyu/miyazaki/attach/pdf/250528_tege-3.pdf", status:"ok"},
-  {id:"satsumaimo", cat:"farm", word:"さつまいも", kana:"", pref:46, note:"鹿児島県（令和6年産で約21.8万t）。水はけのよいシラス台地に向く。でんぷん・焼酎・食品加工などに使う",
-   basis:"かんしょ（さつまいも）の収穫量", year:"令和6年産", ...SRC.gaiyou(46), status:"ok"},
-  {id:"tea", cat:"farm", word:"茶", q:"<em>茶</em>（荒茶）の生産量が全国一の都道府県は？（令和6年産）", kana:"ちゃ", pref:46, note:"鹿児島県（令和6年産で全国の約37％）。長く静岡県が1位だったが、令和6年産で初めて鹿児島県が1位になった",
-   basis:"荒茶の生産量", year:"令和6年産", ...SRC.gaiyou(46), status:"ok"},
+  {id:"satsumaimo", cat:"farm", word:"さつまいも", q:"<em>さつまいも</em>の収穫量が全国一の都道府県は？（令和7年産）", kana:"", pref:46, note:"鹿児島県（令和7年産で約21.9万t、全国の31％）。水はけのよいシラス台地に向く。でんぷん・焼酎・食品加工などに使う。2位は茨城県",
+   basis:"かんしょ（さつまいも）の収穫量", year:"令和7年産", ...SRC.gaiyou26(46), status:"ok"},
+  {id:"tea", cat:"farm", word:"茶", q:"<em>茶</em>（荒茶）の生産量が全国一の都道府県は？（令和7年産）", kana:"ちゃ", pref:46, note:"鹿児島県（令和7年産で3万t）。長く静岡県が1位だったが、令和6年産で初めて鹿児島県が1位になり、令和7年産も1位。2位は静岡県",
+   basis:"荒茶の生産量（主産県）", year:"令和7年産", ...SRC.gaiyou26(46), status:"ok"},
+  // ---- ふえた野菜（1〜3位）：全国の収穫量が昭和48年（統計の始まり）から令和6年までにふえた野菜。順位は令和6年産 ----
+  {id:"lettuce", cat:"veg", word:"<em>レタス</em>の収穫量が全国一の都道府県は？", kana:"", pref:20, note:"長野県（令和6年産で全国の33％）。夏もすずしい高原でつくる「高原野菜」。2位は茨城県、3位は群馬県。全国の収穫量は昭和48年の約2.4倍",
+   basis:"レタスの収穫量", year:"令和6年産", ...SRC.vegst, status:"ok"},
+  {id:"lettuce2", cat:"veg", word:"<em>レタス</em>の収穫量が全国2位の都道府県は？", kana:"", pref:8, note:"茨城県（令和6年産で全国の16％）。1位は長野県、3位は群馬県",
+   basis:"レタスの収穫量", year:"令和6年産", ...SRC.vegst, status:"ok"},
+  {id:"lettuce3", cat:"veg", word:"<em>レタス</em>の収穫量が全国3位の都道府県は？", kana:"", pref:10, note:"群馬県（令和6年産で全国の11％）。1位は長野県、2位は茨城県",
+   basis:"レタスの収穫量", year:"令和6年産", ...SRC.vegst, status:"ok"},
+  {id:"broccoli", cat:"veg", word:"<em>ブロッコリー</em>の収穫量が全国一の都道府県は？", kana:"", pref:1, note:"北海道（令和6年産で全国の18％）。2位は埼玉県、3位は香川県。全国の収穫量は統計に加わった平成元年の約1.8倍",
+   basis:"ブロッコリーの収穫量", year:"令和6年産", ...SRC.vegst, status:"ok"},
+  {id:"broccoli2", cat:"veg", word:"<em>ブロッコリー</em>の収穫量が全国2位の都道府県は？（令和6年産）", kana:"", pref:11, note:"埼玉県（令和6年産で全国の9％）。1位は北海道、3位は香川県",
+   basis:"ブロッコリーの収穫量", year:"令和6年産", ...SRC.vegst, status:"ok"},
+  {id:"broccoli3", cat:"veg", word:"<em>ブロッコリー</em>の収穫量が全国3位の都道府県は？（令和6年産）", kana:"", pref:37, note:"香川県（令和6年産で全国の8％）。令和4・5年産は愛知県が3位だった",
+   basis:"ブロッコリーの収穫量", year:"令和6年産", ...SRC.vegst, status:"ok"},
+  {id:"onion", cat:"veg", word:"<em>たまねぎ</em>の収穫量が全国一の都道府県は？", kana:"", pref:1, note:"北海道（令和6年産で全国の67％）。2位は佐賀県、3位は兵庫県（淡路島）",
+   basis:"たまねぎの収穫量", year:"令和6年産", ...SRC.vegst, status:"ok"},
+  {id:"onion2", cat:"veg", word:"<em>たまねぎ</em>の収穫量が全国2位の都道府県は？（令和6年産）", kana:"", pref:41, note:"佐賀県（令和6年産で全国の7％）。兵庫県とほぼ同じで、令和4・5年産は兵庫県が2位だった",
+   basis:"たまねぎの収穫量", year:"令和6年産", ...SRC.vegst, status:"ok"},
+  {id:"onion3", cat:"veg", word:"<em>たまねぎ</em>の収穫量が全国3位の都道府県は？（令和6年産）", kana:"", pref:28, note:"兵庫県（令和6年産で全国の7％）。淡路島のたまねぎが有名",
+   basis:"たまねぎの収穫量", year:"令和6年産", ...SRC.vegst, status:"ok"},
+  {id:"carrot", cat:"veg", word:"<em>にんじん</em>の収穫量が全国一の都道府県は？", kana:"", pref:1, note:"北海道（令和6年産で全国の33％）。2位は千葉県、3位は徳島県",
+   basis:"にんじんの収穫量", year:"令和6年産", ...SRC.vegst, status:"ok"},
+  {id:"carrot2", cat:"veg", word:"<em>にんじん</em>の収穫量が全国2位の都道府県は？", kana:"", pref:12, note:"千葉県（令和6年産で全国の16％）。1位は北海道、3位は徳島県",
+   basis:"にんじんの収穫量", year:"令和6年産", ...SRC.vegst, status:"ok"},
+  {id:"carrot3", cat:"veg", word:"<em>にんじん</em>の収穫量が全国3位の都道府県は？", kana:"", pref:36, note:"徳島県（令和6年産で全国の8％）。1位は北海道、2位は千葉県",
+   basis:"にんじんの収穫量", year:"令和6年産", ...SRC.vegst, status:"ok"},
   // ---- くだもの ----
   {id:"apple", cat:"fruit", word:"りんご", kana:"", pref:2, note:"青森県（令和7年産で全国の61％）。2位は長野県",
    basis:"りんごの収穫量", year:"令和7年産", source:"農林水産省「作物統計調査 令和7年産りんごの栽培面積、結果樹面積、収穫量及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_ringo_25.pdf", status:"ok"},
@@ -752,13 +784,32 @@ const INDUSTRY = [
    basis:"不知火（しらぬい）の収穫量", year:"未確認（令和7年版の概要に掲載の年次）", ...SRC.gaiyou(43), status:"check"},
   {id:"biwa", cat:"fruit", word:"びわ", kana:"", pref:42, note:"長崎県（令和7年産で全国の31％）。2位は千葉県。長崎市の茂木（もぎ）びわが有名",
    basis:"びわの収穫量", year:"令和7年産", source:"農林水産省「作物統計調査 令和7年産びわ、おうとう、うめの栽培面積、結果樹面積、収穫量及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_biwa_25.pdf", status:"ok"},
-  // ---- 畜産・林業・水産業 ----
-  {id:"dairy", cat:"sea", word:"<em>乳牛</em>（乳用牛）の飼育頭数が全国一の都道府県は？", kana:"にゅうぎゅう", pref:1, note:"北海道（令和7年2月1日現在で全国一）",
-   basis:"乳用牛の飼養頭数", year:"令和7年2月1日現在", source:"農林水産省「畜産統計」（鹿児島県「鹿児島県畜産の概要」の全国表で確認）", url:"http://www.pref.kagoshima.jp/ag07/sangyo-rodo/nogyo/tikusan/basic/gaiyou.html", status:"ok"},
-  {id:"pig", cat:"sea", word:"<em>豚</em>の飼育頭数が全国一の都道府県は？", kana:"ぶた", pref:46, note:"鹿児島県（令和7年2月1日現在で約120万頭、全国の約14％）。「かごしま黒豚」で知られる",
-   basis:"豚の飼養頭数", year:"令和7年2月1日現在", source:"鹿児島県「豚に関する情報」（農林水産省「畜産統計」より）", url:"https://www.pref.kagoshima.jp/ag07/sangyo-rodo/nogyo/tikusan/tokei/buta.html", status:"ok"},
-  {id:"broiler", cat:"sea", word:"<em>ブロイラー</em>（肉用の若鶏）の飼育羽数が全国一の都道府県は？", kana:"", pref:46, note:"鹿児島県（令和6年2月1日現在で約3200万羽、全国の約22％）。2位は宮崎県で、南九州は畜産がさかん",
-   basis:"ブロイラーの飼養羽数", year:"令和6年2月1日現在", source:"鹿児島県「畜産の概要」（農林水産省「畜産統計」より）", url:"https://www.pref.kagoshima.jp/ag07/sangyo-rodo/nogyo/tikusan/basic/gaiyou.html", status:"ok"},
+  // ---- 畜産（1〜3位）。乳用牛・肉用牛は令和7年2月1日現在、豚・ブロイラーは令和6年2月1日現在 ----
+  {id:"dairy", cat:"chiku", word:"<em>乳用牛</em>の飼育頭数が全国一の都道府県は？", kana:"にゅうようぎゅう", pref:1, note:"北海道（令和7年2月1日現在で約82万頭、全国の63％）。すずしい気候と広い土地で、根釧台地などで酪農がさかん。2位は栃木県、3位は熊本県",
+   basis:"乳用牛の飼養頭数", year:"令和7年2月1日現在", ...SRC.chiku, status:"ok"},
+  {id:"dairy2", cat:"chiku", word:"<em>乳用牛</em>の飼育頭数が全国2位の都道府県は？", kana:"にゅうようぎゅう", pref:9, note:"栃木県（令和7年2月1日現在で約5万頭）。那須の高原などで酪農がさかん。1位は北海道、3位は熊本県",
+   basis:"乳用牛の飼養頭数", year:"令和7年2月1日現在", ...SRC.chiku, status:"ok"},
+  {id:"dairy3", cat:"chiku", word:"<em>乳用牛</em>の飼育頭数が全国3位の都道府県は？", kana:"にゅうようぎゅう", pref:43, note:"熊本県（令和7年2月1日現在で約4万頭）。1位は北海道、2位は栃木県",
+   basis:"乳用牛の飼養頭数", year:"令和7年2月1日現在", ...SRC.chiku, status:"ok"},
+  {id:"beef", cat:"chiku", word:"<em>肉用牛</em>の飼育頭数が全国一の都道府県は？", kana:"にくようぎゅう", pref:1, note:"北海道（令和7年2月1日現在で約54万頭、全国の21％）。2位は鹿児島県、3位は宮崎県",
+   basis:"肉用牛の飼養頭数", year:"令和7年2月1日現在", ...SRC.chiku, status:"ok"},
+  {id:"beef2", cat:"chiku", word:"<em>肉用牛</em>の飼育頭数が全国2位の都道府県は？", kana:"にくようぎゅう", pref:46, note:"鹿児島県（令和7年2月1日現在で約36万頭）。1位は北海道、3位は宮崎県",
+   basis:"肉用牛の飼養頭数", year:"令和7年2月1日現在", ...SRC.chiku, status:"ok"},
+  {id:"beef3", cat:"chiku", word:"<em>肉用牛</em>の飼育頭数が全国3位の都道府県は？", kana:"にくようぎゅう", pref:45, note:"宮崎県（令和7年2月1日現在で約25万頭）。1位は北海道、2位は鹿児島県",
+   basis:"肉用牛の飼養頭数", year:"令和7年2月1日現在", ...SRC.chiku, status:"ok"},
+  {id:"pig", cat:"chiku", word:"<em>豚</em>の飼育頭数が全国一の都道府県は？", kana:"ぶた", pref:46, note:"鹿児島県（令和6年2月1日現在で約120万頭、全国の約14％）。「かごしま黒豚」で知られる。2位は北海道、3位は宮崎県",
+   basis:"豚の飼養頭数", year:"令和6年2月1日現在", ...SRC.chiku, status:"ok"},
+  {id:"pig2", cat:"chiku", word:"<em>豚</em>の飼育頭数が全国2位の都道府県は？", kana:"ぶた", pref:1, note:"北海道（令和6年2月1日現在で約75万頭）。1位は鹿児島県、3位は宮崎県",
+   basis:"豚の飼養頭数", year:"令和6年2月1日現在", ...SRC.chiku, status:"ok"},
+  {id:"pig3", cat:"chiku", word:"<em>豚</em>の飼育頭数が全国3位の都道府県は？", kana:"ぶた", pref:45, note:"宮崎県（令和6年2月1日現在で約72万頭）。1位は鹿児島県、2位は北海道",
+   basis:"豚の飼養頭数", year:"令和6年2月1日現在", ...SRC.chiku, status:"ok"},
+  {id:"broiler", cat:"chiku", word:"<em>肉用若鶏</em>（ブロイラー）の飼育羽数が全国一の都道府県は？", kana:"にくようわかどり", pref:46, note:"鹿児島県（令和6年2月1日現在で約3200万羽、全国の約22％）。2位は宮崎県、3位は岩手県。南九州は畜産がさかん",
+   basis:"ブロイラーの飼養羽数", year:"令和6年2月1日現在", ...SRC.chiku, status:"ok"},
+  {id:"broiler2", cat:"chiku", word:"<em>肉用若鶏</em>（ブロイラー）の飼育羽数が全国2位の都道府県は？", kana:"にくようわかどり", pref:45, note:"宮崎県（令和6年2月1日現在で約2800万羽）。1位の鹿児島県とあわせて、南九州で全国の4割以上",
+   basis:"ブロイラーの飼養羽数", year:"令和6年2月1日現在", ...SRC.chiku, status:"ok"},
+  {id:"broiler3", cat:"chiku", word:"<em>肉用若鶏</em>（ブロイラー）の飼育羽数が全国3位の都道府県は？", kana:"にくようわかどり", pref:3, note:"岩手県（令和6年2月1日現在で約2400万羽）。1位は鹿児島県、2位は宮崎県",
+   basis:"ブロイラーの飼養羽数", year:"令和6年2月1日現在", ...SRC.chiku, status:"ok"},
+  // ---- 林業・水産業 ----
   {id:"kiso", cat:"sea", word:"<em>木曽ひのき</em>（天然の三大美林）がある都道府県は？", kana:"きそひのき", pref:20,
    note:"長野県。林野庁は、青森ヒバ（青森県）・秋田スギ（秋田県）・木曽ヒノキ（長野県）の天然林を日本三大美林としている（木曽ヒノキの林は岐阜県の一部にも広がる）",
    basis:"日本三大美林（天然林）", year:"―", source:"林野庁東北森林管理局「日本三大美林について」", url:"https://www.rinya.maff.go.jp/tohoku/keikaku/sandaibirin.html", status:"ok"},
@@ -814,6 +865,19 @@ const INDUSTRY = [
   {id:"tsubame", cat:"maker", word:"金属洋食器の産地、<em>燕市</em>がある都道府県は？", kana:"つばめし", pref:15,
    note:"新潟県。燕市はスプーン・フォークなど金属洋食器の国内生産の9割以上をしめる",
    basis:"金属洋食器の産地", year:"―", source:"燕市「金属洋食器」地域未来投資促進法 基本計画", url:"https://www.cas.go.jp/jp/seisaku/chiikimirai2/sangyo-keikaku/pdf/c-keikaku/niigataken-tsubameshi_kinzokuyoshokki_2-1.pdf", status:"ok"},
+  // ---- 半導体（IC・メモリ・イメージセンサー）の工場がある都市 ----
+  {id:"tsmc", cat:"semi", word:"台湾の半導体メーカー<em>TSMC</em>の工場（JASM、菊陽町）がある都道府県は？", kana:"", pref:43, note:"熊本県（菊陽町）。第1工場は2024年に開所し、第2工場も計画されている。九州はIC工場が多く「シリコンアイランド」とよばれる",
+   basis:"特定半導体生産施設整備等計画の認定（JASM）", year:"令和4年・6年認定", ...SRC.semiplan, status:"ok"},
+  {id:"rapidus", cat:"semi", word:"最先端の半導体をつくる<em>ラピダス</em>の工場（千歳市）がある都道府県は？", kana:"", pref:1, note:"北海道（千歳市）。国が開発を支援し、2ナノメートル世代の半導体の量産をめざしている",
+   basis:"ポスト5G基金事業での研究開発支援（Rapidus）", year:"令和4年〜", source:"北海道経済産業局「Rapidusの取組」", url:"https://www.hkd.meti.go.jp/hokcm/semiconductor/result/20240327/data04.pdf", status:"ok"},
+  {id:"kioxia4", cat:"semi", word:"キオクシアのメモリ工場がある<em>四日市市</em>は、どの都道府県？", kana:"よっかいちし", pref:24, note:"三重県（四日市市）。スマートフォンなどに使うフラッシュメモリをつくる。四日市市は石油化学コンビナートでも有名",
+   basis:"特定半導体生産施設整備等計画の認定（キオクシア四日市工場）", year:"令和4年認定", ...SRC.semiplan, status:"ok"},
+  {id:"kioxiak", cat:"semi", word:"キオクシアのメモリ工場がある<em>北上市</em>は、どの都道府県？", kana:"きたかみし", pref:3, note:"岩手県（北上市）。東北の高速道路ぞいにはIC工場が多く「シリコンロード」とよばれる",
+   basis:"特定半導体生産施設整備等計画の認定（キオクシア北上工場）", year:"令和6年認定", ...SRC.semiplan, status:"ok"},
+  {id:"micron", cat:"semi", word:"マイクロンのメモリ工場がある<em>東広島市</em>は、どの都道府県？", kana:"ひがしひろしまし", pref:34, note:"広島県（東広島市）。アメリカの半導体メーカー、マイクロンの工場。パソコンやスマートフォンに使うDRAMというメモリをつくる",
+   basis:"特定半導体生産施設整備等計画の認定（マイクロン広島工場）", year:"令和4年・5年・7年認定", ...SRC.semiplan, status:"ok"},
+  {id:"sonyisa", cat:"semi", word:"ソニーのイメージセンサー工場がある<em>諫早市</em>は、どの都道府県？", kana:"いさはやし", pref:42, note:"長崎県（諫早市）。カメラやスマートフォンで光を電気の信号に変えるイメージセンサーをつくる",
+   basis:"ソニーセミコンダクタマニュファクチャリング 長崎テクノロジーセンター", year:"―", source:"経済産業省「METI Journal」ソニーセミコンダクタマニュファクチャリング", url:"https://journal.meti.go.jp/wp-content/uploads/2024/03/d36a28e43cb6c4e7f69e5784e5d8ffdc.pdf", status:"ok"},
   // ---- 伝統工芸品（すべて国の伝統的工芸品） ----
   {id:"nanbu", cat:"craft", word:"南部鉄器", kana:"なんぶてっき", pref:3, note:"岩手県。国の伝統的工芸品", basis:"伝統的工芸品の指定", year:"―", ...SRC.meti, status:"ok"},
   {id:"tendo", cat:"craft", word:"天童将棋駒", kana:"てんどうしょうぎこま", pref:6, note:"山形県（天童市）。国の伝統的工芸品", basis:"伝統的工芸品の指定", year:"―", ...SRC.meti, status:"ok"},
@@ -832,6 +896,8 @@ const INDUSTRY = [
    source:"九州経済産業局「九州の伝統的工芸品」", url:"https://www.kyushu.meti.go.jp/seisaku/dento/210330pamphlet.pdf", status:"ok"},
   {id:"oshima", cat:"craft", word:"本場大島紬", kana:"ほんばおおしまつむぎ", pref:46, note:"鹿児島県（奄美大島など）。泥染めで仕上げる絹織物。国の伝統的工芸品", basis:"伝統的工芸品の指定", year:"―", ...SRC.meti, status:"ok"},
 ].map(f => Object.assign({checked: IND_CHECKED}, f));
+// 長い問題文を言葉の途中で折らない：文字のあいだでは折らず（keep-all）、「の」「を」「が」「、」「がある」のあとと「（」「都道府県」の前でだけ折る。ふりがなつきの言葉（em）は1つのまとまり
+const phraseBreak = html => `<span class="kb">${html.split(/(<[^>]+>)/).map(t => t.startsWith("<") ? t : t.replace(/がある/g, "\u0001").replace(/([のをが、])(?=.)/g, "$1<wbr>").replace(/\u0001/g, "がある<wbr>").replace(/（/g, "<wbr>（").replace(/([^>])(都道府県)/g, "$1<wbr>$2")).join("")}</span>`;
 const industryOf = id => INDUSTRY.find(f => f.id === id);
 const industryLive = () => INDUSTRY.filter(f => f.status !== "stop");   // 出題する問題（出題停止を除く）
 const industryName = f => (f.word.match(/<em>(.*?)<\/em>/) || [0, f.word])[1];   // 結果の一覧に出す短い名前
@@ -892,7 +958,9 @@ const historyOf = id => HISTORY.find(h => h.id === id);
 const TREASURE_STAGES = {
   temple:   {name: "国宝の寺社", ask: "光る場所の<em>寺・神社</em>は？"},
   castle:   {name: "国宝の城", ask: "光る場所の<em>国宝の城</em>は？"},
-  heritage: {name: "世界遺産", ask: "光る場所の<em>世界遺産</em>は？"},
+  heritage_e: {name: "東の世界遺産", ask: "光る場所の<em>世界遺産</em>は？"},
+  heritage: {name: "西の世界遺産", ask: "光る場所の<em>世界遺産</em>は？"},
+  nature:   {name: "世界自然遺産", ask: "光る場所の<em>自然遺産</em>は？"},   // 問題文は1行に入るよう短く
   meiji:    {name: "産業革命遺産", ask: "光る場所の<em>産業遺産</em>は？"},   // 問題文は1行に入るよう短く
   mania:    {name: "マニアな国宝", ask: "光る場所ゆかりの<em>国宝</em>は？"},
 };
@@ -909,11 +977,29 @@ const TREASURE = [
   ["inuyama","castle","犬山城","いぬやまじょう",23,35.3700,136.9786,"愛知県犬山市にある城。木曽川ぞいの丘に立つ天守は、現存する天守のなかでも古いものの一つで、国宝。別名は白帝城。"],
   ["hikone","castle","彦根城","ひこねじょう",25,35.2764,136.2518,"滋賀県彦根市にある城。江戸時代に井伊家が治めた。天守は国宝。"],
   ["matsue","castle","松江城","まつえじょう",32,35.4750,133.0507,"島根県松江市にある城。江戸時代の初めに建てられた天守が現存し、2015年に国宝に指定。別名は千鳥城。"],
-  ["shirakawago","heritage","白川郷","しらかわごう",21,36.2577,136.9060,"岐阜県白川村にある集落。雪に強い急な屋根の合掌造りの家が残る。富山県の五箇山とともに世界遺産。"],
+  ["shirakawago","heritage_e","白川郷","しらかわごう",21,36.2577,136.9060,"岐阜県白川村にある集落。雪に強い急な屋根の合掌造りの家が残る。富山県の五箇山とともに世界遺産。"],
   ["iwami","heritage","石見銀山","いわみぎんざん",32,35.1110,132.4370,"島根県大田市にある銀山のあと。戦国時代から江戸時代にかけて多くの銀がほられ、世界にも運ばれた。2007年に世界遺産に登録。"],
   ["kumano","heritage","熊野古道","くまのこどう",30,33.8402,135.7735,"和歌山県などにある、熊野三山へお参りする道。平安時代から多くの人が歩いた。「紀伊山地の霊場と参詣道」として世界遺産。"],
   ["shuri","heritage","首里城跡","しゅりじょうあと",47,26.2170,127.7195,"沖縄県那覇市にある琉球王国の城のあと。王の住まいで、政治の中心だった。「琉球王国のグスク及び関連遺産群」として世界遺産。"],
-  ["shiretoko","heritage","知床","しれとこ",1,44.08,145.05,"北海道の東のはしにある半島。流氷が運ぶ栄養で、海と陸の生き物がつながる豊かな自然が残る。2005年に世界自然遺産に登録。"],
+  ["shiretoko","nature","知床","しれとこ",1,44.08,145.05,"北海道の東のはしにある半島。流氷が運ぶ栄養で、海と陸の生き物がつながる豊かな自然が残る。2005年に世界自然遺産に登録。"],
+  ["nikko","heritage_e","日光東照宮","にっこうとうしょうぐう",9,36.7581,139.5988,"栃木県日光市にある神社。江戸幕府を開いた徳川家康をまつり、はなやかな陽明門で知られる。「日光の社寺」として1999年に世界遺産に登録。"],
+  ["chusonji","heritage_e","中尊寺","ちゅうそんじ",3,39.0016,141.1003,"岩手県平泉町にある寺。平安時代の終わりに栄えた奥州藤原氏が、金色堂を建てた。「平泉」として2011年に世界遺産に登録。"],
+  ["fujisan","heritage_e","富士山","ふじさん",22,35.33,138.73,"山梨県と静岡県にまたがる日本一高い山（3776m）。古くから信仰の対象となり、多くの絵にえがかれてきた。「信仰の対象と芸術の源泉」として2013年に世界文化遺産に登録。"],
+  ["tomioka","heritage_e","富岡製糸場","とみおかせいしじょう",10,36.2554,138.8877,"群馬県富岡市にある工場。明治政府が1872年に開いた官営の製糸工場で、生糸の生産を広めた。「富岡製糸場と絹産業遺産群」として2014年に世界遺産に登録。"],
+  ["seiyo","heritage_e","国立西洋美術館","こくりつせいようびじゅつかん",13,35.7155,139.7757,"東京都台東区の上野公園にある美術館。フランスの建築家ル・コルビュジエが設計した。世界7か国にある彼の建築とともに2016年に世界遺産に登録。"],
+  ["sannai","heritage_e","三内丸山遺跡","さんないまるやまいせき",2,40.8114,140.6966,"青森県青森市にある縄文時代の大きな集落のあと。大きな掘立柱建物のあとや、くりを育てたあとが見つかった。「北海道・北東北の縄文遺跡群」として2021年に世界遺産に登録。"],
+  ["sado","heritage_e","佐渡島の金山","さどがしまのきんざん",15,38.0414,138.2522,"新潟県佐渡市にある金山のあと。江戸時代には幕府の財政を支える大量の金をほり出した。手作業でほり進めたあとが残り、2024年に世界遺産に登録。"],
+  ["horyuji","heritage","法隆寺","ほうりゅうじ",29,34.6143,135.7346,"奈良県斑鳩町にある寺。聖徳太子が建てたと伝えられ、現存する世界最古の木造建築として知られる。「法隆寺地域の仏教建造物」として1993年に日本で初めて世界遺産に登録。"],
+  ["kiyomizu","heritage","清水寺","きよみずでら",26,34.9949,135.7850,"京都府京都市にある寺。がけの上にせり出した「清水の舞台」で知られる。「古都京都の文化財」の一つとして1994年に世界遺産に登録。"],
+  ["genbaku","heritage","原爆ドーム","げんばくどーむ",34,34.3955,132.4536,"広島県広島市にある建物。1945年8月6日の原子爆弾で被爆した姿のまま残されている。核兵器のおそろしさを伝える遺産として1996年に世界遺産に登録。"],
+  ["itsukushima","heritage","厳島神社","いつくしまじんじゃ",34,34.2959,132.3199,"広島県廿日市市の宮島にある神社。平清盛があつく信仰し、海の上に建つ社殿と大鳥居で知られる。1996年に世界遺産に登録。"],
+  ["oura","heritage","大浦天主堂","おおうらてんしゅどう",42,32.7343,129.8701,"長崎県長崎市にある教会。江戸時代に禁止されたキリスト教をひそかに信じ続けた人々が、ここで神父に信仰を打ち明けた。「長崎と天草地方の潜伏キリシタン関連遺産」として2018年に世界遺産に登録。"],
+  ["daisen","heritage","大仙古墳","だいせんこふん",27,34.5640,135.4877,"大阪府堺市にある日本最大の前方後円墳。仁徳天皇の墓（仁徳天皇陵古墳）とされる。「百舌鳥・古市古墳群」として2019年に世界遺産に登録。"],
+  ["fujiwarakyo","heritage","藤原宮跡","ふじわらきゅうせき",29,34.5022,135.8070,"奈良県橿原市にある宮殿のあと。694年に持統天皇が移した、日本で初めての本格的な都・藤原京の中心。「飛鳥・藤原の宮都」として2026年に世界遺産に登録。"],
+  ["shirakami","nature","白神山地","しらかみさんち",2,40.52,140.15,"青森県と秋田県にまたがる山地。人の手がほとんど入っていない、世界最大級のぶなの原生林が広がる。1993年に屋久島とともに日本で初めて世界自然遺産に登録。"],
+  ["yakushima","nature","屋久島","やくしま",46,30.34,130.53,"鹿児島県の南の海にうかぶ島。樹齢数千年といわれる縄文杉などの屋久杉が生える。1993年に白神山地とともに日本で初めて世界自然遺産に登録。"],
+  ["ogasawara","nature","小笠原諸島","おがさわらしょとう",13,27.07,142.21,"東京都の南、約1000kmの太平洋にうかぶ島々。一度も大陸とつながったことがなく、ここにしかいない生き物が多い。2011年に世界自然遺産に登録。"],
+  ["amami","nature","奄美・沖縄","あまみ・おきなわ",46,28.29,129.33,"鹿児島県の奄美大島・徳之島と、沖縄県の沖縄島北部・西表島からなる。アマミノクロウサギやヤンバルクイナなど、ここにしかいない生き物がすむ。2021年に世界自然遺産に登録。"],
   ["munakata","heritage","宗像大社","むなかたたいしゃ",40,33.8312,130.5139,"福岡県宗像市にある神社。沖ノ島は島全体が神としてまつられ、古代のお祭りの品が多く見つかった。「神宿る島」宗像・沖ノ島と関連遺産群として世界遺産。"],
   ["gunkanjima","meiji","軍艦島","ぐんかんじま",42,32.6118,129.8122,"長崎県長崎市の沖にある島（正式な名前は端島）。海の底の石炭をほった島で、軍艦のような形から名づけられた。「明治日本の産業革命遺産」として世界遺産。"],
   ["nirayama","meiji","韮山反射炉","にらやまはんしゃろ",22,35.0396,138.9614,"静岡県伊豆の国市にある、鉄をとかして大砲をつくるための炉。江戸時代の終わりに完成した。実際に使われた反射炉で今も残るのはここだけで、世界遺産にも登録。"],
@@ -927,7 +1013,7 @@ const TREASURE = [
 ].map(([id, stage, name, kana, pref, lat, lon, note]) => ({id, stage, name, kana, pref, ll: [lat, lon], note}));
 const treasureOf = id => TREASURE.find(t => t.id === id);
 
-const TERRAIN_CATS = { mount: "山地・山脈・山", river: "川", plain: "平野" };
+const TERRAIN_CATS = { mount: "山地・山脈・山", river: "川", plain: "平野", land: "地形", coast: "海岸・湾・半島" };
 
 /* ---------- 気候（気候区分・雨温図） ----------
    CLIMATE_ZONES：日本の6つの気候区分。codes は地図で色をつける「その気候の代表的な都道府県」（県の一部だけがあてはまる県は入れない）
@@ -1045,7 +1131,8 @@ const COURSES = [
           `完了：全国${CITIES.designated.length}問を最後まで解く`, `👑マスター：ヒントなしで全国${CITIES.designated.length}問すべて正解（ある都道府県をタップ）`,
           "都市そのものの位置を答える問題は準備中（記録は別に分けて持つ）"]},
   {id:"terrain", name:"山・河川・平野", master:"地形マスター", from:"g5", ready:true, stages:true, unlock:{course:"designated", need:"complete"},
-   stageList:[{id:"mount", cat:"mount", name:"山地・山脈", codes:range(1,47)}, {id:"river", cat:"river", name:"川", codes:range(1,47)}, {id:"plain", cat:"plain", name:"平野", codes:range(1,47)}],
+   stageList:[{id:"mount", cat:"mount", name:"山地・山脈", codes:range(1,47)}, {id:"river", cat:"river", name:"川", codes:range(1,47)}, {id:"plain", cat:"plain", name:"平野", codes:range(1,47)},
+     {id:"land", cat:"land", name:"地形の用語", codes:range(1,47)}, {id:"coast", cat:"coast", name:"海岸・湾・半島", codes:range(1,47)}],
    rules:["山地・山脈（11）・川（10）・平野（10）の3ステージ。地図に出た図形の名前を4択で答える", "ステージ👑：そのステージをヒントなしで全問正解",
           "👑地形マスター：3ステージすべて👑", "完了：3ステージすべてを最後まで解く",
           "図形は教材の略地図程度のおおまかな形（石狩川・最上川・利根川は Natural Earth の線）"]},
@@ -1443,6 +1530,8 @@ function fitBox(bb, animate=true) {
 }
 const unionBox = codes => codes.reduce((a,c) => { const b = boxOf[c]; return [Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[2],b[2]),Math.max(a[3],b[3])]; }, [1e9,1e9,-1e9,-1e9]);
 let homeBox = FULL;
+// 範囲にピンの場所が入っていなければ、ピンまで広げる（小笠原諸島・奄美大島など、地方の外の島のピン）
+const withPin = (bb, ll) => { const [x, y] = toXY(...ll), m = 24; return [Math.min(bb[0], x - m), Math.min(bb[1], y - m), Math.max(bb[2], x + m), Math.max(bb[3], y + m)]; };
 function zoomArea(id){ fitBox(unionBox(AREAS.find(a => a.id === id).codes)); }
 
 /* 全国の挑戦のピンチの案内：最初の大きさから1.6倍より拡大したら消し、1.1倍以内に戻したらまた出す（あいだは今のまま） */
@@ -1949,13 +2038,14 @@ function nextQ() {
       fitLater(unionBox(q.zone));
     } else if (q.feature) {
       showFeature(q.feature);
-      const b = TERRAIN.find(f => f.id === q.feature).b, cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2, h = Math.max(b[2] - b[0], b[3] - b[1], 160) / 2;
+      const tf = TERRAIN.find(f => f.id === q.feature), b = tf.b, cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2;
+      const h = Math.max(b[2] - b[0], b[3] - b[1], tf.cat === "land" || tf.cat === "coast" ? 110 : 160) / 2;   // 地形の用語・海岸は小さい形が多いので少し寄せる
       fitLater([cx - h, cy - h, cx + h, cy + h]);
     } else {
       pathEl[q.focus].classList.add("sel");
       // 県庁所在地は県庁、歴史の場所はその場所を、ピンクの光で示す
-      if (q.pinLL) { showPinAt(q.pinLL, q.focus); fitLater(unionBox(areaOfPref(q.focus).codes)); } else showPin(q.pin);
-      if (quiz.area.wide) fitLater(unionBox(areaOfPref(q.focus).codes));
+      if (q.pinLL) { showPinAt(q.pinLL, q.focus); fitLater(withPin(unionBox(areaOfPref(q.focus).codes), q.pinLL)); } else showPin(q.pin);
+      if (quiz.area.wide) fitLater(q.pinLL ? withPin(unionBox(areaOfPref(q.focus).codes), q.pinLL) : unionBox(areaOfPref(q.focus).codes));
     }
     q.order = shuffle(q.choices);
     sheet.innerHTML = `${askBlock()}<div class="qslot" id="qslot"><div class="choices">${q.order.map(([n, k], j) =>
