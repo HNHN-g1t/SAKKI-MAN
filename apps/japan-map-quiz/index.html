@@ -78,7 +78,11 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 /* 顔は前の1.8倍（高さ2.7em）。下は文字の底にそろえ、頭は行や問題のウインドウの上へあえて飛び出させる（行の高さは変えない） */
 .ask .q .qface img{position:absolute;left:.12em;bottom:0;height:2.7em;width:calc(2.7em * 127 / 144);transform-origin:50% 100%;animation:faceIn .35s cubic-bezier(.2,1.6,.4,1) 1}
 @keyframes faceIn{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
-@media (prefers-reduced-motion:reduce){.ask .q .qface img{animation:none}}
+/* 正解の顔（国宝・世界遺産以外）：問題のウインドウのいちばん右下。大きさは「？」の右の顔と同じ（問題文の字の2.7倍） */
+.sheet .cface{position:absolute;right:max(var(--s16),env(safe-area-inset-right,0px));bottom:calc(var(--s16) + env(safe-area-inset-bottom,0px));
+  height:calc(var(--fs28) * 2.7);width:calc(var(--fs28) * 2.7 * 127 / 144);pointer-events:none;z-index:2}
+.sheet .cface img{display:block;width:100%;height:100%;transform-origin:50% 100%;animation:faceIn .35s cubic-bezier(.2,1.6,.4,1) 1}
+@media (prefers-reduced-motion:reduce){.ask .q .qface img,.sheet .cface img{animation:none}}
 /* 問題中は、飛び出した顔が切れないようウインドウの外へもはみ出せるようにする */
 .sheet.inquiz{overflow:visible}
 .ask .q.long{font-size:var(--fs20)}
@@ -1962,9 +1966,11 @@ function afterAnswer(ok, html, opt = {}) {
   const q = quiz.q;
   if (ok) {
     sndOk();
-    // 正解のときは、問題文の最後（？のすぐ右）にサッ記マンの超笑顔を小さく出す
+    // 正解のときは、問題のウインドウのいちばん右下にサッ記マンのうれしい顔を出す。
+    // 国宝・世界遺産（kind "wide"）は右下に解説が来るので、これまでどおり問題文の最後（？のすぐ右）に出す
     const qEl = sheet.querySelector(".ask .q");
-    if (qEl && !qEl.querySelector(".qface")) { qEl.insertAdjacentHTML("beforeend", `\u2060<span class="qface" aria-hidden="true"><img src="${qfUrl(qfTake())}" alt=""></span>`); placeQFace(qEl); }
+    if (opt.kind !== "wide") { if (!sheet.querySelector(".cface")) sheet.insertAdjacentHTML("beforeend", `<span class="cface" aria-hidden="true"><img src="${qfUrl(qfTake())}" alt=""></span>`); }
+    else if (qEl && !qEl.querySelector(".qface")) { qEl.insertAdjacentHTML("beforeend", `\u2060<span class="qface" aria-hidden="true"><img src="${qfUrl(qfTake())}" alt=""></span>`); placeQFace(qEl); }
     if (q.hint) quiz.combo = 0; else { quiz.combo++; quiz.maxCombo = Math.max(quiz.maxCombo, quiz.combo); }
     if (quiz.combo >= 2) { combo.textContent = `${quiz.combo}れんぞく！`; combo.hidden = false; combo.classList.remove("pop"); void combo.offsetWidth; combo.classList.add("pop"); }
     else combo.hidden = true;
