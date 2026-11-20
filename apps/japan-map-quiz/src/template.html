@@ -72,9 +72,11 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 /* ふりがなは漢字の上（ruby） */
 .ask .q rt{font-size:min(.42em, calc(var(--fit, 1) * 1em));font-weight:700;color:var(--muted);letter-spacing:0}
 /* 正解のときの顔：問題文の「？」のすぐ右に、文字より少し大きく。ぽんと出る */
-.ask .q .qface{display:inline-block;position:relative;width:calc(2.7em * 127 / 144);height:1em;margin-left:.12em;vertical-align:var(--face-base,-.1em)}
+/* 顔の箱は幅0にして、行がいっぱいでも次の行へ送られないようにする（顔は「？」の右に絵だけはみ出させる）。
+   画面の右からはみ出すときは、JS（placeQFace）で左へずらす（「？」にかぶってよい） */
+.ask .q .qface{display:inline-block;position:relative;width:0;height:1em;vertical-align:var(--face-base,-.1em)}
 /* 顔は前の1.8倍（高さ2.7em）。下は文字の底にそろえ、頭は行や問題のウインドウの上へあえて飛び出させる（行の高さは変えない） */
-.ask .q .qface img{position:absolute;left:0;bottom:0;height:2.7em;width:auto;transform-origin:50% 100%;animation:faceIn .35s cubic-bezier(.2,1.6,.4,1) 1}
+.ask .q .qface img{position:absolute;left:.12em;bottom:0;height:2.7em;width:calc(2.7em * 127 / 144);transform-origin:50% 100%;animation:faceIn .35s cubic-bezier(.2,1.6,.4,1) 1}
 @keyframes faceIn{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
 @media (prefers-reduced-motion:reduce){.ask .q .qface img{animation:none}}
 /* 問題中は、飛び出した顔が切れないようウインドウの外へもはみ出せるようにする */
@@ -1505,6 +1507,16 @@ function rotStep() { let n; do n = rotSet[Math.floor(Math.random() * rotSet.leng
 const qfUrl = n => `img/qf-${n}.webp?v=1`;
 ROT_HAPPY.forEach(n => { const i = new Image(); i.src = qfUrl(n); });
 let qfNext = 0;
+// 「？」の右に置いた顔が問題文の右はしからはみ出すなら、はみ出した分だけ左へずらす（変形前の大きさで測る）
+function placeQFace(qEl) {
+  const f = qEl.querySelector(".qface"), img = f && f.querySelector("img"); if (!img) return;
+  const fit = () => {
+    f.style.left = "0px";
+    const right = f.getBoundingClientRect().left + img.offsetLeft + img.offsetWidth, lim = qEl.getBoundingClientRect().right;
+    if (right > lim) f.style.left = `${lim - right}px`;
+  };
+  fit(); if (!img.complete) img.addEventListener("load", fit, {once: true});
+}
 function qfTake() { const n = ROT_HAPPY[qfNext]; qfNext = (qfNext + 1) % ROT_HAPPY.length; return n; }
 // on：出すかどうか。happy：うれしい3つだけにする。出しはじめの顔は、その組の中からランダム
 function rotFace(on, happy = false) {
@@ -1952,7 +1964,7 @@ function afterAnswer(ok, html, opt = {}) {
     sndOk();
     // 正解のときは、問題文の最後（？のすぐ右）にサッ記マンの超笑顔を小さく出す
     const qEl = sheet.querySelector(".ask .q");
-    if (qEl && !qEl.querySelector(".qface")) qEl.insertAdjacentHTML("beforeend", `\u2060<span class="qface" aria-hidden="true"><img src="${qfUrl(qfTake())}" alt=""></span>`);
+    if (qEl && !qEl.querySelector(".qface")) { qEl.insertAdjacentHTML("beforeend", `\u2060<span class="qface" aria-hidden="true"><img src="${qfUrl(qfTake())}" alt=""></span>`); placeQFace(qEl); }
     if (q.hint) quiz.combo = 0; else { quiz.combo++; quiz.maxCombo = Math.max(quiz.maxCombo, quiz.combo); }
     if (quiz.combo >= 2) { combo.textContent = `${quiz.combo}れんぞく！`; combo.hidden = false; combo.classList.remove("pop"); void combo.offsetWidth; combo.classList.add("pop"); }
     else combo.hidden = true;
