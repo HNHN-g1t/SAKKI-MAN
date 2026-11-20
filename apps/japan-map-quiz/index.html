@@ -132,20 +132,17 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 /* 全国の挑戦：ピンチで拡大できることを教える。指を広げる手の絵＋「かくだい」（点滅は、ぼかさず・透けさせず、パッと消えてパッと出る）。
    ある程度拡大したら消し、最初の大きさまで戻したらまた出す（pinchGuide） */
 .pinchg{position:absolute;right:calc(var(--s16) + env(safe-area-inset-right,0px));bottom:calc(var(--r-sheet) + var(--s32) + var(--s8) + 64px + var(--s16));
-  width:76px;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;z-index:2}
+  width:76px;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;z-index:2}
 .pinchg[hidden]{display:none}
 .pinchg svg{width:68px;height:68px;overflow:visible}
-.pinchg .pg-index rect,.pinchg .pg-thumb rect,.pinchg .pg-palm{fill:var(--paper);stroke:var(--ink);stroke-width:2.5;stroke-linejoin:round}
-.pinchg .pg-crease{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round}
+.pinchg .pg-index rect,.pinchg .pg-thumb rect,.pinchg .pg-palm,.pinchg .pg-curl{fill:var(--paper);stroke:var(--ink);stroke-width:2.5;stroke-linejoin:round}
 .pinchg .pg-arrow{fill:none;stroke:var(--brand);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
-.pinchg .pg-index{animation:pgIndex 1.4s ease-in-out infinite}
-.pinchg .pg-thumb{animation:pgThumb 1.4s ease-in-out infinite}
-@keyframes pgIndex{0%,15%{transform:translate(6px,6px)}55%,100%{transform:translate(-3px,-3px)}}
-@keyframes pgThumb{0%,15%{transform:translate(7px,-3px)}55%,100%{transform:translate(-4px,2px)}}
+/* 手：人さし指と親指は、根元を支点に角度だけを開閉する（SVG の animateTransform）。中指・薬指は折り曲げて、人さし指のとなりの角丸。
+   矢印は指先が開く向きに沿った弧 */
 .pinchg span{font-family:var(--display);font-size:var(--fs16);color:var(--on-brand);background:var(--brand);border:var(--bw) solid var(--ink);border-radius:var(--r-pill);padding:1px 10px;white-space:nowrap;
   animation:pgBlink 1s steps(1,end) infinite}
 @keyframes pgBlink{0%{visibility:visible}65%{visibility:hidden}}
-@media (prefers-reduced-motion:reduce){.pinchg .pg-index,.pinchg .pg-thumb,.pinchg span{animation:none}}
+@media (prefers-reduced-motion:reduce){.pinchg span{animation:none}}
 .dbgdock{position:absolute;left:50%;top:var(--s8);transform:translateX(-50%);z-index:2;display:flex;gap:4px;opacity:.38}
 .dbgdock:hover,.dbgdock:has(.dbg-on){opacity:.7}
 .dbgdock .dbgbox{display:flex;gap:4px}
@@ -491,13 +488,14 @@ svg:not(.explore) .region-line{display:none}
     <div class="rotface" id="rotface" aria-hidden="true"><img alt=""></div>
     <div class="pinchg" id="pinchg" aria-hidden="true" hidden>
       <svg viewBox="0 0 90 90">
-        <path class="pg-arrow" d="M17 15 7 5M7 5h9M7 5v9"/>
-        <path class="pg-arrow" d="M12 81 2 86M2 86l8 3M2 86l4-8"/>
-        <g class="pg-index"><rect x="-6.5" y="-38" width="13" height="42" rx="6.5" transform="translate(54 47) rotate(-45)"/></g>
-        <g class="pg-thumb"><rect x="-6.5" y="-36" width="13" height="38" rx="6.5" transform="translate(52 63) rotate(-114)"/></g>
-        <path class="pg-palm" d="M46 46 Q52 38 62 40 L80 46 Q88 50 86 60 L82 76 Q78 86 66 85 L54 83 Q42 79 44 66 Z"/>
-        <path class="pg-crease" d="M66 48 Q74 50 80 53M64 57 Q72 59 79 62M62 66 Q69 68 76 70"/>
-      </svg>
+        <path class="pg-arrow" d="M12.7 23.7 A44 44 0 0 1 32.1 6.8M28.4 12.8 L32.1 6.8 L25.2 5.5"/>
+        <path class="pg-arrow" d="M15.5 75.7 A34 34 0 0 0 26.1 89.8M19.1 89.4 L26.1 89.8 L23.9 83.1"/>
+        <g transform="translate(47 63)"><g class="pg-thumb"><rect x="-6.5" y="-30" width="13" height="36" rx="6.5"/><animateTransform attributeName="transform" type="rotate" values="-80;-80;-125;-125" keyTimes="0;.15;.55;1" keySplines=".4 0 .2 1;.4 0 .2 1;.4 0 .2 1" calcMode="spline" dur="1.4s" repeatCount="indefinite"/></g></g>
+        <g transform="translate(50 47)"><g class="pg-index"><rect x="-6.5" y="-36" width="13" height="42" rx="6.5"/><animateTransform attributeName="transform" type="rotate" values="-100;-100;-45;-45" keyTimes="0;.15;.55;1" keySplines=".4 0 .2 1;.4 0 .2 1;.4 0 .2 1" calcMode="spline" dur="1.4s" repeatCount="indefinite"/></g></g>
+        <rect class="pg-palm" x="45" y="44" width="36" height="38" rx="12"/>
+        <rect class="pg-curl" x="56" y="37" width="13" height="19" rx="6.5"/>
+        <rect class="pg-curl" x="67" y="40" width="13" height="18" rx="6.5"/>
+        </svg>
       <span>かくだい</span>
     </div>
     <div class="dbgdock" id="dbgdock"></div>
@@ -1430,6 +1428,8 @@ function zoomArea(id){ fitBox(unionBox(AREAS.find(a => a.id === id).codes)); }
 
 /* 全国の挑戦のピンチの案内：最初の大きさから1.6倍より拡大したら消し、1.1倍以内に戻したらまた出す（あいだは今のまま） */
 const pinchEl = document.getElementById("pinchg");
+// 動きを減らす設定では、指を開いた形で止める
+if (matchMedia("(prefers-reduced-motion: reduce)").matches) { const g = pinchEl.querySelector("svg"); g.pauseAnimations(); g.setCurrentTime(0.9); }
 let pinchOn = false;
 function pinchGuide(force) {
   const wide = mode === "quiz" && quiz && quiz.area && quiz.area.wide;
