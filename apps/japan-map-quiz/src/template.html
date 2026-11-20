@@ -163,6 +163,8 @@ svg#map:active{cursor:grabbing}
 .pref{fill:var(--cream);stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;transition:fill .25s}
 /* ホーム：⓪まだの県はグレー → ①地方の3段階（A白・Bクリーム・C淡い黄）→ ②③色が濃くなる（data-lv＝正解したコースの数） */
 .explore .pref{fill:var(--land-none)}
+/* 湖（琵琶湖）：県の上に海と同じ色で重ね、輪郭を県境と同じ線で描く。タップは下の県に通す */
+.lake{fill:var(--sea);stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;pointer-events:none}
 .explore .pref:not([data-lv="0"]):is([data-r="1"],[data-r="4"],[data-r="7"]){fill:var(--tier-a)}
 .explore .pref:not([data-lv="0"]):is([data-r="2"],[data-r="5"]){fill:var(--tier-b)}
 .explore .pref:not([data-lv="0"]):is([data-r="3"],[data-r="6"]){fill:var(--tier-c)}
@@ -428,6 +430,7 @@ svg:not(.explore) .region-line{display:none}
     <svg id="map" class="explore" viewBox="0 0 880 980" preserveAspectRatio="xMidYMid meet" aria-label="日本地図">
       <g id="prefs"></g>
       <g id="regions"></g>
+      <g id="lakes"></g>
       <g id="terrain"></g>
       <g id="insetg"><polyline class="inset" points="-100000,712 -11,712 -11,800 52,884 52,100000"></polyline></g>
       <g class="labels" id="labels"></g>
@@ -1210,6 +1213,14 @@ PATHS.forEach(o => {
   const t = document.createElementNS(NS, "text");
   t.setAttribute("x", o.l[0]); t.setAttribute("y", o.l[1]); t.textContent = byCode(o.c).short;
   gLabels.appendChild(t); labelEl[o.c] = t;
+});
+
+/* 湖（tools/build_lakes.py が data/lakes.json に書き出す）。県名ラベルは湖の上に乗らないよう陸へ移す */
+const LAKES = __LAKES__;
+LAKES.forEach(o => {
+  const p = document.createElementNS(NS, "path"); p.setAttribute("d", o.d); p.setAttribute("class", "lake");
+  document.getElementById("lakes").appendChild(p);
+  if (o.l && labelEl[o.c]) { labelEl[o.c].setAttribute("x", o.l[0]); labelEl[o.c].setAttribute("y", o.l[1]); }
 });
 
 /* ---------- 沖縄：全国表示では左下の枠に、九州へ寄ると本当の位置に ---------- */

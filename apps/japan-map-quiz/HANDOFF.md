@@ -26,6 +26,7 @@ japan-map-quiz/
     ├─ extract.py      元データ → jp_raw.json
     ├─ build_paths.py  jp_raw.json → paths.json（投影・簡略化・島の取捨・沖縄の枠用コピー）
     ├─ build_cities.py 総務省の市区町村コード一覧で名前・所属・よみを照合 → cities.json
+    ├─ build_lakes.py  Natural Earth の湖（ne_10m_lakes）から琵琶湖 → data/lakes.json（投影は build_paths と同じ）
     ├─ preview.py      paths.json を PNG で確認（matplotlib）
     └─ build.py        template.html ＋ paths.json ＋ cities.json → index.html
 ```
@@ -60,6 +61,13 @@ y = (45.8 - 緯度) × 60
 | `l` | 県名ラベルの位置（一番大きい島の内側の点） |
 | `b` | ズーム用の範囲 [x0,y0,x1,y1]。一番大きい島だけで計算（離島で範囲が広がらないように） |
 | `di` `li` `bi` | 沖縄（c=47）だけ。左下の枠に置くコピーのパス・ラベル位置・範囲 |
+
+### 湖（琵琶湖）
+
+- `data/lakes.json`（`tools/build_lakes.py <ne_10m_lakes.geojson>` で作る。入手先は build_lakes.py の先頭）。`build.py` が `__LAKES__` に埋め込む
+- `#lakes`（`#regions` の上・`#terrain` の下）に `.lake` で重ねる。中は海と同じ `--sea`、輪郭は県境と同じ墨の線。`pointer-events:none` なので、湖をタップしても滋賀県として答えられる。県を黄色にしても湖は海の色のまま
+- 滋賀の県名ラベルは湖の上に乗るので、湖を除いた陸の一番広い所（polylabel、[398.8, 646.1]）へ移す（lakes.json の `l`）
+- 滋賀のピン（大津市役所・安土城・彦根城）はどれも湖の外にあることを確かめた（岸から 0.2〜3px）
 
 ### 島の取捨（`keep()`）
 
