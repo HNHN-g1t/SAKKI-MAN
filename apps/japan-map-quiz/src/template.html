@@ -129,6 +129,23 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .rotface{position:absolute;left:calc(var(--s16) + env(safe-area-inset-left,0px));top:44px;width:calc(84px * 189 / 216);height:84px;z-index:1;pointer-events:none}
 .rotface[hidden]{display:none}
 .rotface img{display:block;width:100%;height:100%}
+/* 全国の挑戦：ピンチで拡大できることを教える。指を広げる手の絵＋「かくだい」（点滅は、ぼかさず・透けさせず、パッと消えてパッと出る）。
+   ある程度拡大したら消し、最初の大きさまで戻したらまた出す（pinchGuide） */
+.pinchg{position:absolute;right:calc(var(--s16) + env(safe-area-inset-right,0px));bottom:calc(var(--r-sheet) + var(--s32) + var(--s8) + 64px + var(--s16));
+  width:76px;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;z-index:2}
+.pinchg[hidden]{display:none}
+.pinchg svg{width:68px;height:68px;overflow:visible}
+.pinchg .pg-index rect,.pinchg .pg-thumb rect,.pinchg .pg-palm{fill:var(--paper);stroke:var(--ink);stroke-width:2.5;stroke-linejoin:round}
+.pinchg .pg-crease{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round}
+.pinchg .pg-arrow{fill:none;stroke:var(--brand);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+.pinchg .pg-index{animation:pgIndex 1.4s ease-in-out infinite}
+.pinchg .pg-thumb{animation:pgThumb 1.4s ease-in-out infinite}
+@keyframes pgIndex{0%,15%{transform:translate(6px,6px)}55%,100%{transform:translate(-3px,-3px)}}
+@keyframes pgThumb{0%,15%{transform:translate(7px,-3px)}55%,100%{transform:translate(-4px,2px)}}
+.pinchg span{font-family:var(--display);font-size:var(--fs16);color:var(--on-brand);background:var(--brand);border:var(--bw) solid var(--ink);border-radius:var(--r-pill);padding:1px 10px;white-space:nowrap;
+  animation:pgBlink 1s steps(1,end) infinite}
+@keyframes pgBlink{0%{visibility:visible}65%{visibility:hidden}}
+@media (prefers-reduced-motion:reduce){.pinchg .pg-index,.pinchg .pg-thumb,.pinchg span{animation:none}}
 .dbgdock{position:absolute;left:50%;top:var(--s8);transform:translateX(-50%);z-index:2;display:flex;gap:4px;opacity:.38}
 .dbgdock:hover,.dbgdock:has(.dbg-on){opacity:.7}
 .dbgdock .dbgbox{display:flex;gap:4px}
@@ -472,6 +489,17 @@ svg:not(.explore) .region-line{display:none}
     <div class="clearmsg" id="clearmsg" hidden><span></span></div>
     <div class="toast" id="toast" role="status" hidden></div>
     <div class="rotface" id="rotface" aria-hidden="true"><img alt=""></div>
+    <div class="pinchg" id="pinchg" aria-hidden="true" hidden>
+      <svg viewBox="0 0 90 90">
+        <path class="pg-arrow" d="M17 15 7 5M7 5h9M7 5v9"/>
+        <path class="pg-arrow" d="M12 81 2 86M2 86l8 3M2 86l4-8"/>
+        <g class="pg-index"><rect x="-6.5" y="-38" width="13" height="42" rx="6.5" transform="translate(54 47) rotate(-45)"/></g>
+        <g class="pg-thumb"><rect x="-6.5" y="-36" width="13" height="38" rx="6.5" transform="translate(52 63) rotate(-114)"/></g>
+        <path class="pg-palm" d="M46 46 Q52 38 62 40 L80 46 Q88 50 86 60 L82 76 Q78 86 66 85 L54 83 Q42 79 44 66 Z"/>
+        <path class="pg-crease" d="M66 48 Q74 50 80 53M64 57 Q72 59 79 62M62 66 Q69 68 76 70"/>
+      </svg>
+      <span>かくだい</span>
+    </div>
     <div class="dbgdock" id="dbgdock"></div>
     <button class="eye" id="eye" type="button" aria-label="押している間だけ県名を表示">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
@@ -1368,20 +1396,24 @@ function apply() {
   svg.classList.toggle("zooms-off", view.w < 330);
   zoomEls.forEach(g => g.setAttribute("transform", `translate(${g.dataset.x} ${g.dataset.y}) scale(${s})`));
   if (typeof placePin === "function") placePin();
+  if (typeof pinchGuide === "function") pinchGuide();
 }
 function setView(x, y, w) {
   const b = box(); w = Math.max(70, Math.min(1400, w));
   view = {x, y, w, h: w * b.h / b.w}; apply();
 }
 let fitToken = 0;
-function fitBox(bb, animate=true) {
-  // 右下の目ボタンにかからないよう、下を少しあけて合わせる
+// 範囲 bb を画面に合わせたときの表示（右下の目ボタンにかからないよう、下を少しあけて合わせる）
+function fitTarget(bb) {
   const b = box(), R = Math.min(40, b.h * 0.1), ar = b.w / (b.h - R), pad = 0.06;
   let w = bb[2]-bb[0], h = bb[3]-bb[1];
   w *= 1+pad*2; h *= 1+pad*2;
   if (w / h < ar) w = h * ar;
   const cx = (bb[0]+bb[2])/2, cy = (bb[1]+bb[3])/2, Hfree = w / ar;
-  const target = {x: cx - w/2, y: cy - Hfree/2, w};
+  return {x: cx - w/2, y: cy - Hfree/2, w};
+}
+function fitBox(bb, animate=true) {
+  const target = fitTarget(bb);
   const token = ++fitToken;   // 新しい移動が始まったら、前の移動アニメは止める
   if (!animate || matchMedia("(prefers-reduced-motion: reduce)").matches) return setView(target.x, target.y, target.w);
   const from = {...view}, t0 = performance.now(), D = 420;
@@ -1395,6 +1427,17 @@ function fitBox(bb, animate=true) {
 const unionBox = codes => codes.reduce((a,c) => { const b = boxOf[c]; return [Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[2],b[2]),Math.max(a[3],b[3])]; }, [1e9,1e9,-1e9,-1e9]);
 let homeBox = FULL;
 function zoomArea(id){ fitBox(unionBox(AREAS.find(a => a.id === id).codes)); }
+
+/* 全国の挑戦のピンチの案内：最初の大きさから1.6倍より拡大したら消し、1.1倍以内に戻したらまた出す（あいだは今のまま） */
+const pinchEl = document.getElementById("pinchg");
+let pinchOn = false;
+function pinchGuide(force) {
+  const wide = mode === "quiz" && quiz && quiz.area && quiz.area.wide;
+  if (!wide) { pinchOn = false; pinchEl.hidden = true; return; }
+  const zoom = fitTarget(FULL).w / view.w;
+  if (force || zoom <= 1.1) pinchOn = true; else if (zoom > 1.6) pinchOn = false;
+  pinchEl.hidden = !pinchOn;
+}
 
 /* ---------- ページ全体の拡大を止める ----------
    iPhone の Safari は viewport の拡大禁止を無視するので、ジェスチャーと2本指の動きを地図の外では止める。
@@ -1711,7 +1754,7 @@ function placeDbg() {
 // ホーム系の画面（モード選択・コース一覧・コース）に共通：地図をコレクションの色で見せ、県をさわると名前を出す
 function toHomeScreen(box = FULL) {
   cancelQuizTimers(); eyeOff(); clearNextTri();
-  mode = "home"; bgmStop(); quiz = null; selected = null; clearTag(); combo.hidden = true; clearmsg.hidden = true; pbar.innerHTML = ""; showFeature(null); showChart(null); showPin(null);
+  mode = "home"; pinchGuide(); bgmStop(); quiz = null; selected = null; clearTag(); combo.hidden = true; clearmsg.hidden = true; pbar.innerHTML = ""; showFeature(null); showChart(null); showPin(null);
   JapanMap.resetColors(); svg.classList.add("explore"); svg.classList.remove("region-quiz");
   Object.values(labelEl).forEach(t => t.classList.remove("off"));
   const lv = prefLevels();
@@ -1830,10 +1873,10 @@ function startQuiz(course, area, codes, opts={}) {
   cancelQuizTimers(); eyeOff();
   const type = QUIZ_TYPES[course.id];
   sheet.classList.remove("home"); sheet.classList.add("inquiz"); rotFace(false); freshShown = ""; qfNext = Math.floor(Math.random() * ROT_HAPPY.length); showFeature(null);
-  mode = "quiz"; selected = null; clearTag(); clearmsg.hidden = true; bgmStop(); bgmPick(); bgmStart(); JapanMap.resetColors(); svg.classList.remove("explore");
+  mode = "quiz"; selected = null; pinchOn = false; clearTag(); clearmsg.hidden = true; bgmStop(); bgmPick(); bgmStart(); JapanMap.resetColors(); svg.classList.remove("explore");
   const inArea = new Set(area.codes);
   PREFS.forEach(p => { pathEl[p.code].classList.toggle("off", !inArea.has(p.code)); labelEl[p.code].classList.toggle("off", !inArea.has(p.code)); });
-  homeBox = area.wide ? FULL : unionBox(area.codes); fitLater(homeBox);
+  homeBox = area.wide ? FULL : unionBox(area.codes); fitLater(homeBox); pinchGuide();
   svg.classList.toggle("region-quiz", !area.wide);
   let qs = type.make(codes, area);
   if (opts.keys) qs = qs.filter(q => opts.keys.includes(q.key));
@@ -2125,7 +2168,7 @@ function result() {
   pbar.innerHTML = ""; showFeature(null); showChart(null); showPin(null);
   // 正解した県の色は、途中の遅延処理が取り消されても結果画面で付けそろえる
   quiz.log.forEach(l => l.ok && l.tap && pathEl[l.pref].classList.add("ok"));
-  mode = "result"; bgmStop(); combo.hidden = true; clearTag();
+  mode = "result"; pinchGuide(); bgmStop(); combo.hidden = true; clearTag();
   const course = quiz.course, total = quiz.qs.length, correct = quiz.log.filter(l => l.ok).length, clean = quiz.log.filter(l => l.ok && !l.hint).length;
   const missed = quiz.log.filter(l => !l.ok);
   rotFace(true, total > 0 && correct / total >= 0.8);   // 8割以上〜パーフェクトなら、うれしい顔だけ
