@@ -1457,9 +1457,9 @@ const clearTag = () => gTag.innerHTML = "";
 
 /* ---------- 画面 ---------- */
 // 地図の左上で表情を1秒ごとに切りかえる（同じ顔が続かないように、いまの顔以外から選ぶ）
-// ふだんは7つの表情。ドリルの結果が8割以上のときは、うれしい3つ（笑顔・超笑顔・ニヤリ）だけ
+// ふだんは6つの表情（がっかりは使わない）。ドリルの結果が8割以上のときは、うれしい3つ（笑顔・超笑顔・ニヤリ）だけ
 const faceUrl = n => `img/fx-${n}.webp?v=2`;
-const ROT_ALL = ["majime","egao","super","niyari","odoroki","gakkari","ikari"], ROT_HAPPY = ["egao","super","niyari"];
+const ROT_ALL = ["majime","egao","super","niyari","odoroki","ikari"], ROT_HAPPY = ["egao","super","niyari"];
 ROT_ALL.forEach(n => { const i = new Image(); i.src = faceUrl(n); });
 const rotEl = document.getElementById("rotface"), rotImg = rotEl.querySelector("img");
 let rotSet = ROT_ALL, rotNow = "", rotTimer = 0;
