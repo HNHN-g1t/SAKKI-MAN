@@ -365,10 +365,11 @@ svg:not(.explore) .region-line{display:none}
 /* まだ一度も挑戦していないステージ：「つぎへ」の三角と同じキラッ（太・細2本のななめの帯。ぼかさず、くっきり）が、
    角丸の中いっぱいを文字の上もふくめて左から右へ横切る。帯は加算（plus-lighter）で重ねて光らせる。テンポは「つぎへ」の2倍（0.865秒） */
 .chip.zero{position:relative;overflow:hidden;isolation:isolate}
-.chip.zero::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:inherit;
+.chip.zero::after{content:"";position:absolute;top:-50%;bottom:-50%;left:0;right:0;z-index:2;pointer-events:none;
   background:linear-gradient(114deg,transparent 0 calc(50% - 26px),var(--zero-shine) calc(50% - 26px) calc(50% - 6px),transparent calc(50% - 6px) calc(50% + 4px),var(--zero-shine) calc(50% + 4px) calc(50% + 11px),transparent calc(50% + 11px));
   mix-blend-mode:screen;mix-blend-mode:plus-lighter;transform:translateX(-100%);animation:chipShine .865s cubic-bezier(.25,.1,.4,1) infinite}
-/* 帯はチップの左の外から出て、すぐ右の外へ抜ける（左はしで止まって見えない）。抜けたあとは外で待つ */
+/* 帯はチップの左の外から出て、すぐ右の外へ抜ける（左はしで止まって見えない）。抜けたあとは外で待つ。
+   帯を描く疑似要素は角を丸めず、上下にはみ出させておく（帯の端がチップの中で切れないように）。切りぬくのはチップの角丸（overflow:hidden）だけ */
 @keyframes chipShine{0%{transform:translateX(-100%)}55%,100%{transform:translateX(100%)}}
 @media (prefers-reduced-motion:reduce){.chip.zero::after{animation:none;display:none}}
 @media (prefers-reduced-motion:reduce){.course.fresh,.chip.fresh{animation:none;box-shadow:0 0 0 2px var(--brand),0 0 10px 2px var(--brand)}}
