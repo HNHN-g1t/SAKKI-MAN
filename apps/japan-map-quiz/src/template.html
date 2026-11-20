@@ -1457,14 +1457,20 @@ const clearTag = () => gTag.innerHTML = "";
 
 /* ---------- 画面 ---------- */
 // 地図の左上で表情を1秒ごとに切りかえる（同じ顔が続かないように、いまの顔以外から選ぶ）
-const ROT_FACES = ["majime","egao","super","niyari","odoroki","gakkari","ikari"].map(n => `img/fx-${n}.webp?v=2`);
-ROT_FACES.forEach(u => { const i = new Image(); i.src = u; });
+// ふだんは7つの表情。問題に正解したときと、ドリルの結果が8割以上のときは、うれしい3つ（笑顔・超笑顔・ニヤリ）だけ
+const faceUrl = n => `img/fx-${n}.webp?v=2`;
+const ROT_ALL = ["majime","egao","super","niyari","odoroki","gakkari","ikari"], ROT_HAPPY = ["egao","super","niyari"];
+ROT_ALL.forEach(n => { const i = new Image(); i.src = faceUrl(n); });
 const rotEl = document.getElementById("rotface"), rotImg = rotEl.querySelector("img");
-let rotNow = -1, rotTimer = 0;
-function rotStep() { let k; do k = Math.floor(Math.random() * ROT_FACES.length); while (k === rotNow); rotNow = k; rotImg.src = ROT_FACES[k]; }
-function rotFace(on) {
-  rotEl.hidden = !on; clearInterval(rotTimer); rotTimer = 0;
-  if (on) { if (rotNow < 0) rotStep(); rotTimer = setInterval(rotStep, 1000); }
+let rotSet = ROT_ALL, rotNow = "", rotTimer = 0;
+function rotStep() { let n; do n = rotSet[Math.floor(Math.random() * rotSet.length)]; while (n === rotNow); rotNow = n; rotImg.src = faceUrl(n); }
+// on：出すかどうか。happy：うれしい3つだけにする。出しはじめの顔は、その組の中からランダム
+function rotFace(on, happy = false) {
+  clearInterval(rotTimer); rotTimer = 0;
+  const set = happy ? ROT_HAPPY : ROT_ALL;
+  if (on && !rotEl.hidden && set === rotSet && rotNow) { rotTimer = setInterval(rotStep, 1000); return; }
+  rotEl.hidden = !on; rotSet = set; rotNow = "";
+  if (on) { rotStep(); rotTimer = setInterval(rotStep, 1000); }
 }
 const top_ = document.getElementById("top"), sheet = document.getElementById("sheet"), combo = document.getElementById("combo"), clearmsg = document.getElementById("clearmsg");
 let mode = "home", quiz = null, selected = null;
@@ -1786,7 +1792,7 @@ function askText(q) {
 const askBlock = () => { const t = askText(quiz.q); return `<div class="ask"><span class="q${quiz.q.text.replace(/<[^>]+>/g, "").length > 18 ? " long" : ""}">${t.html}</span>${t.under ? `<span class="kana">${t.under}</span>` : ""}</div>`; };
 
 function nextQ() {
-  eyeOff(); clearTag(); clearNextTri();
+  eyeOff(); clearTag(); clearNextTri(); rotFace(false);
   if (quiz.i >= quiz.qs.length) return result();
   const q = quiz.q = quiz.qs[quiz.i]; q.hint = false; quiz.answered = false;
   // 出題文はどのコースも下段（シート）に置き、上のバーには進み具合だけを出す。4択は出題文のすぐ下に選択肢
@@ -1900,6 +1906,7 @@ function afterAnswer(ok, html, opt = {}) {
     sndOk();
     // 正解のときは、問題文の最後（？のすぐ右）にサッ記マンの超笑顔を小さく出す
     const qEl = sheet.querySelector(".ask .q");
+    rotFace(true, true);   // 地図の左上にも、うれしい顔（笑顔・超笑顔・ニヤリ）を切りかえて出す。次の問題で消える
     if (qEl && !qEl.querySelector(".qface")) qEl.insertAdjacentHTML("beforeend", `\u2060<span class="qface" aria-hidden="true"><img src="img/face-super.webp?v=3" alt=""></span>`);
     if (q.hint) quiz.combo = 0; else { quiz.combo++; quiz.maxCombo = Math.max(quiz.maxCombo, quiz.combo); }
     if (quiz.combo >= 2) { combo.textContent = `${quiz.combo}れんぞく！`; combo.hidden = false; combo.classList.remove("pop"); void combo.offsetWidth; combo.classList.add("pop"); }
@@ -2027,7 +2034,7 @@ function generalLabel(l) {
 }
 
 function result() {
-  sheet.classList.remove("inquiz"); rotFace(true);
+  sheet.classList.remove("inquiz");
   cancelQuizTimers(); eyeOff(); clearNextTri();
   Object.values(pathEl).forEach(p => p.classList.remove("flash-ok", "flash-ng", "reveal"));
   pbar.innerHTML = ""; showFeature(null); showChart(null); showPin(null);
@@ -2036,6 +2043,7 @@ function result() {
   mode = "result"; bgmStop(); combo.hidden = true; clearTag();
   const course = quiz.course, total = quiz.qs.length, correct = quiz.log.filter(l => l.ok).length, clean = quiz.log.filter(l => l.ok && !l.hint).length;
   const missed = quiz.log.filter(l => !l.ok);
+  rotFace(true, total > 0 && correct / total >= 0.8);   // 8割以上〜パーフェクトなら、うれしい顔だけ
   const r = rec(quiz.modeId, course.id);
   const before = COURSES.filter(c => c.ready && inMode(c) && !unlocked(c)).map(c => c.id);
   let newMaster = null, newStage = false;
