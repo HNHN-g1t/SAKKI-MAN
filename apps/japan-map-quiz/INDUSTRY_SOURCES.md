@@ -1,6 +1,6 @@
 # 農林水産業・工業コース 問題データの出典一覧
 
-`src/template.html` の `INDUSTRY` から作った一覧（最終確認日 2026-11-02）。データを直したら作り直す。
+`src/template.html` の `INDUSTRY` から作った一覧（最終確認日 2026-11-02、九州の10問は 2026-11-20 に追加）。データを直したら作り直す。
 
 - 確認済み：答え・統計年・出典を国や県などの公式資料で確認した（出題する）
 - 要確認：答えは確認済みだが、最新の年次などに確認が残る（出題する）
@@ -23,6 +23,12 @@
 | konjac | こんにゃくいもの収穫量が全国一の都道府県は？ | 群馬県 | こんにゃくいもの収穫量 | 令和6年産 | [農林水産省「こんにゃくをめぐる事情」（令和7年7月）](https://www.maff.go.jp/j/seisan/tokusan/attach/pdf/konnyaku-17.pdf) | 確認済み |
 | sugarcane | さとうきびの収穫量が全国一の都道府県は？ | 沖縄県 | さとうきびの収穫量 | 令和5年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-47.pdf) | 確認済み |
 | chrysanthemum | 菊（切り花）の出荷量が全国一の都道府県は？（令和6年産） | 愛知県 | きく（切り花）の出荷量 | 令和6年産 | [農林水産省「令和6年産花きの作付（収穫）面積及び出荷量」](https://www.maff.go.jp/j/tokei/kekka_gaiyou/sakumotu/sakkyou_kaki/sakutuke/r6/index.html) | 確認済み |
+| tomato | トマトの収穫量が全国一の都道府県は？ | 熊本県 | トマトの収穫量 | 令和5年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-43.pdf) | 確認済み |
+| suika | すいかの収穫量が全国一の都道府県は？ | 熊本県 | すいかの収穫量 | 令和5年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-43.pdf) | 確認済み |
+| igusa | たたみ表の原料、い草の収穫量が全国一の都道府県は？ | 熊本県 | い（い草）の収穫量 | 令和5年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-43.pdf) | 確認済み |
+| cucumber | きゅうりの収穫量が全国一の都道府県は？ | 宮崎県 | きゅうりの収穫量 | 令和6年産 | [九州農政局宮崎県拠点「てげ がんばっちょる 宮崎の農業」（令和8年4月）](https://www.maff.go.jp/kyusyu/miyazaki/attach/pdf/250528_tege-3.pdf) | 確認済み |
+| satsumaimo | さつまいもの収穫量が全国一の都道府県は？ | 鹿児島県 | かんしょ（さつまいも）の収穫量 | 令和6年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-46.pdf) | 確認済み |
+| tea | 茶（荒茶）の生産量が全国一の都道府県は？（令和6年産） | 鹿児島県 | 荒茶の生産量 | 令和6年産（それまでは静岡県が1位） | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-46.pdf) | 確認済み |
 
 ## くだもの
 
@@ -37,6 +43,8 @@
 | ume | うめの収穫量が全国一の都道府県は？ | 和歌山県 | うめの収穫量 | 令和7年産 | [農林水産省「作物統計調査 令和7年産びわ、おうとう、うめの栽培面積、結果樹面積、収穫量及び出荷量」](https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_biwa_25.pdf) | 確認済み |
 | melon | メロンの収穫量が全国一の都道府県は？ | 茨城県 | メロンの収穫量 | 令和5年産 | [関東農政局茨城県拠点「茨城県のメロン生産」（令和7年10月）](https://www.maff.go.jp/kanto/chiikinet/ibaraki/ibarakitokei_bunnseki/attach/pdf/ibarakibunseki-3.pdf) | 確認済み |
 | pineapple | パイナップルの収穫量が全国一の都道府県は？ | 沖縄県 | パインアップルの収穫量 | 令和5年産 | [農林水産省「令和5年産パインアップルの収穫面積、収穫量及び出荷量（沖縄県）」](https://www.maff.go.jp/j/tokei/kekka_gaiyou/sakumotu/sakkyou_kajyu/paineapp/r5/index.html) | 確認済み |
+| dekopon | デコポン（不知火）の収穫量が全国一の都道府県は？ | 熊本県 | 不知火の収穫量 | 未確認（令和7年版の概要に掲載の年次） | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-43.pdf) | 要確認 |
+| biwa | びわの収穫量が全国一の都道府県は？ | 長崎県 | びわの収穫量 | 令和7年産 | [農林水産省「作物統計調査 令和7年産びわ、おうとう、うめの栽培面積、結果樹面積、収穫量及び出荷量」](https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_biwa_25.pdf) | 確認済み |
 
 ## 畜産・林業・水産業
 
@@ -44,6 +52,7 @@
 |---|---|---|---|---|---|---|
 | dairy | 乳牛（乳用牛）の飼育頭数が全国一の都道府県は？ | 北海道 | 乳用牛の飼養頭数 | 令和7年2月1日現在 | [農林水産省「畜産統計」（鹿児島県「鹿児島県畜産の概要」の全国表で確認）](http://www.pref.kagoshima.jp/ag07/sangyo-rodo/nogyo/tikusan/basic/gaiyou.html) | 確認済み |
 | pig | 豚の飼育頭数が全国一の都道府県は？ | 鹿児島県 | 豚の飼養頭数 | 令和7年2月1日現在 | [鹿児島県「豚に関する情報」（農林水産省「畜産統計」より）](https://www.pref.kagoshima.jp/ag07/sangyo-rodo/nogyo/tikusan/tokei/buta.html) | 確認済み |
+| broiler | ブロイラー（肉用の若鶏）の飼育羽数が全国一の都道府県は？ | 鹿児島県 | ブロイラーの飼養羽数 | 令和6年2月1日現在 | [鹿児島県「畜産の概要」（農林水産省「畜産統計」より）](https://www.pref.kagoshima.jp/ag07/sangyo-rodo/nogyo/tikusan/basic/gaiyou.html) | 確認済み |
 | kiso | 木曽ひのき（天然の三大美林）がある都道府県は？ | 長野県 | 日本三大美林（天然林） | ― | [林野庁東北森林管理局「日本三大美林について」](https://www.rinya.maff.go.jp/tohoku/keikaku/sandaibirin.html) | 確認済み |
 | akita | 秋田すぎ（天然の三大美林）がある都道府県は？ | 秋田県 | 日本三大美林（天然林） | ― | [林野庁東北森林管理局「日本三大美林について」](https://www.rinya.maff.go.jp/tohoku/keikaku/sandaibirin.html) | 確認済み |
 | yoshino | 吉野すぎ（人工の三大美林）がある都道府県は？ | 奈良県 | 日本三大人工美林 | ― | [奈良県川上村「川上村のプロフィール」](https://www.vill.kawakami.nara.jp/life/docs/2017013100120/) | 確認済み |
@@ -82,3 +91,4 @@
 | bizen | 備前焼がつくられている都道府県は？ | 岡山県 | 伝統的工芸品の指定 | ― | [経済産業省「伝統的工芸品指定品目一覧［都道府県別］」（令和7年10月27日現在）](https://www.meti.go.jp/press/2025/10/20251027001/20251027001-b.pdf) | 確認済み |
 | arita | 伊万里・有田焼がつくられている都道府県は？ | 佐賀県 | 伝統的工芸品の指定 | ― | [九州経済産業局「九州の伝統的工芸品」](https://www.kyushu.meti.go.jp/seisaku/dento/210330pamphlet.pdf) | 確認済み |
 | hakata | 博多人形がつくられている都道府県は？ | 福岡県 | 伝統的工芸品の指定 | ― | [九州経済産業局「九州の伝統的工芸品」](https://www.kyushu.meti.go.jp/seisaku/dento/210330pamphlet.pdf) | 確認済み |
+| oshima | 本場大島紬がつくられている都道府県は？ | 鹿児島県 | 伝統的工芸品の指定 | ― | 経済産業省「伝統的工芸品指定品目一覧［都道府県別］」 | 確認済み |
