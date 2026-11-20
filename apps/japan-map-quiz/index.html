@@ -18,7 +18,7 @@
    --brand と --on-brand はダークでも変えない（黄色の上の文字は常に墨。白やクリームの上に黄色の文字は置かない） */
 :root{
   --brand:#FED003; --on-brand:#282727; --pin:#FF4FA3;
-  --tri-edge:#4A4745; --tri-shine:#FFF47E; --zero-shine:#FED003;   /* つぎへの三角：グレーのふちと文字（地は --brand。ダークでも同じ） */
+  --tri-edge:#4A4745; --tri-shine:#FFF47E; --zero-shine:#FFF47E;   /* つぎへの三角：グレーのふちと文字（地は --brand。ダークでも同じ） */
   --ink:#282727; --paper:#EEEDEA; --cream:#F4EBDF; --sea:#D3DDE2; --bg:#E2E1DD;   /* ライトは真っ白をやめ、目にやさしいライトグレー */
   --muted:#5A5654; --line-soft:#C7C4C0; --off:#DAD9D5;
   --ok:#1E7B45; --ng:#C23A2B; --on-strong:#FFFFFF; --ok-soft:#CBEBD6; --ng-soft:#F9D4CD;
@@ -362,15 +362,15 @@ svg:not(.explore) .region-line{display:none}
 @keyframes freshGlowWide{
   from{box-shadow:0 4px 0 var(--ink),0 0 4px 1px var(--brand)}
   to{box-shadow:0 4px 0 var(--ink),0 0 18px 5px var(--brand)}}
-/* まだ一度も挑戦していないステージ：「つぎへ」の三角と同じキラッ（太・細2本のななめの帯。ぼかさず、くっきり）が左から右へ横切る */
+/* まだ一度も挑戦していないステージ：「つぎへ」の三角と同じキラッ（太・細2本のななめの帯。ぼかさず、くっきり）が、
+   角丸の中いっぱいを文字の上もふくめて左から右へ横切る。帯は加算（plus-lighter）で重ねて光らせる。テンポは「つぎへ」の2倍（0.865秒） */
 .chip.zero{position:relative;overflow:hidden;isolation:isolate}
-.chip.zero>*{position:relative;z-index:1}
-.chip.zero::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
-  background:linear-gradient(114deg,transparent 0 14px,var(--zero-shine) 14px 32px,transparent 32px 40px,var(--zero-shine) 40px 46px,transparent 46px) no-repeat;
-  background-size:60px 100%;animation:chipShine 1.73s cubic-bezier(.25,.1,.4,1) infinite}
+.chip.zero::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(114deg,transparent 0 calc(50% - 26px),var(--zero-shine) calc(50% - 26px) calc(50% - 6px),transparent calc(50% - 6px) calc(50% + 4px),var(--zero-shine) calc(50% + 4px) calc(50% + 11px),transparent calc(50% + 11px));
+  mix-blend-mode:screen;mix-blend-mode:plus-lighter;transform:translateX(-100%);animation:chipShine .865s cubic-bezier(.25,.1,.4,1) infinite}
 /* 帯はチップの左の外から出て、すぐ右の外へ抜ける（左はしで止まって見えない）。抜けたあとは外で待つ */
-@keyframes chipShine{0%{background-position:-62px 0}55%,100%{background-position:calc(100% + 62px) 0}}
-@media (prefers-reduced-motion:reduce){.chip.zero::before{animation:none;display:none}}
+@keyframes chipShine{0%{transform:translateX(-100%)}55%,100%{transform:translateX(100%)}}
+@media (prefers-reduced-motion:reduce){.chip.zero::after{animation:none;display:none}}
 @media (prefers-reduced-motion:reduce){.course.fresh,.chip.fresh{animation:none;box-shadow:0 0 0 2px var(--brand),0 0 10px 2px var(--brand)}}
 .rules{margin:0;padding-left:1.2em;font-size:var(--fs14);color:var(--muted);font-weight:700;line-height:1.5}
 /* アイコン：文字と同じ大きさ。王冠はキーカラーの黄色に墨の細いふち（白地でも見える） */
