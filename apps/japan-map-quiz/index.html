@@ -72,9 +72,13 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 /* ふりがなは漢字の上（ruby） */
 .ask .q rt{font-size:min(.42em, calc(var(--fit, 1) * 1em));font-weight:700;color:var(--muted);letter-spacing:0}
 /* 正解のときの顔：問題文の「？」のすぐ右に、文字より少し大きく。ぽんと出る */
-.ask .q .qface{display:inline-block;height:1.5em;width:auto;margin-left:.15em;vertical-align:-.38em;animation:faceIn .35s cubic-bezier(.2,1.6,.4,1) 1}
+.ask .q .qface{display:inline-block;position:relative;width:calc(2.7em * 127 / 144);height:1em;margin-left:.12em;vertical-align:var(--face-base,-.1em)}
+/* 顔は前の1.8倍（高さ2.7em）。下は文字の底にそろえ、頭は行や問題のウインドウの上へあえて飛び出させる（行の高さは変えない） */
+.ask .q .qface img{position:absolute;left:0;bottom:0;height:2.7em;width:auto;transform-origin:50% 100%;animation:faceIn .35s cubic-bezier(.2,1.6,.4,1) 1}
 @keyframes faceIn{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
-@media (prefers-reduced-motion:reduce){.ask .q .qface{animation:none}}
+@media (prefers-reduced-motion:reduce){.ask .q .qface img{animation:none}}
+/* 問題中は、飛び出した顔が切れないようウインドウの外へもはみ出せるようにする */
+.sheet.inquiz{overflow:visible}
 .ask .q.long{font-size:var(--fs20)}
 .ask .q.shout{font-family:var(--display);font-weight:400;font-size:var(--fs20)}
 /* 県名だけ黄色のマーカー線（下半分） */
@@ -1625,7 +1629,7 @@ function toHomeScreen(box = FULL) {
   PREFS.forEach(p => pathEl[p.code].dataset.lv = lv[p.code]);
   okiCopy.dataset.lv = lv[47];
   homeBox = box; fitLater(box);
-  sheet.classList.add("home");
+  sheet.classList.remove("inquiz"); sheet.classList.add("home");
   return lv;
 }
 
@@ -1732,7 +1736,7 @@ function shuffle(a){ a = a.slice(); for (let i=a.length-1;i>0;i--){ const j = Ma
 function startQuiz(course, area, codes, opts={}) {
   cancelQuizTimers(); eyeOff();
   const type = QUIZ_TYPES[course.id];
-  sheet.classList.remove("home"); showFeature(null);
+  sheet.classList.remove("home"); sheet.classList.add("inquiz"); showFeature(null);
   mode = "quiz"; selected = null; clearTag(); clearmsg.hidden = true; bgmStop(); bgmPick(); bgmStart(); JapanMap.resetColors(); svg.classList.remove("explore");
   const inArea = new Set(area.codes);
   PREFS.forEach(p => { pathEl[p.code].classList.toggle("off", !inArea.has(p.code)); labelEl[p.code].classList.toggle("off", !inArea.has(p.code)); });
@@ -1878,7 +1882,7 @@ function afterAnswer(ok, html, opt = {}) {
     sndOk();
     // 正解のときは、問題文の最後（？のすぐ右）にサッ記マンの超笑顔を小さく出す
     const qEl = sheet.querySelector(".ask .q");
-    if (qEl && !qEl.querySelector(".qface")) qEl.insertAdjacentHTML("beforeend", `\u2060<img class="qface" src="img/face-super.webp?v=2" alt="" aria-hidden="true">`);
+    if (qEl && !qEl.querySelector(".qface")) qEl.insertAdjacentHTML("beforeend", `\u2060<span class="qface" aria-hidden="true"><img src="img/face-super.webp?v=2" alt=""></span>`);
     if (q.hint) quiz.combo = 0; else { quiz.combo++; quiz.maxCombo = Math.max(quiz.maxCombo, quiz.combo); }
     if (quiz.combo >= 2) { combo.textContent = `${quiz.combo}れんぞく！`; combo.hidden = false; combo.classList.remove("pop"); void combo.offsetWidth; combo.classList.add("pop"); }
     else combo.hidden = true;
@@ -2005,6 +2009,7 @@ function generalLabel(l) {
 }
 
 function result() {
+  sheet.classList.remove("inquiz");
   cancelQuizTimers(); eyeOff(); clearNextTri();
   Object.values(pathEl).forEach(p => p.classList.remove("flash-ok", "flash-ng", "reveal"));
   pbar.innerHTML = ""; showFeature(null); showChart(null); showPin(null);
