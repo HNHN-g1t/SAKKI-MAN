@@ -351,6 +351,18 @@ svg:not(.explore) .region-line{display:none}
 .course .mface{flex:none;height:44px;width:auto;margin:-4px -2px -4px 0}
 .course.done .no{background:var(--ok);color:var(--on-strong)}
 .course:disabled{opacity:.5;cursor:default}
+/* まだクリアが0のコース・まだ挑戦していないステージ（新しく開いたものもふくむ）：
+   画面に入ったときに一度だけ花火（burst）を出し、そのあとは黄色い発光をずっとゆっくり明滅させて目立たせる */
+.course.fresh,.chip.fresh{border-color:var(--brand);animation:freshGlow 1.6s ease-in-out infinite alternate}
+.chip.wide.fresh{border-color:var(--ink)}
+@keyframes freshGlow{
+  from{box-shadow:0 0 0 1px var(--brand),0 0 4px 1px var(--brand)}
+  to{box-shadow:0 0 0 2px var(--brand),0 0 16px 4px var(--brand)}}
+.chip.wide.fresh{animation-name:freshGlowWide}
+@keyframes freshGlowWide{
+  from{box-shadow:0 4px 0 var(--ink),0 0 4px 1px var(--brand)}
+  to{box-shadow:0 4px 0 var(--ink),0 0 18px 5px var(--brand)}}
+@media (prefers-reduced-motion:reduce){.course.fresh,.chip.fresh{animation:none;box-shadow:0 0 0 2px var(--brand),0 0 10px 2px var(--brand)}}
 .rules{margin:0;padding-left:1.2em;font-size:var(--fs14);color:var(--muted);font-weight:700;line-height:1.5}
 /* アイコン：文字と同じ大きさ。王冠はキーカラーの黄色に墨の細いふち（白地でも見える） */
 .ic{display:inline-block;width:1.05em;height:1.05em;vertical-align:-.16em;fill:currentColor;flex:none}
@@ -1692,9 +1704,9 @@ function courseStatus(c) {
   }
   const m = masterOf(c.id);
   if (m) return {text: crown(c), done: true};
-  if (c.stages) return {text: `ステージ ${stageCrowns(c.id)} / ${stagesOf(c).length}`};   // コース一覧では王冠を付けない（ヒントなし全問正解したステージの数）
+  if (c.stages) { const n = stageCrowns(c.id); return {text: `ステージ ${n} / ${stagesOf(c).length}`, fresh: n === 0}; }   // コース一覧では王冠を付けない（ヒントなし全問正解したステージの数）
   const got = new Set(); recsOf(c.id).forEach(r => Object.keys(r.got).forEach(k => got.add(k)));
-  return {text: `正解した問題 ${got.size} / ${fullCount(c.id)}`};
+  return {text: `正解した問題 ${got.size} / ${fullCount(c.id)}`, fresh: got.size === 0};
 }
 
 /* コース一覧（モードごと） */
@@ -1707,15 +1719,16 @@ function home() {
     <h2>${TRACKS[0].name}</h2>
     <div class="courses">${COURSES.filter(c => c.track !== "history").map((c, i) => {
       const s = courseStatus(c);
-      return `<button class="course${s.done ? " done" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${s.done ? CROWN_SVG : ""}${c.name}${s.done ? `<em class="mastered">マスター！</em>` : `<small>${s.text}</small>`}</span>${s.done ? `<img class="mface" src="img/fx-super.webp?v=2" alt="">` : ""}</button>`;
+      return `<button class="course${s.done ? " done" : ""}${s.fresh ? " fresh" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${s.done ? CROWN_SVG : ""}${c.name}${s.done ? `<em class="mastered">マスター！</em>` : `<small>${s.text}</small>`}</span>${s.done ? `<img class="mface" src="img/fx-super.webp?v=2" alt="">` : ""}</button>`;
     }).join("")}</div>
     <h2>${TRACKS[1].name}</h2>
     <div class="courses">${COURSES.filter(c => c.track === "history").map((c, i) => {
       const s = courseStatus(c);
-      return `<button class="course${s.done ? " done" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${s.done ? CROWN_SVG : ""}${c.name}${s.done ? `<em class="mastered">マスター！</em>` : `<small>${s.text}</small>`}</span>${s.done ? `<img class="mface" src="img/fx-super.webp?v=2" alt="">` : ""}</button>`;
+      return `<button class="course${s.done ? " done" : ""}${s.fresh ? " fresh" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${s.done ? CROWN_SVG : ""}${c.name}${s.done ? `<em class="mastered">マスター！</em>` : `<small>${s.text}</small>`}</span>${s.done ? `<img class="mface" src="img/fx-super.webp?v=2" alt="">` : ""}</button>`;
     }).join("")}</div>
     <button class="btn resetbtn" id="reset" type="button">${ic("refresh")}リセット</button>`;
   byId("reset").onclick = openReset;
+  freshBurst("home");
   sheet.querySelectorAll("[data-course]").forEach(b => b.onclick = () => coursePage(courseOf(b.dataset.course)));
 }
 
@@ -1752,16 +1765,17 @@ function coursePage(c) {
   const regions = (c.stages ? stagesOf(c) : STAGES).map(a => ({a, n: type.make(a.codes, a).length})).filter(x => x.n > 0);
   sheet.innerHTML = `
     <div class="modebar"><button class="btn backbtn" id="back" type="button">${ic("back")}コース一覧にもどる</button>${m ? `<span class="medal">${crown(c)}</span>` : ""}</div>
-    ${c.stages ? "" : `<div class="chips"><button class="chip wide" type="button" id="master">全国の挑戦<small>${total}問${best.zenkoku != null ? `・ベスト ${best.zenkoku}/${total}` : ""}</small></button></div>`}
+    ${c.stages ? "" : `<div class="chips"><button class="chip wide${best.zenkoku == null ? " fresh" : ""}" type="button" id="master">全国の挑戦<small>${total}問${best.zenkoku != null ? `・ベスト ${best.zenkoku}/${total}` : ""}</small></button></div>`}
     <h2>${c.stages ? `${c.stageList ? "" : "地方"}ステージ（${ic("crown")}${stageCrowns(c.id)} / ${stagesOf(c).length}）` : "地方ごとの練習"}</h2>
     <div class="chips">${regions.map(({a, n}) => {
       // 県名タップは v4 の地方ベスト（store.best）も参考に出す
       const b = Math.max(best[a.id] ?? -1, c.id === "prefName" ? (store.best[a.id] ?? -1) : -1);
       const cr = c.stages && stageDone(c.id, a.id, "master") ? ic("crown") : "";
-      return `<button class="chip" type="button" data-area="${a.id}"><span class="cnm${!a.name.includes("・") && a.name.length >= 5 ? " tight" : ""}">${brkDot(a.name)}</span><small${b >= n ? ` class="perfect"` : ""}>${cr}${b >= 0 ? `ベスト ${b}/${n}` : `${n}問`}</small></button>`;   // パーフェクト（ベストが全問）は黄色
+      return `<button class="chip${b < 0 ? " fresh" : ""}" type="button" data-area="${a.id}"><span class="cnm${!a.name.includes("・") && a.name.length >= 5 ? " tight" : ""}">${brkDot(a.name)}</span><small${b >= n ? ` class="perfect"` : ""}>${cr}${b >= 0 ? `ベスト ${b}/${n}` : `${n}問`}</small></button>`;   // パーフェクト（ベストが全問）は黄色
     }).join("")}</div>
     <p class="motto">県名なしの日本地図でノーミスクリアをめざそう！</p>`;   // くわしい条件は COURSES[].rules（画面には出さない）
   byId("back").onclick = home;
+  freshBurst("course:" + c.id);
   if (!c.stages) byId("master").onclick = () => startQuiz(c, zen, zen.codes, {master: true});
   sheet.querySelectorAll("[data-area]").forEach(b => b.onclick = () => { const a = (c.stages ? stagesOf(c) : AREAS).find(x => x.id === b.dataset.area); startQuiz(c, a, a.codes, {stage: !!c.stages}); });
 }
@@ -1780,7 +1794,7 @@ function shuffle(a){ a = a.slice(); for (let i=a.length-1;i>0;i--){ const j = Ma
 function startQuiz(course, area, codes, opts={}) {
   cancelQuizTimers(); eyeOff();
   const type = QUIZ_TYPES[course.id];
-  sheet.classList.remove("home"); sheet.classList.add("inquiz"); rotFace(false); qfNext = Math.floor(Math.random() * ROT_HAPPY.length); showFeature(null);
+  sheet.classList.remove("home"); sheet.classList.add("inquiz"); rotFace(false); freshShown = ""; qfNext = Math.floor(Math.random() * ROT_HAPPY.length); showFeature(null);
   mode = "quiz"; selected = null; clearTag(); clearmsg.hidden = true; bgmStop(); bgmPick(); bgmStart(); JapanMap.resetColors(); svg.classList.remove("explore");
   const inArea = new Set(area.codes);
   PREFS.forEach(p => { pathEl[p.code].classList.toggle("off", !inArea.has(p.code)); labelEl[p.code].classList.toggle("off", !inArea.has(p.code)); });
@@ -1964,6 +1978,21 @@ function showNextTri() {
 
 /* ---------- 正解の花火：黄色い粒をシュパーンと散らす ---------- */
 let fxCanvas = null, fxParts = [], fxRunning = false;
+// 画面に入ったときに一度だけ、光らせているボタン（.fresh）それぞれの上で花火を出す。
+// 同じ画面のまま描き直したとき（テーマの切りかえなど）は出さない。問題を始めると、もどったときにまた出す
+let freshShown = "";
+function freshBurst(key) {
+  if (freshShown === key) return; freshShown = key;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (freshShown !== key) return;
+    const sr = sheet.getBoundingClientRect();
+    sheet.querySelectorAll(".fresh").forEach((b, i) => {
+      const r = b.getBoundingClientRect();
+      if (r.bottom < sr.top || r.top > sr.bottom || r.height === 0) return;   // シートの外（スクロールの先）は出さない
+      setTimeout(() => { if (freshShown === key) burst(r.left + r.width / 2, r.top + r.height / 2); }, i * 90);
+    });
+  }));
+}
 function burst(x, y) {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   if (!fxCanvas) { fxCanvas = document.createElement("canvas"); fxCanvas.className = "fx"; document.body.appendChild(fxCanvas); }
