@@ -18,7 +18,7 @@
    --brand と --on-brand はダークでも変えない（黄色の上の文字は常に墨。白やクリームの上に黄色の文字は置かない） */
 :root{
   --brand:#FED003; --on-brand:#282727; --pin:#FF4FA3;
-  --tri-edge:#4A4745; --tri-shine:#FFF47E;   /* つぎへの三角：グレーのふちと文字（地は --brand。ダークでも同じ） */
+  --tri-edge:#4A4745; --tri-shine:#FFF47E; --zero-shine:#FED003;   /* つぎへの三角：グレーのふちと文字（地は --brand。ダークでも同じ） */
   --ink:#282727; --paper:#EEEDEA; --cream:#F4EBDF; --sea:#D3DDE2; --bg:#E2E1DD;   /* ライトは真っ白をやめ、目にやさしいライトグレー */
   --muted:#5A5654; --line-soft:#C7C4C0; --off:#DAD9D5;
   --ok:#1E7B45; --ng:#C23A2B; --on-strong:#FFFFFF; --ok-soft:#CBEBD6; --ng-soft:#F9D4CD;
@@ -362,6 +362,15 @@ svg:not(.explore) .region-line{display:none}
 @keyframes freshGlowWide{
   from{box-shadow:0 4px 0 var(--ink),0 0 4px 1px var(--brand)}
   to{box-shadow:0 4px 0 var(--ink),0 0 18px 5px var(--brand)}}
+/* まだ一度も挑戦していないステージ：「つぎへ」の三角と同じキラッ（太・細2本のななめの帯。ぼかさず、くっきり）が左から右へ横切る */
+.chip.zero{position:relative;overflow:hidden;isolation:isolate}
+.chip.zero>*{position:relative;z-index:1}
+.chip.zero::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(114deg,transparent 0 14px,var(--zero-shine) 14px 32px,transparent 32px 40px,var(--zero-shine) 40px 46px,transparent 46px) no-repeat;
+  background-size:60px 100%;animation:chipShine 1.73s cubic-bezier(.25,.1,.4,1) infinite}
+/* 帯はチップの左の外から出て、すぐ右の外へ抜ける（左はしで止まって見えない）。抜けたあとは外で待つ */
+@keyframes chipShine{0%{background-position:-62px 0}55%,100%{background-position:calc(100% + 62px) 0}}
+@media (prefers-reduced-motion:reduce){.chip.zero::before{animation:none;display:none}}
 @media (prefers-reduced-motion:reduce){.course.fresh,.chip.fresh{animation:none;box-shadow:0 0 0 2px var(--brand),0 0 10px 2px var(--brand)}}
 .rules{margin:0;padding-left:1.2em;font-size:var(--fs14);color:var(--muted);font-weight:700;line-height:1.5}
 /* アイコン：文字と同じ大きさ。王冠はキーカラーの黄色に墨の細いふち（白地でも見える） */
@@ -1771,7 +1780,9 @@ function coursePage(c) {
       // 県名タップは v4 の地方ベスト（store.best）も参考に出す
       const b = Math.max(best[a.id] ?? -1, c.id === "prefName" ? (store.best[a.id] ?? -1) : -1);
       const cr = c.stages && stageDone(c.id, a.id, "master") ? ic("crown") : "";
-      return `<button class="chip${b < 0 ? " fresh" : ""}" type="button" data-area="${a.id}"><span class="cnm${!a.name.includes("・") && a.name.length >= 5 ? " tight" : ""}">${brkDot(a.name)}</span><small${b >= n ? ` class="perfect"` : ""}>${cr}${b >= 0 ? `ベスト ${b}/${n}` : `${n}問`}</small></button>`;   // パーフェクト（ベストが全問）は黄色
+      // 光らせる：ステージは👑がまだ（挑戦済みでも）、地方ごとの練習はパーフェクトがまだ。一度も挑戦していない（ベストなし）ものは、キラッの帯も横切らせる
+      const fresh = c.stages ? !cr : b < n;
+      return `<button class="chip${fresh ? " fresh" : ""}${fresh && b < 0 ? " zero" : ""}" type="button" data-area="${a.id}"><span class="cnm${!a.name.includes("・") && a.name.length >= 5 ? " tight" : ""}">${brkDot(a.name)}</span><small${b >= n ? ` class="perfect"` : ""}>${cr}${b >= 0 ? `ベスト ${b}/${n}` : `${n}問`}</small></button>`;   // パーフェクト（ベストが全問）は黄色
     }).join("")}</div>
     <p class="motto">県名なしの日本地図でノーミスクリアをめざそう！</p>`;   // くわしい条件は COURSES[].rules（画面には出さない）
   byId("back").onclick = home;
