@@ -1464,19 +1464,16 @@ ROT_ALL.forEach(n => { const i = new Image(); i.src = faceUrl(n); });
 const rotEl = document.getElementById("rotface"), rotImg = rotEl.querySelector("img");
 let rotSet = ROT_ALL, rotNow = "", rotTimer = 0;
 function rotStep() { let n; do n = rotSet[Math.floor(Math.random() * rotSet.length)]; while (n === rotNow); rotNow = n; rotImg.src = faceUrl(n); }
-// 正解のとき「？」の右に出す顔：うれしい3つ（笑顔・超笑顔・ニヤリ）を1秒ごとに切りかえる。最初の顔はランダム
-// qf-*.webp は3枚をヘルメットの形で位置をそろえて切りぬいた版（127×144）。次の問題・結果・ホームで止める
+// 正解のとき「？」の右に出す顔：うれしい3つ（笑顔・超笑顔・ニヤリ）。1つの正解には1つの顔を出したまま（切りかえない）。
+// 次の正解では順番に次の顔へ。ドリルの最初の顔は3つからランダム（startQuiz で qfNext を決める）
+// qf-*.webp は3枚をヘルメットの形で位置をそろえて切りぬいた版（127×144）
 const qfUrl = n => `img/qf-${n}.webp?v=1`;
 ROT_HAPPY.forEach(n => { const i = new Image(); i.src = qfUrl(n); });
-let qfNow = "", qfTimer = 0;
-function qfStart() { clearInterval(qfTimer); qfTimer = 0; qfNow = ROT_HAPPY[Math.floor(Math.random() * ROT_HAPPY.length)]; return qfNow; }
-function qfStep() {
-  const img = document.querySelector(".ask .q .qface img"); if (!img) { clearInterval(qfTimer); qfTimer = 0; return; }
-  let n; do n = ROT_HAPPY[Math.floor(Math.random() * ROT_HAPPY.length)]; while (n === qfNow); qfNow = n; img.src = qfUrl(n);
-}
+let qfNext = 0;
+function qfTake() { const n = ROT_HAPPY[qfNext]; qfNext = (qfNext + 1) % ROT_HAPPY.length; return n; }
 // on：出すかどうか。happy：うれしい3つだけにする。出しはじめの顔は、その組の中からランダム
 function rotFace(on, happy = false) {
-  clearInterval(rotTimer); rotTimer = 0; clearInterval(qfTimer); qfTimer = 0;
+  clearInterval(rotTimer); rotTimer = 0;
   const set = happy ? ROT_HAPPY : ROT_ALL;
   if (on && !rotEl.hidden && set === rotSet && rotNow) { rotTimer = setInterval(rotStep, 1000); return; }
   rotEl.hidden = !on; rotSet = set; rotNow = "";
@@ -1770,7 +1767,7 @@ function shuffle(a){ a = a.slice(); for (let i=a.length-1;i>0;i--){ const j = Ma
 function startQuiz(course, area, codes, opts={}) {
   cancelQuizTimers(); eyeOff();
   const type = QUIZ_TYPES[course.id];
-  sheet.classList.remove("home"); sheet.classList.add("inquiz"); rotFace(false); showFeature(null);
+  sheet.classList.remove("home"); sheet.classList.add("inquiz"); rotFace(false); qfNext = Math.floor(Math.random() * ROT_HAPPY.length); showFeature(null);
   mode = "quiz"; selected = null; clearTag(); clearmsg.hidden = true; bgmStop(); bgmPick(); bgmStart(); JapanMap.resetColors(); svg.classList.remove("explore");
   const inArea = new Set(area.codes);
   PREFS.forEach(p => { pathEl[p.code].classList.toggle("off", !inArea.has(p.code)); labelEl[p.code].classList.toggle("off", !inArea.has(p.code)); });
@@ -1916,8 +1913,7 @@ function afterAnswer(ok, html, opt = {}) {
     sndOk();
     // 正解のときは、問題文の最後（？のすぐ右）にサッ記マンの超笑顔を小さく出す
     const qEl = sheet.querySelector(".ask .q");
-    if (qEl && !qEl.querySelector(".qface")) qEl.insertAdjacentHTML("beforeend", `\u2060<span class="qface" aria-hidden="true"><img src="${qfUrl(qfStart())}" alt=""></span>`);
-    qfTimer = setInterval(qfStep, 1000);
+    if (qEl && !qEl.querySelector(".qface")) qEl.insertAdjacentHTML("beforeend", `\u2060<span class="qface" aria-hidden="true"><img src="${qfUrl(qfTake())}" alt=""></span>`);
     if (q.hint) quiz.combo = 0; else { quiz.combo++; quiz.maxCombo = Math.max(quiz.maxCombo, quiz.combo); }
     if (quiz.combo >= 2) { combo.textContent = `${quiz.combo}れんぞく！`; combo.hidden = false; combo.classList.remove("pop"); void combo.offsetWidth; combo.classList.add("pop"); }
     else combo.hidden = true;
