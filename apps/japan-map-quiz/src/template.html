@@ -151,6 +151,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .cele-box{border-color:var(--brand);border-width:4px;box-shadow:0 0 0 4px var(--on-brand),0 0 40px var(--brand);animation:celeIn .5s cubic-bezier(.2,1.6,.4,1) 1}
 .cele-crown{font-size:72px;line-height:1;color:var(--brand);filter:drop-shadow(0 0 6px var(--brand)) drop-shadow(0 0 16px var(--brand));animation:celeCrown 1.2s ease-in-out infinite alternate}
 .cele-crown .ic{vertical-align:0}
+.nw{white-space:nowrap}
 .cele-sub{margin:0;font-weight:700;color:var(--muted);font-size:var(--fs14)}
 .pin-box b.cele-title{font-size:var(--fs28);text-align:center;background:var(--brand);color:var(--on-brand);padding:var(--s4) var(--s16);border-radius:var(--r-btn)}
 @keyframes celeIn{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
@@ -1099,7 +1100,13 @@ const ICONS = {
   ng: `<path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>`,
 };
 const ic = (name, cls = "") => `<svg class="ic ic-${name}${cls ? " " + cls : ""}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
-const crown = c => `${ic("crown")}${c.master}`;
+// 称号（〇〇マスター）は変な所で折らない。折ってよいのは「マスター」の前と「・」のあとだけ（県庁所在地／マスター、国宝・／世界遺産／マスター）
+const masterHtml = (m, tail = "") => {
+  const i = m.lastIndexOf("マスター"), head = i > 0 ? m.slice(0, i) : m, parts = head.split("・");
+  const nw = t => `<span class="nw">${t}</span>`;
+  return parts.map((t, k) => nw(t + (k < parts.length - 1 ? "・" : "") + (i > 0 || k < parts.length - 1 ? "" : tail))).join("<wbr>") + (i > 0 ? `<wbr>${nw("マスター" + tail)}` : "");
+};
+const crown = c => `${ic("crown")}${masterHtml(c.master)}`;
 // 地方ステージ（stages:true のコース）。rec の stage[地方id] = {complete:bool, master:null|{at}}
 const STAGES = AREAS.filter(a => !a.wide);
 const stagesOf = c => c.stageList || STAGES;
@@ -2208,8 +2215,8 @@ function celebrateMaster(course) {
   ov.innerHTML = `<div class="pin-box cele-box" role="dialog" aria-modal="true" aria-labelledby="celeTitle">
     <div class="cele-crown" aria-hidden="true">${ic("crown")}</div>
     <p class="cele-sub">称号ゲット！</p>
-    <b id="celeTitle" class="cele-title">${course.master}</b>
-    <p class="hint" style="text-align:center">「${course.name}」をヒントなしで全問正解！<br>キミは今日から ${course.master} だ！</p>
+    <b id="celeTitle" class="cele-title">${masterHtml(course.master)}</b>
+    <p class="hint" style="text-align:center"><span class="nw">「${course.name}」を</span><wbr><span class="nw">ヒントなしで全問正解！</span><br><span class="nw">キミは今日から </span><wbr><span class="nw">${course.master} だ！</span></p>
     <button class="btn primary" type="button" id="celeOk" style="flex:none;width:100%">やったね！</button></div>`;
   document.body.appendChild(ov);
   sndFanfare();
