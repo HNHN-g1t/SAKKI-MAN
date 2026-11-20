@@ -1878,7 +1878,7 @@ function afterAnswer(ok, html, opt = {}) {
     sndOk();
     // 正解のときは、問題文の最後（？のすぐ右）にサッ記マンの超笑顔を小さく出す
     const qEl = sheet.querySelector(".ask .q");
-    if (qEl && !qEl.querySelector(".qface")) qEl.insertAdjacentHTML("beforeend", `\u2060<img class="qface" src="img/face-super.webp?v=1" alt="" aria-hidden="true">`);
+    if (qEl && !qEl.querySelector(".qface")) qEl.insertAdjacentHTML("beforeend", `\u2060<img class="qface" src="img/face-super.webp?v=2" alt="" aria-hidden="true">`);
     if (q.hint) quiz.combo = 0; else { quiz.combo++; quiz.maxCombo = Math.max(quiz.maxCombo, quiz.combo); }
     if (quiz.combo >= 2) { combo.textContent = `${quiz.combo}れんぞく！`; combo.hidden = false; combo.classList.remove("pop"); void combo.offsetWidth; combo.classList.add("pop"); }
     else combo.hidden = true;
