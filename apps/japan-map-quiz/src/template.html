@@ -72,7 +72,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 /* ふりがなは漢字の上（ruby） */
 .ask .q rt{font-size:min(.42em, calc(var(--fit, 1) * 1em));font-weight:700;color:var(--muted);letter-spacing:0}
 /* 正解のときの顔：問題文の「？」のすぐ右に、文字より少し大きく。ぽんと出る */
-.ask .q .qface{display:inline-block;position:relative;width:calc(2.7em * 126 / 144);height:1em;margin-left:.12em;vertical-align:var(--face-base,-.1em)}
+.ask .q .qface{display:inline-block;position:relative;width:calc(2.7em * 127 / 144);height:1em;margin-left:.12em;vertical-align:var(--face-base,-.1em)}
 /* 顔は前の1.8倍（高さ2.7em）。下は文字の底にそろえ、頭は行や問題のウインドウの上へあえて飛び出させる（行の高さは変えない） */
 .ask .q .qface img{position:absolute;left:0;bottom:0;height:2.7em;width:auto;transform-origin:50% 100%;animation:faceIn .35s cubic-bezier(.2,1.6,.4,1) 1}
 @keyframes faceIn{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
@@ -1457,16 +1457,26 @@ const clearTag = () => gTag.innerHTML = "";
 
 /* ---------- 画面 ---------- */
 // 地図の左上で表情を1秒ごとに切りかえる（同じ顔が続かないように、いまの顔以外から選ぶ）
-// ふだんは7つの表情。問題に正解したときと、ドリルの結果が8割以上のときは、うれしい3つ（笑顔・超笑顔・ニヤリ）だけ
+// ふだんは7つの表情。ドリルの結果が8割以上のときは、うれしい3つ（笑顔・超笑顔・ニヤリ）だけ
 const faceUrl = n => `img/fx-${n}.webp?v=2`;
 const ROT_ALL = ["majime","egao","super","niyari","odoroki","gakkari","ikari"], ROT_HAPPY = ["egao","super","niyari"];
 ROT_ALL.forEach(n => { const i = new Image(); i.src = faceUrl(n); });
 const rotEl = document.getElementById("rotface"), rotImg = rotEl.querySelector("img");
 let rotSet = ROT_ALL, rotNow = "", rotTimer = 0;
 function rotStep() { let n; do n = rotSet[Math.floor(Math.random() * rotSet.length)]; while (n === rotNow); rotNow = n; rotImg.src = faceUrl(n); }
+// 正解のとき「？」の右に出す顔：うれしい3つ（笑顔・超笑顔・ニヤリ）を1秒ごとに切りかえる。最初の顔はランダム
+// qf-*.webp は3枚をヘルメットの形で位置をそろえて切りぬいた版（127×144）。次の問題・結果・ホームで止める
+const qfUrl = n => `img/qf-${n}.webp?v=1`;
+ROT_HAPPY.forEach(n => { const i = new Image(); i.src = qfUrl(n); });
+let qfNow = "", qfTimer = 0;
+function qfStart() { clearInterval(qfTimer); qfTimer = 0; qfNow = ROT_HAPPY[Math.floor(Math.random() * ROT_HAPPY.length)]; return qfNow; }
+function qfStep() {
+  const img = document.querySelector(".ask .q .qface img"); if (!img) { clearInterval(qfTimer); qfTimer = 0; return; }
+  let n; do n = ROT_HAPPY[Math.floor(Math.random() * ROT_HAPPY.length)]; while (n === qfNow); qfNow = n; img.src = qfUrl(n);
+}
 // on：出すかどうか。happy：うれしい3つだけにする。出しはじめの顔は、その組の中からランダム
 function rotFace(on, happy = false) {
-  clearInterval(rotTimer); rotTimer = 0;
+  clearInterval(rotTimer); rotTimer = 0; clearInterval(qfTimer); qfTimer = 0;
   const set = happy ? ROT_HAPPY : ROT_ALL;
   if (on && !rotEl.hidden && set === rotSet && rotNow) { rotTimer = setInterval(rotStep, 1000); return; }
   rotEl.hidden = !on; rotSet = set; rotNow = "";
@@ -1906,8 +1916,8 @@ function afterAnswer(ok, html, opt = {}) {
     sndOk();
     // 正解のときは、問題文の最後（？のすぐ右）にサッ記マンの超笑顔を小さく出す
     const qEl = sheet.querySelector(".ask .q");
-    rotFace(true, true);   // 地図の左上にも、うれしい顔（笑顔・超笑顔・ニヤリ）を切りかえて出す。次の問題で消える
-    if (qEl && !qEl.querySelector(".qface")) qEl.insertAdjacentHTML("beforeend", `\u2060<span class="qface" aria-hidden="true"><img src="img/face-super.webp?v=3" alt=""></span>`);
+    if (qEl && !qEl.querySelector(".qface")) qEl.insertAdjacentHTML("beforeend", `\u2060<span class="qface" aria-hidden="true"><img src="${qfUrl(qfStart())}" alt=""></span>`);
+    qfTimer = setInterval(qfStep, 1000);
     if (q.hint) quiz.combo = 0; else { quiz.combo++; quiz.maxCombo = Math.max(quiz.maxCombo, quiz.combo); }
     if (quiz.combo >= 2) { combo.textContent = `${quiz.combo}れんぞく！`; combo.hidden = false; combo.classList.remove("pop"); void combo.offsetWidth; combo.classList.add("pop"); }
     else combo.hidden = true;
