@@ -136,11 +136,14 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .pinchg{position:absolute;right:calc(var(--s16) + env(safe-area-inset-right,0px));bottom:calc(var(--r-sheet) + var(--s32) + var(--s8) + 64px + var(--s16));
   width:76px;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;z-index:2}
 .pinchg[hidden]{display:none}
-.pinchg svg{width:68px;height:68px;overflow:visible}
-.pinchg .pg-index rect,.pinchg .pg-thumb rect,.pinchg .pg-palm,.pinchg .pg-curl{fill:var(--paper);stroke:var(--ink);stroke-width:2.5;stroke-linejoin:round}
-.pinchg .pg-arrow{fill:none;stroke:var(--brand);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
-/* 手：人さし指と親指は、根元を支点に角度だけを開閉する（SVG の animateTransform）。中指・薬指は折り曲げて、人さし指のとなりの角丸。
-   矢印は指先が開く向きに沿った弧 */
+.pinchg svg{width:72px;height:69px;overflow:visible}
+/* 手：サッ記マンの白い手袋。人さし指・親指・手の甲・そでの形をまとめて、外側の線だけを1本につないで描く
+   （太い線の影の上に白い面を重ねるので、指の付け根などに区切りの線が出ない）。中の線は折り曲げた指とそで口だけ */
+.pinchg .pg-line{fill:#282727;stroke:#282727;stroke-width:6;stroke-linejoin:round}
+.pinchg .pg-glove{fill:#fff}
+.pinchg .pg-detail{fill:none;stroke:#282727;stroke-width:2.6;stroke-linecap:round}
+.pinchg .pg-arrow{fill:none;stroke:var(--brand);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+/* 人さし指と親指は、根元を支点に角度だけを開閉する（SVG の animateTransform）。矢印は指先が開く向きに沿った弧 */
 .pinchg span{font-family:var(--display);font-size:var(--fs16);color:var(--on-brand);background:var(--brand);border:var(--bw) solid var(--ink);border-radius:var(--r-pill);padding:1px 10px;white-space:nowrap;
   animation:pgBlink 1s steps(1,end) infinite}
 @keyframes pgBlink{0%{visibility:visible}65%{visibility:hidden}}
@@ -489,15 +492,21 @@ svg:not(.explore) .region-line{display:none}
     <div class="toast" id="toast" role="status" hidden></div>
     <div class="rotface" id="rotface" aria-hidden="true"><img alt=""></div>
     <div class="pinchg" id="pinchg" aria-hidden="true" hidden>
-      <svg viewBox="0 0 90 90">
-        <path class="pg-arrow" d="M12.7 23.7 A44 44 0 0 1 32.1 6.8M28.4 12.8 L32.1 6.8 L25.2 5.5"/>
-        <path class="pg-arrow" d="M15.5 75.7 A34 34 0 0 0 26.1 89.8M19.1 89.4 L26.1 89.8 L23.9 83.1"/>
-        <g transform="translate(47 63)"><g class="pg-thumb"><rect x="-6.5" y="-30" width="13" height="36" rx="6.5"/><animateTransform attributeName="transform" type="rotate" values="-80;-80;-125;-125" keyTimes="0;.15;.55;1" keySplines=".4 0 .2 1;.4 0 .2 1;.4 0 .2 1" calcMode="spline" dur="1.4s" repeatCount="indefinite"/></g></g>
-        <g transform="translate(50 47)"><g class="pg-index"><rect x="-6.5" y="-36" width="13" height="42" rx="6.5"/><animateTransform attributeName="transform" type="rotate" values="-100;-100;-45;-45" keyTimes="0;.15;.55;1" keySplines=".4 0 .2 1;.4 0 .2 1;.4 0 .2 1" calcMode="spline" dur="1.4s" repeatCount="indefinite"/></g></g>
-        <rect class="pg-palm" x="45" y="44" width="36" height="38" rx="12"/>
-        <rect class="pg-curl" x="56" y="37" width="13" height="19" rx="6.5"/>
-        <rect class="pg-curl" x="67" y="40" width="13" height="18" rx="6.5"/>
-        </svg>
+      <svg viewBox="0 0 100 96" aria-hidden="true">
+        <defs>
+          <g id="pgHand">
+            <g transform="translate(54 40)"><g><rect x="-38" y="-6.5" width="44" height="13" rx="6.5"/><animateTransform attributeName="transform" type="rotate" values="-8;-8;28;28" keyTimes="0;.15;.55;1" keySplines=".4 0 .2 1;.4 0 .2 1;.4 0 .2 1" calcMode="spline" dur="1.4s" repeatCount="indefinite" additive="sum"/></g></g>
+            <g transform="translate(56 60)"><g><rect x="-30" y="-6.5" width="36" height="13" rx="6.5"/><animateTransform attributeName="transform" type="rotate" values="6;6;-30;-30" keyTimes="0;.15;.55;1" keySplines=".4 0 .2 1;.4 0 .2 1;.4 0 .2 1" calcMode="spline" dur="1.4s" repeatCount="indefinite" additive="sum"/></g></g>
+            <path d="M46,38 C52,24 70,18 82,25 C93,32 95,52 91,66 C87,79 72,85 58,81 C48,78 43,68 46,56 Z"/>
+            <rect x="83" y="40" width="15" height="40" rx="6" transform="rotate(-14 90 60)"/>
+          </g>
+        </defs>
+        <path class="pg-arrow" d="M11.3 22.8 A46 46 0 0 1 22.0 6.9M20.6 13.8 L22.0 6.9 L15.1 8.1"/>
+        <path class="pg-arrow" d="M22.8 84.1 A41 41 0 0 0 34.3 94.8M27.3 95.1 L34.3 94.8 L31.5 88.4"/>
+        <use href="#pgHand" class="pg-line"/>
+        <use href="#pgHand" class="pg-glove"/>
+        <path class="pg-detail" d="M49,40 C56,31 67,30 73,35M56,31 C62,25 71,25 77,30M83,38 C80,52 81,68 85,80"/>
+      </svg>
       <span>かくだい</span>
     </div>
     <div class="dbgdock" id="dbgdock"></div>
