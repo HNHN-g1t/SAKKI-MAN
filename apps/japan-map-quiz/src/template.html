@@ -1135,7 +1135,7 @@ function inlandQs() {
       text: "光っている<em>海なし県</em>は？", explain: INLAND_NOTE };
   });
 }
-const TERRAIN_CATS = { mount: "山地・山脈・山", river: "川", plain: "平野", land: "地形", coast: "海岸・湾・半島" };
+const TERRAIN_CATS = { mount: "山地・山脈・山", river: "川", plain: "平野", basin: "盆地", lake: "湖", volcano: "火山", island: "島", hanto: "半島", coast: "海岸・湾", land: "地形" };
 
 /* ---------- 気候（気候区分・雨温図） ----------
    CLIMATE_ZONES：日本の6つの気候区分。codes は地図で色をつける「その気候の代表的な都道府県」（県の一部だけがあてはまる県は入れない）
@@ -1256,7 +1256,9 @@ const COURSES = [
           "都市そのものの位置を答える問題は準備中（記録は別に分けて持つ）"]},
   {id:"terrain", name:"山・河川・平野", master:"地形マスター", from:"g5", ready:true, stages:true, unlock:{course:"designated", need:"complete"},
    stageList:[{id:"mount", cat:"mount", name:"山地・山脈", codes:range(1,47)}, {id:"river", cat:"river", name:"川", codes:range(1,47)}, {id:"plain", cat:"plain", name:"平野", codes:range(1,47)},
-     {id:"land", cat:"land", name:"地形の用語", codes:range(1,47)}, {id:"inland", cat:"inland", name:"海なし県", codes:range(1,47)}, {id:"coast", cat:"coast", name:"海岸・湾・半島", codes:range(1,47)}],
+     {id:"basin", cat:"basin", name:"盆地", codes:range(1,47)}, {id:"lake", cat:"lake", name:"湖", codes:range(1,47)}, {id:"volcano", cat:"volcano", name:"火山", codes:range(1,47)},
+     {id:"island", cat:"island", name:"島", codes:range(1,47)}, {id:"hanto", cat:"hanto", name:"半島", codes:range(1,47)}, {id:"coast", cat:"coast", name:"海岸・湾", codes:range(1,47)},
+     {id:"land", cat:"land", name:"地形の用語", codes:range(1,47)}, {id:"inland", cat:"inland", name:"海なし県", codes:range(1,47)}],
    rules:["山地・山脈（11）・川（10）・平野（10）の3ステージ。地図に出た図形の名前を4択で答える", "ステージ👑：そのステージをヒントなしで全問正解",
           "👑地形マスター：3ステージすべて👑", "完了：3ステージすべてを最後まで解く",
           "図形は教材の略地図程度のおおまかな形（石狩川・最上川・利根川は Natural Earth の線）"]},
@@ -2190,7 +2192,7 @@ function nextQ() {
     } else if (q.feature) {
       showFeature(q.feature);
       const tf = TERRAIN.find(f => f.id === q.feature), b = tf.b, cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2;
-      const h = Math.max(b[2] - b[0], b[3] - b[1], tf.cat === "land" || tf.cat === "coast" ? 110 : 160) / 2;   // 地形の用語・海岸は小さい形が多いので少し寄せる
+      const h = Math.max(b[2] - b[0], b[3] - b[1], tf.cat === "lake" ? 80 : ["land", "coast", "hanto", "island", "volcano", "basin"].includes(tf.cat) ? 110 : 160) / 2;   // 地形の用語・海岸は小さい形が多いので少し寄せる
       fitLater([cx - h, cy - h, cx + h, cy + h]);
     } else {
       pathEl[q.focus].classList.add("sel");
