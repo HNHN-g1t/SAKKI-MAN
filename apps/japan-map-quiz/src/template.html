@@ -356,8 +356,10 @@ svg:not(.explore) .region-line{display:none}
 .fb .txt .head{display:block;color:var(--ink);font-size:var(--fs16);font-weight:700;line-height:1.5}
 .fb .txt .head b{display:inline;font-size:var(--fs20)}
 /* ふえた野菜の1〜3位の表（解説のかわり）。答えの県の行に黄色のマーカー */
-.fb .rank3{list-style:none;margin:var(--s4) 0 0;padding:0;display:grid;grid-template-columns:auto auto auto;justify-content:start;gap:4px var(--s12);font-size:calc(var(--fs14) * 1.5);font-weight:700;color:var(--ink)}
+.fb .rank3{list-style:none;margin:var(--s4) 0 0;padding:0;display:grid;grid-template-columns:auto auto auto;justify-content:start;gap:2px var(--s12);font-size:calc(var(--fs14) * 1.5);line-height:1.2;font-weight:700;color:var(--ink)}
 .fb .rank3 li{display:contents}
+@media (max-height:720px){.fb .rank3{font-size:calc(var(--fs14) * 1.25)}}   /* 背の低い画面では、ざんねんの2行の文と表が画面に収まるよう少し小さく */
+.fb .txt .rank3y{display:inline;margin-left:var(--s4);white-space:nowrap;font-size:var(--fs12);color:var(--muted);font-weight:700}
 .fb .rank3 b{display:grid;place-items:center;width:1.4em;height:1.4em;border-radius:50%;background:var(--cream);color:var(--ink);font-family:var(--display);font-weight:400;font-size:.85em}
 .fb .rank3 span{display:block;justify-self:start;color:var(--ink);font-size:inherit}
 .fb .rank3 em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums}
@@ -639,7 +641,7 @@ const QUIZ_TYPES = {
     // area.cat（farm／fruit／sea／maker／craft）の問題。地図で答えの都道府県をタップ
     // 出題停止（status:"stop"）の問題は出さない。出題数・完了・👑の判定もこの数で行う
     make: (codes, area) => industryLive().filter(f => (!area || !area.cat || f.cat === area.cat) && codes.includes(f.pref)).map(f => (
-      { key: f.id, prefs: [f.pref], top3: f.cat === "veg" || f.cat === "chiku" ? TOP3[f.id.replace(/\d$/, "")] : null, text: phraseBreak(f.q || INDUSTRY_CATS[f.cat].ask(f.word)), sub: f.kana, answers: [f.pref], explain: f.note }))
+      { key: f.id, prefs: [f.pref], top3: TOP3[f.id.replace(/\d$/, "")] || null, text: phraseBreak(f.q || INDUSTRY_CATS[f.cat].ask(f.word)), sub: f.kana, answers: [f.pref], explain: f.note }))
   },
   climate: {
     title: "気候", kind: "choice",
@@ -924,20 +926,49 @@ const INDUSTRY = [
 ].map(f => Object.assign({checked: IND_CHECKED}, f));
 // 長い問題文を言葉の途中で折らない：文字のあいだでは折らず（keep-all）、「の」「を」「が」「、」「がある」のあとと「（」「都道府県」の前でだけ折る。ふりがなつきの言葉（em）は1つのまとまり
 const phraseBreak = html => `<span class="kb">${html.split(/(<[^>]+>)/).map(t => t.startsWith("<") ? t : t.replace(/がある/g, "\u0001").replace(/([のをが、])(?=.)/g, "$1<wbr>").replace(/\u0001/g, "がある<wbr>").replace(/（/g, "<wbr>（").replace(/([^>])(都道府県)/g, "$1<wbr>$2")).join("")}</span>`;
-// ふえた野菜・畜産：1〜3位と全国にしめる割合（％）。答えのあとは解説文のかわりにこの表を出す
-//   野菜は令和6年産の収穫量（e-Stat 野菜生産出荷統計の都道府県別の値から計算）
-//   畜産は乳用牛・肉用牛が令和7年2月1日、豚・ブロイラーが令和6年2月1日の飼養頭羽数（畜産統計。東北農政局の全国順位表の値から計算）
+// 農業・くだもの・ふえた野菜・畜産：1〜3位と全国にしめる割合（％、小数1けた）。答えのあとは解説文のかわりにこの表を出す
+//   y＝統計の年（表の上に小さく出す）、r＝[県コード, ％]（同じ割合で同じ順位の県は [[県コード, 県コード], ％] で1行に）
+//   出どころ：野菜は e-Stat 野菜生産出荷統計の都道府県別の値、果物（令和7年産）は農林水産省 作物統計の都道府県別収穫量の図、
+//   米・さつまいも・茶・西洋なし・こんにゃくいも・さとうきび・きく・い草・パイナップル・不知火は農林水産省「都道府県の農林水産業の概要（2026年版）」、
+//   落花生は千葉県「千葉県産落花生の全国的位置」（農林水産統計）、畜産は東北農政局の全国順位表（畜産統計）から計算
+//   国の資料で順位を確かめられた県だけを入れる（生産する県が少ない品目や、3位が公表資料で確かめられない品目は2行・1行）
 const TOP3 = {
-  lettuce:  [[20, 33.3], [8, 16.3], [10, 11.0]],
-  broccoli: [[1, 18.5], [11, 9.0], [37, 8.2]],
-  onion:    [[1, 66.8], [41, 7.3], [28, 6.9]],
-  carrot:   [[1, 33.2], [12, 15.6], [36, 8.2]],
-  dairy:    [[1, 63.2], [9, 4.0], [43, 3.2]],
-  beef:     [[1, 21.0], [46, 13.9], [45, 9.6]],
-  pig:      [[46, 13.6], [1, 8.5], [45, 8.2]],
-  broiler:  [[46, 22.1], [45, 19.4], [3, 16.3]],
+  lettuce:  {y: "令和6年産", r: [[20, 33.3], [8, 16.3], [10, 11.0]]},
+  broccoli: {y: "令和6年産", r: [[1, 18.5], [11, 9.0], [37, 8.2]]},
+  onion:    {y: "令和6年産", r: [[1, 66.8], [41, 7.3], [28, 6.9]]},
+  carrot:   {y: "令和6年産", r: [[1, 33.2], [12, 15.6], [36, 8.2]]},
+  dairy:    {y: "令和7年2月1日", r: [[1, 63.2], [9, 4.0], [43, 3.2]]},
+  beef:     {y: "令和7年2月1日", r: [[1, 21.0], [46, 13.9], [45, 9.6]]},
+  pig:      {y: "令和6年2月1日", r: [[46, 13.6], [1, 8.5], [45, 8.2]]},
+  broiler:  {y: "令和6年2月1日", r: [[46, 22.1], [45, 19.4], [3, 16.3]]},
+  rice:     {y: "令和7年産（水稲）", r: [[15, 8.2], [1, 7.4], [5, 6.6]]},
+  potato:   {y: "令和6年産", r: [[1, 81.5], [46, 3.6], [42, 3.2]]},
+  strawberry: {y: "令和6年産", r: [[9, 16.4], [40, 9.2], [43, 7.1]]},
+  peanut:   {y: "令和6年産", r: [[12, 86.5], [8, 8.0], [14, 1.6]]},
+  konjac:   {y: "令和7年産", r: [[10, 96.1]]},
+  sugarcane: {y: "令和6年産・2県だけ", r: [[47, 60.2], [46, 39.8]]},
+  chrysanthemum: {y: "令和6年産", r: [[23, 35.9], [47, 16.0]]},
+  tomato:   {y: "令和6年産", r: [[43, 19.5], [1, 8.9], [23, 6.7]]},
+  suika:    {y: "令和6年産", r: [[43, 14.1], [12, 12.4], [6, 9.9]]},
+  igusa:    {y: "令和7年産", r: [[43, 100.0]]},
+  cucumber: {y: "令和6年産", r: [[45, 11.7], [10, 10.1], [11, 8.0]]},
+  satsumaimo: {y: "令和7年産", r: [[46, 31.3], [8, 28.0], [12, 11.4]]},
+  tea:      {y: "令和7年産・主産県の中の割合", r: [[46, 44.1], [22, 35.4], [24, 7.1]]},
+  pepper:   {y: "令和5年産", r: [[8, 22.9], [45, 17.7], [39, 9.4]]},
+  apple:    {y: "令和7年産", r: [[2, 60.9], [20, 18.4], [3, 5.3]]},
+  mikan:    {y: "令和7年産", r: [[30, 22.1], [38, 18.6], [22, 13.6]]},
+  grape:    {y: "令和7年産", r: [[19, 25.9], [20, 19.5], [33, 8.5]]},
+  peach:    {y: "令和7年産", r: [[19, 32.0], [7, 23.2], [20, 9.5]]},
+  cherry:   {y: "令和7年産", r: [[6, 74.2], [1, 10.0]]},
+  pear:     {y: "令和6年産", r: [[6, 70.1], [2, 7.0], [15, 6.4]]},
+  ume:      {y: "令和7年産", r: [[30, 58.2], [10, 7.0], [18, 2.8]]},
+  melon:    {y: "令和6年産", r: [[8, 26.8], [43, 15.2], [1, 13.9]]},
+  pineapple: {y: "令和6年産", r: [[47, 100.0]]},
+  dekopon:  {y: "令和5年産", r: [[43, 28.5], [38, 23.7]]},
+  biwa:     {y: "令和7年産", r: [[42, 30.8], [12, 19.2], [[37, 46], 7.1]]},   // 3位は香川県と鹿児島県が同じ割合
 };
-const rankTable = (top3, ans) => `<ol class="rank3">${top3.map(([c, pct], i) => `<li${c === ans ? ` class="hit"` : ""}><b>${i + 1}</b><span>${byCode(c).name}</span><em>${pct.toFixed(1)}%</em></li>`).join("")}</ol>`;
+const rankYear = t => t ? ` <small class="rank3y">${t.y}</small>` : "";
+const rankTable = (t, ans) => `<ol class="rank3">${t.r.map(([c, pct], i) => `<li${[].concat(c).includes(ans) ? ` class="hit"` : ""}><b>${i + 1}</b><span>${[].concat(c).map(x => byCode(x).name).join("・")}</span><em>${pct.toFixed(1)}%</em></li>`).join("")}</ol>`;
 const industryOf = id => INDUSTRY.find(f => f.id === id);
 const industryLive = () => INDUSTRY.filter(f => f.status !== "stop");   // 出題する問題（出題停止を除く）
 const industryName = f => (f.word.match(/<em>(.*?)<\/em>/) || [0, f.word])[1];   // 結果の一覧に出す短い名前
@@ -2297,13 +2328,13 @@ function handleTap(code) {
   if (ok) {
     pathEl[code].classList.add("flash-ok");
     quizTimeout(() => { pathEl[code].classList.remove("flash-ok"); pathEl[code].classList.add("ok"); }, 450);
-    afterAnswer(true, `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans.name}</b>${q.top3 ? `${q.hint ? `<span class="desc">（ヒントを見て正解）</span>` : ""}${rankTable(q.top3, ans.code)}` : `<span class="desc">${q.hint ? "（ヒントを見て正解）" : ""}${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}`}</div></div>`,
+    afterAnswer(true, `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans.name}${rankYear(q.top3)}</b>${q.top3 ? `${q.hint ? `<span class="desc">（ヒントを見て正解）</span>` : ""}${rankTable(q.top3, ans.code)}` : `<span class="desc">${q.hint ? "（ヒントを見て正解）" : ""}${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}`}</div></div>`,
       {kind: "tap", burst: () => { const r = pathEl[code].getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; }});
   } else {
     pathEl[code].classList.add("flash-ng"); showTag(code, p.short);
     pathEl[ans.code].classList.add("miss");
     JapanMap.highlightPrefecture(ans.code);
-    afterAnswer(false, `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　正解は <em>${ans.name}</em>。<span class="nw">キミが指したのは</span> <span class="nw">${p.name}。</span></span>${q.top3 ? rankTable(q.top3, ans.code) : `<span class="desc">${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}`}</div></div>`, {kind: "tap"});
+    afterAnswer(false, `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　正解は <em>${ans.name}</em>。<span class="nw">キミが指したのは</span> <span class="nw">${p.name}。</span>${rankYear(q.top3)}</span>${q.top3 ? rankTable(q.top3, ans.code) : `<span class="desc">${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}`}</div></div>`, {kind: "tap"});
   }
 }
 
