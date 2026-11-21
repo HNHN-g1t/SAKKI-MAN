@@ -995,6 +995,7 @@ const KOGAI = [
   {id: "yokkaichi", name: "四日市ぜんそく", kana: "よっかいちぜんそく", pref: 24, ll: [34.965, 136.625],
    note: "三重県四日市市の石油化学コンビナートから出た亜硫酸ガス（硫黄酸化物）が原因。空気がよごれ、ぜんそくに苦しむ人が多く出た。"},
 ];
+const somber = () => !!(quiz && quiz.area && quiz.area.cat === "kogai");   // キャラを出さないステージ（公害）
 function kogaiQs() {
   return shuffle(KOGAI.flatMap(k => [
     { key: "kogai-t:" + k.id, kind: "tap", prefs: [k.pref], answers: [k.pref], sub: k.kana, text: phraseBreak(`<em>${k.name}</em>がおこった都道府県は？`), explain: k.note },
@@ -2280,7 +2281,9 @@ function afterAnswer(ok, html, opt = {}) {
     // 正解のときは、問題のウインドウのいちばん右下にサッ記マンのうれしい顔を出す。
     // 国宝・世界遺産（kind "wide"）は右下に解説が来るので、これまでどおり問題文の最後（？のすぐ右）に出す
     const qEl = sheet.querySelector(".ask .q");
-    if (opt.kind !== "wide") { if (!sheet.querySelector(".cface")) sheet.insertAdjacentHTML("beforeend", `<span class="cface" aria-hidden="true"><img src="${qfUrl(qfTake())}" alt=""></span>`); }
+    // 公害のステージでは、病気に苦しんだ人のことなので、キャラは出さない（笑った顔を出さない）
+    if (somber()) {}
+    else if (opt.kind !== "wide") { if (!sheet.querySelector(".cface")) sheet.insertAdjacentHTML("beforeend", `<span class="cface" aria-hidden="true"><img src="${qfUrl(qfTake())}" alt=""></span>`); }
     else if (qEl && !qEl.querySelector(".qface")) { qEl.insertAdjacentHTML("beforeend", `\u2060<span class="qface" aria-hidden="true"><img src="${qfUrl(qfTake())}" alt=""></span>`); placeQFace(qEl); }
     if (q.hint) quiz.combo = 0; else { quiz.combo++; quiz.maxCombo = Math.max(quiz.maxCombo, quiz.combo); }
     if (quiz.combo >= 2) { combo.textContent = `${quiz.combo}れんぞく！`; combo.hidden = false; combo.classList.remove("pop"); void combo.offsetWidth; combo.classList.add("pop"); }
@@ -2432,7 +2435,7 @@ function result() {
   mode = "result"; pinchGuide(); bgmStop(); combo.hidden = true; clearTag();
   const course = quiz.course, total = quiz.qs.length, correct = quiz.log.filter(l => l.ok).length, clean = quiz.log.filter(l => l.ok && !l.hint).length;
   const missed = quiz.log.filter(l => !l.ok);
-  rotFace(true, total > 0 && correct / total >= 0.8);   // 8割以上〜パーフェクトなら、うれしい顔だけ
+  rotFace(!somber(), total > 0 && correct / total >= 0.8);   // 8割以上〜パーフェクトなら、うれしい顔だけ。公害のステージでは顔を出さない
   const r = rec(quiz.modeId, course.id);
   const before = COURSES.filter(c => c.ready && inMode(c) && !unlocked(c)).map(c => c.id);
   let newMaster = null, newStage = false;
