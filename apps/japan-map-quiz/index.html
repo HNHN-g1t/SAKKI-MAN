@@ -249,8 +249,13 @@ svg:not(.explore) .region-line{display:none}
 .combo{position:absolute;left:50%;top:var(--s16);transform:translateX(-50%);font-family:var(--display);font-size:var(--fs20);color:var(--on-brand);background:var(--brand);border:var(--bw) solid var(--on-brand);padding:var(--s4) var(--s16);border-radius:var(--r-pill);pointer-events:none}
 .combo.pop{animation:pop .3s ease-out 1}
 /* 雨温図の札：地図の上に出す。棒＝降水量（川の青）、折れ線＝平均気温（赤） */
-.chart{position:absolute;left:50%;top:60px;transform:translateX(-50%);width:min(340px,calc(100% - var(--s32)));box-sizing:border-box;background:var(--paper);color:var(--ink);border:var(--bw) solid var(--ink);border-radius:var(--r-btn);padding:var(--s8) var(--s8) var(--s4);pointer-events:none;z-index:1}
+.chart{position:absolute;left:50%;top:var(--s8);transform:translateX(-50%);width:min(340px,calc(100% - var(--s32)));box-sizing:border-box;background:var(--paper);color:var(--ink);border:var(--bw) solid var(--ink);border-radius:var(--r-btn);padding:var(--s8) var(--s8) var(--s4);pointer-events:none;z-index:1}
 .chart[hidden]{display:none}
+/* 雨温図の問題では、「つぎへ」の三角を左へ寄せて、雨温図の解説と比べるボタンにかぶせない（高さは同じ）。地図を使わないので目のボタンは隠す */
+.nexttri.left{left:var(--s16);transform:none}
+/* 背の低い画面（iPhone SE など）では、左の三角が解説にかからないよう雨温図を小さくする */
+@media (max-height:720px){.chart{left:auto;right:var(--s16);transform:none;width:min(240px,calc(100% - var(--s32)))}}   /* 右に寄せて、左の三角と重ならないようにする */
+.nexttri.left:active{transform:scale(.94)}
 .chart svg{display:block;width:100%;height:auto}
 .chart p{margin:0;text-align:center;font-size:var(--fs12);font-weight:700;color:var(--muted)}
 /* 雨温図の読みとり：黄色の帯（降水量）・点線の円（気温）・矢印（気温の差）・黄色の下線（年降水量）と、番号つきの説明 */
@@ -286,6 +291,10 @@ svg:not(.explore) .region-line{display:none}
 .chart.cmp-on .clegend{display:block}
 .cmpbtn{position:absolute;left:50%;transform:translateX(-50%);z-index:2;min-height:40px;padding:0 var(--s16);font-size:var(--fs14);white-space:nowrap;touch-action:none;box-shadow:0 3px 0 var(--ink)}
 .cmpbtn.on{background:var(--ink);color:var(--paper);transform:translateX(-50%) translateY(3px);box-shadow:none}
+/* 比べるボタンは雨温図の右はしにそろえる（左には「つぎへ」の三角が来る） */
+.cmpbtn.r{transform:none}
+.cmpbtn.r.on{transform:translateY(3px)}
+.eye[hidden]{display:none}
 @keyframes pop{50%{transform:translateX(-50%) scale(1.2)}}
 /* けっか画面の大きな一言：地図の真ん中に札で出す。地図は触れるように素通し */
 .clearmsg{position:absolute;inset:0 0 var(--r-sheet);display:grid;place-items:center;padding:var(--s16);pointer-events:none}
@@ -1442,14 +1451,16 @@ function setupCompare(other) {
   const btn = document.createElement("button");
   btn.className = "btn cmpbtn"; btn.id = "cmpBtn"; btn.type = "button"; btn.textContent = `${other.name}と重ねる（おしてる間）`;
   btn.style.top = `${chartEl.offsetTop + chartEl.offsetHeight + 8}px`;
-  document.getElementById("mapwrap").appendChild(btn);
+  const mw = document.getElementById("mapwrap"); mw.appendChild(btn);
+  btn.classList.add("r"); btn.style.left = "auto";
+  btn.style.right = `${mw.getBoundingClientRect().right - chartEl.getBoundingClientRect().right}px`;
   const on = e => { e.preventDefault(); btn.classList.add("on"); chartEl.classList.add("cmp-on"); try { btn.setPointerCapture(e.pointerId); } catch(err){} };
   const off = () => { btn.classList.remove("on"); chartEl.classList.remove("cmp-on"); };
   btn.addEventListener("pointerdown", on); ["pointerup", "pointercancel", "lostpointercapture"].forEach(t => btn.addEventListener(t, off));
   btn.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); btn.classList.add("on"); chartEl.classList.add("cmp-on"); } });
   btn.addEventListener("keyup", off); btn.addEventListener("blur", off);
 }
-const showChart = (id, withNote) => { const old = document.getElementById("cmpBtn"); if (old) old.remove(); chartEl.classList.remove("cmp-on"); const c = id && CLIMATE_CITIES.find(x => x.id === id); chartEl.hidden = !c; chartEl.innerHTML = c ? climateChart(c, withNote && CLIMATE_NOTES[c.id]) : ""; };
+const showChart = (id, withNote) => { const old = document.getElementById("cmpBtn"); if (old) old.remove(); chartEl.classList.remove("cmp-on"); const c = id && CLIMATE_CITIES.find(x => x.id === id); chartEl.hidden = !c; eye.hidden = !!c; chartEl.innerHTML = c ? climateChart(c, withNote && CLIMATE_NOTES[c.id]) : ""; };
 const showFeature = id => Object.entries(featEls).forEach(([k, els]) => els.forEach(p => p.classList.toggle("show", k === id)));
 let insetShown = true;
 
@@ -1552,7 +1563,8 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) { const g = pinchEl.
 let pinchOn = false;
 function pinchGuide(force) {
   // 問題中はどのステージでも出す（全国の挑戦も、九州などの地方ステージも）。基準はアプリが問題ごとに合わせた表示（fitBaseW）
-  const on = mode === "quiz" && quiz && quiz.area;
+  // 雨温図のステージでは、指のアイコンはいつも出さない（ピンチで拡大する操作はそのまま使える）
+  const on = mode === "quiz" && quiz && quiz.area && quiz.area.cat !== "chart" && chartEl.hidden;
   if (!on) { pinchOn = false; pinchEl.hidden = true; return; }
   const zoom = (fitBaseW || fitTarget(homeBox).w) / view.w;
   if (force || zoom <= 1.1) pinchOn = true; else if (zoom > 1.6) pinchOn = false;
@@ -2168,7 +2180,7 @@ function clearNextTri() { const o = byId("next"); if (o) o.remove(); }
 function showNextTri() {
   clearNextTri();
   const b = document.createElement("button");
-  b.type = "button"; b.id = "next"; b.className = "nexttri"; b.setAttribute("aria-label", "つぎへ");
+  b.type = "button"; b.id = "next"; b.className = chartEl.hidden ? "nexttri" : "nexttri left"; b.setAttribute("aria-label", "つぎへ");
   // 黄色の地に、ななめのグレーの帯（太・細の2本）が三角の中を横切ってキラッと光る。帯は三角の形で切りぬく
   b.innerHTML = `<svg viewBox="0 0 92 104" aria-hidden="true"><defs><clipPath id="triClip"><path d="M6 6 L86 52 L6 98 Z"/></clipPath></defs>
     <path class="tri-fill" d="M6 6 L86 52 L6 98 Z"/>
