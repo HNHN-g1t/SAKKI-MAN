@@ -39,7 +39,37 @@
 <body>
 <main class="stage">
   <h1>サッと記憶！サッ記マン 〜中学受験・社会〜</h1>
-  <a class="start" href="japan-map-quiz/">はじめる</a>
+  <a class="start" id="start" href="japan-map-quiz/">はじめる</a>
 </main>
+<script>
+// 「はじめる」を押したら、軽い「チュリーン」（上へ駆け上がる3つの鈴の音＋きらっと伸びる高い音）を鳴らしてから進む
+// 音のくわしいことは ME リポジトリの「サウンドの心得」
+(function () {
+  var btn = document.getElementById("start"), going = false;
+  btn.addEventListener("click", function (e) {
+    if (going) return;
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;   // 音が出せないブラウザはそのまま進む
+    e.preventDefault(); going = true;
+    try {
+      var a = new AC(), T = a.currentTime + 0.01, out = a.createGain();
+      out.gain.value = 0.25; out.connect(a.destination);
+      // チュ・リ・ー：ミ→ソ#→シ（ホ長調）をすばやく上がり、最後の音（高いミ）を少し伸ばす
+      [1318.5, 1661.2, 1975.5, 2637.0].forEach(function (f, i) {
+        var t = T + i * 0.055, len = i === 3 ? 0.55 : 0.18, g = a.createGain();
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(i === 3 ? 0.16 : 0.12, t + 0.008);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + len); g.connect(out);
+        [[f, "sine", 1], [f * 2, "sine", 0.15]].forEach(function (v) {
+          var o = a.createOscillator(), og = a.createGain(); o.type = v[1]; o.frequency.value = v[0]; og.gain.value = v[2];
+          o.connect(og); og.connect(g); o.start(t); o.stop(t + len + 0.05);
+        });
+      });
+    } catch (err) {}
+    setTimeout(function () { location.href = btn.href; }, 380);   // 音の頭（チュリー）を聞かせてから進む
+  });
+  // 戻るボタンでこの画面に戻ってきたら、また押せるようにする
+  window.addEventListener("pageshow", function () { going = false; });
+})();
+</script>
 </body>
 </html>

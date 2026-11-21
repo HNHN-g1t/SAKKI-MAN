@@ -216,8 +216,9 @@ svg:not(.explore) .region-line{display:none}
 .feat.range{fill:none;stroke:var(--brand);stroke-width:7px}
 .feat.river.case{stroke:var(--paper);stroke-width:8px}
 .feat.river{fill:none;stroke:var(--river);stroke-width:4px}
-.feat.plain,.feat.peak{fill:var(--brand);stroke:var(--ink);stroke-width:2.5px}
-.feat.plain{fill-opacity:.75}
+.feat.peak{fill:var(--brand);stroke:var(--ink);stroke-width:2.5px}
+/* 平野・半島・湾・台地などの「範囲」は、差し色のピンクで、ふちどりの線を付けずに縁をぼかす（SVG のぼかしフィルター #featSoft） */
+.feat.plain{fill:var(--pin);stroke:none;fill-opacity:.9}
 /* 県庁所在地の位置：ピンクの円が光る（画面上で同じ大きさ。apply() で scale をかける） */
 .cap-pin{pointer-events:none}
 .cap-pin .dot{fill:var(--pin);stroke:#fff;stroke-width:2}
@@ -498,6 +499,7 @@ svg:not(.explore) .region-line{display:none}
       <g id="prefs"></g>
       <g id="regions"></g>
       <g id="lakes"></g>
+      <defs><filter id="featSoft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.6"/></filter></defs>
       <g id="terrain"></g>
       <g id="insetg"><polyline class="inset" points="-100000,712 -11,712 -11,800 52,884 52,100000"></polyline></g>
       <g class="labels" id="labels"></g>
@@ -1283,8 +1285,11 @@ if (store.theme) document.documentElement.dataset.theme = store.theme;   // 保�
 const loadDbg = () => { try { return JSON.parse(localStorage.getItem(DBG_KEY) || "null"); } catch(e){ return null; } };
 // DBG ON の間は、本当の記録（store.rec）ではなくお試し用の記録（dbgRec。保存しない）を読み書きする
 let debug = false, dbgRec = null;
+// 完成版では DBG ボタンを出さない。アドレスの最後に ?dbg を付けて開いたときだけ DBG ボタンが出て、今までどおり使える
+// （?dbg なしで開くと、前に ON にしていても OFF。お試し記録は消さずに残すので、?dbg で開けば続きから使える）
+const DBG_ALLOWED = /(?:^|[?&#])dbg(?:[=&]|$)/.test(location.search.slice(1)) || /(?:^|#)dbg$/.test(location.hash);
 // DBG を ON のまま再読み込みしたら、ON とお試し記録を続ける
-try { if (localStorage.getItem("jmq-dbg-on") === "1") { debug = true; dbgRec = JSON.parse(localStorage.getItem("jmq-dbg-v1") || "null"); } } catch(e){}
+try { if (DBG_ALLOWED && localStorage.getItem("jmq-dbg-on") === "1") { debug = true; dbgRec = JSON.parse(localStorage.getItem("jmq-dbg-v1") || "null"); } } catch(e){}
 try { Object.values(dbgRec || {}).forEach(m => Object.values(m || {}).forEach(r => { if (r) delete r.gameBest; })); } catch(e){}
 const recRoot = () => debug ? (dbgRec || (dbgRec = fullRecs())) : store.rec;
 function rec(modeId, courseId) {
@@ -1516,7 +1521,7 @@ TERRAIN.forEach(f => {
   // 線の図形は、地図の上で見えるよう下に縁取りの線を敷く
   if (f.kind === "range" || f.kind === "river") els.push(f.kind === "river" ? "feat river case" : "feat case");
   els.push(`feat ${f.kind}`);
-  featEls[f.id] = els.map(cls => { const p = document.createElementNS(NS, "path"); p.setAttribute("d", f.d); p.setAttribute("class", cls); gTerrain.appendChild(p); return p; });
+  featEls[f.id] = els.map(cls => { const p = document.createElementNS(NS, "path"); p.setAttribute("d", f.d); p.setAttribute("class", cls); if (f.kind === "plain") p.setAttribute("filter", "url(#featSoft)"); gTerrain.appendChild(p); return p; });
 });
 const chartEl = document.getElementById("chart");
 // withNote：答えたあとは雨温図に印と説明をつける
@@ -1965,7 +1970,7 @@ function bindTheme() {
 // DBG は地図の上のまん中にうすく出す。問題中は出さない
 function placeDbg() {
   const dock = byId("dbgdock"); if (!dock) return;
-  dock.innerHTML = mode === "quiz" ? "" : debugBtn();
+  dock.innerHTML = mode === "quiz" || !DBG_ALLOWED ? "" : debugBtn();
   bindDbg();
 }
 
