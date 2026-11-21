@@ -17,7 +17,7 @@
    色はこの3か所（:root／ダーク2か所）の変数でだけ定義する。ほかの場所に色コードを書かない。
    --brand と --on-brand はダークでも変えない（黄色の上の文字は常に墨。白やクリームの上に黄色の文字は置かない） */
 :root{
-  --brand:#FED003; --on-brand:#282727; --pin:#FF4FA3; --mount:#2FA35A;   /* 山地・山脈の線の緑 */
+  --brand:#FED003; --on-brand:#282727; --pin:#FF4FA3; --mount:#2FA35A; --volcano:#E53935;   /* 山地・山脈の線の緑 */
   --tri-edge:#4A4745; --tri-shine:#FFF47E; --zero-shine:#FFF47E;   /* つぎへの三角：グレーのふちと文字（地は --brand。ダークでも同じ） */
   --ink:#282727; --paper:#EEEDEA; --cream:#F4EBDF; --sea:#D3DDE2; --bg:#E2E1DD;   /* ライトは真っ白をやめ、目にやさしいライトグレー */
   --muted:#5A5654; --line-soft:#C7C4C0; --off:#DAD9D5;
@@ -216,7 +216,7 @@ svg:not(.explore) .region-line{display:none}
 .feat.range{fill:none;stroke:var(--mount);stroke-width:16px;stroke-opacity:.9}
 .feat.river.case{stroke:var(--paper);stroke-width:8px}
 .feat.river{fill:none;stroke:var(--river);stroke-width:4px}
-.feat.peak{fill:var(--brand);stroke:var(--ink);stroke-width:2.5px}
+.feat.peak{fill:var(--volcano);stroke:var(--ink);stroke-width:2.5px}   /* 火山（富士山もふくむ）は赤の三角 */
 /* 平野・半島・湾・台地などの「範囲」は、差し色のピンクで、ふちどりの線を付けずに縁をぼかす（SVG のぼかしフィルター #featSoft） */
 .feat.plain{fill:var(--pin);stroke:none;fill-opacity:.9}
 /* 海岸線（三陸海岸・九十九里浜など）も、ピンクの太い線で縁をぼかす（ふちどりの線なし） */
@@ -396,6 +396,11 @@ svg:not(.explore) .region-line{display:none}
 .course .mastered{font-style:normal;font-size:inherit;font-weight:700;color:var(--brand);margin-left:var(--s8);white-space:nowrap;text-shadow:0 1px 2px var(--shade),0 0 1px var(--shade)}
 /* マスター！のコースだけ、行の右はしに超笑顔 */
 .course .mface{flex:none;height:44px;width:auto;margin:-4px -2px -4px 0}
+/* 苦手だけドリル：ピンクの線の行。番号の丸のかわりにくり返しの印 */
+.course.weakbtn{border-color:var(--pin);box-shadow:0 0 0 1px var(--pin)}
+.course.weakbtn .no{background:var(--pin);color:#fff}
+.course.weakbtn .no .ic{width:18px;height:18px}
+.weaknote{margin:0;font-size:var(--fs12);font-weight:700;color:var(--muted)}
 .course.done .no{background:var(--ok);color:var(--on-strong)}
 .course:disabled{opacity:.5;cursor:default}
 /* まだクリアが0のコース・まだ挑戦していないステージ（新しく開いたものもふくむ）：
@@ -696,6 +701,10 @@ const QUIZ_TYPES = {
         text: TREASURE_STAGES[t.stage].ask, explain: t.note };
     })
   },
+  weak: {
+    title: "苦手だけドリル", kind: "choice",
+    make: () => weakQs()
+  },
   designated: {
     title: "政令指定都市", kind: "tap",
     make: codes => CITIES.designated.map((d, i) => [d, i]).filter(([d]) => codes.includes(d[2])).map(([[name, kana, c], i]) => (
@@ -995,7 +1004,7 @@ const KOGAI = [
   {id: "yokkaichi", name: "四日市ぜんそく", kana: "よっかいちぜんそく", pref: 24, ll: [34.965, 136.625],
    note: "三重県四日市市の石油化学コンビナートから出た亜硫酸ガス（硫黄酸化物）が原因。空気がよごれ、ぜんそくに苦しむ人が多く出た。"},
 ];
-const somber = () => !!(quiz && quiz.area && quiz.area.cat === "kogai");   // キャラを出さないステージ（公害）
+const somber = () => !!(quiz && ((quiz.area && quiz.area.cat === "kogai") || (quiz.q && String(quiz.q.wk || "").startsWith("kogai"))));   // 苦手だけドリルに出た公害の問題も   // キャラを出さないステージ（公害）
 function kogaiQs() {
   return shuffle(KOGAI.flatMap(k => [
     { key: "kogai-t:" + k.id, kind: "tap", prefs: [k.pref], answers: [k.pref], sub: k.kana, text: phraseBreak(`<em>${k.name}</em>がおこった都道府県は？`), explain: k.note },
@@ -2045,6 +2054,54 @@ function courseStatus(c) {
   return {text: `正解した問題 ${got.size} / ${fullCount(c.id)}`, fresh: got.size === 0};
 }
 
+/* ---------- 苦手だけドリル ----------
+   どのコースでも、まちがえた問題を store.weak に覚える（{"コースID|key": {lvl, due}}）。まちがえたら lvl 0（すぐ出す）。
+   苦手だけドリルで正解すると、lvl 1＝翌日、2＝3日後、3＝7日後にまた出し、lvl 3 で正解したら「覚えた」として消す。
+   ふつうのステージで正解しても、出す日（due）が来ている問題なら同じように進める。総合問題の key は元のコースの問題にもどす */
+const WEAK_DAYS = [0, 1, 3, 7], WEAK_MAX = 10;
+const weakStore = () => store.weak || (store.weak = {});
+function weakRef(courseId, key) {
+  if (courseId === "general") { const [k, id] = String(key).split(":"); return k === "cap" ? ["capital", +id] : k === "ter" ? ["terrain", id] : ["industry", id]; }
+  return [courseId, key];
+}
+function weakMark(courseId, key, ok) {
+  const [c, k] = weakRef(courseId, key), w = weakStore(), id = c + "|" + k, now = Date.now(), e = w[id];
+  if (!ok) w[id] = {lvl: 0, due: now};
+  else if (e && e.due <= now) { e.lvl++; if (e.lvl >= WEAK_DAYS.length) delete w[id]; else e.due = now + WEAK_DAYS[e.lvl] * 864e5; }
+}
+const weakDue = () => { const now = Date.now(); return Object.entries(weakStore()).filter(([, e]) => e.due <= now).sort((a, b) => a[1].due - b[1].due); };
+function weakNextDays() {
+  const now = Date.now(), ds = Object.values(weakStore()).map(e => e.due).filter(d => d > now);
+  return ds.length ? Math.max(1, Math.ceil((Math.min(...ds) - now) / 864e5)) : 0;
+}
+// 苦手な問題を、元のコースの作り方で作り直す（出す日が来たものから最大10問）
+function weakQs() {
+  const out = [];
+  for (const [id] of weakDue()) {
+    if (out.length >= WEAK_MAX) break;
+    const bar = id.indexOf("|"), c = courseOf(id.slice(0, bar)), k = id.slice(bar + 1);
+    if (!c || !QUIZ_TYPES[c.id]) continue;
+    const type = QUIZ_TYPES[c.id];
+    const qs = k.startsWith("inland:") ? inlandQs() : k.startsWith("kogai") ? kogaiQs() : type.make(range(1, 47), null);
+    const q = qs.find(x => String(x.key) === k); if (!q) continue;
+    out.push(Object.assign(q, {kind: q.kind || type.kind, wc: c.id, wk: q.key, key: id, label: keyLabel(c.id, q.key, q.prefs[0])}));
+  }
+  return out;
+}
+const WEAK_COURSE = {id: "weak", name: "苦手だけドリル", master: null, ready: true, stages: false};
+function startWeak() {
+  const zen = AREAS.find(a => a.wide);
+  if (!weakQs().length) { toast("いま復習する問題はないよ"); return home(); }
+  startQuiz(WEAK_COURSE, zen, zen.codes, {});
+}
+// コース一覧のいちばん上：出す日が来た苦手な問題があれば、苦手だけドリルのボタン。まだ先なら「つぎの復習は〇日後」
+function weakRow() {
+  const due = weakDue().length, later = weakNextDays();
+  if (due) return `<div class="courses"><button class="course weakbtn" type="button" id="weakBtn"><b class="no">${ic("refresh")}</b><span>苦手だけドリル<small>まちがえた問題 ${Math.min(due, WEAK_MAX)}問を復習</small></span></button></div>`;
+  if (later) return `<p class="weaknote">苦手だけドリル：つぎの復習は${later === 1 ? "明日" : `${later}日後`}</p>`;
+  return "";
+}
+
 /* コース一覧（モードごと） */
 function home() {
   const lv = toHomeScreen(); screenNow = {kind: "home"};
@@ -2052,6 +2109,7 @@ function home() {
   bindBar();
   sheet.innerHTML = `
     <div class="info" id="info"></div>
+    ${weakRow()}
     <h2>${TRACKS[0].name}</h2>
     <div class="courses">${COURSES.filter(c => c.track !== "history").map((c, i) => {
       const s = courseStatus(c);
@@ -2064,6 +2122,7 @@ function home() {
     }).join("")}</div>
     <button class="btn resetbtn" id="reset" type="button">${ic("refresh")}リセット</button>`;
   byId("reset").onclick = openReset;
+  const wb = byId("weakBtn"); if (wb) wb.onclick = startWeak;
   freshBurst("home");
   sheet.querySelectorAll("[data-course]").forEach(b => b.onclick = () => coursePage(courseOf(b.dataset.course)));
 }
@@ -2215,7 +2274,9 @@ function nextQ() {
 // 1問の正誤を記録する。正解は got に積むだけで、まちがえても消えない
 function logAnswer(ok) {
   const q = quiz.q, r = rec(quiz.modeId, quiz.course.id);
-  quiz.log[quiz.i] = {ok, hint: q.hint, key: q.key, pref: q.prefs[0], tap: kindOf(q) === "tap"};
+  quiz.log[quiz.i] = {ok, hint: q.hint, key: q.key, pref: q.prefs[0], tap: kindOf(q) === "tap", label: q.label};
+  // 苦手だけドリル：まちがえた問題を覚えておき、正解したら間をあけてまた出す（ヒントを見た正解は進めない）
+  if (!debug && !(ok && q.hint)) weakMark(q.wc || quiz.course.id, q.wc ? q.wk : q.key, ok);
   if (ok) { r.got[q.key] = 1; if (!q.hint) r.clean[q.key] = 1; }
   else r.miss[q.key] = (r.miss[q.key] || 0) + 1;
   save();
@@ -2420,6 +2481,11 @@ function handleTap(code) {
 }
 
 // 総合問題のまちがえた一覧：もとのコースの書き方にそろえる
+// 結果の「まちがえた問題」などに出す、問題の短い名前（コースID・問題の key・答えの県から）
+function keyLabel(courseId, key, pref) {
+  const course = {id: courseId}, l = {key, pref};
+  return course.id === "treasure" ? treasureOf(l.key).name : course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? (String(l.key).startsWith("inland:") ? byCode(l.pref).name : TERRAIN.find(f => f.id === l.key).name) : course.id === "industry" ? (String(l.key).startsWith("kogai") ? KOGAI.find(k => k.id === l.key.split(":")[1]).name : `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）`) : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
+}
 function generalLabel(l) {
   const [k, id] = String(l.key).split(":");
   if (k === "cap") return `${byCode(+id).name}（${CITIES.capitals[+id][0][0]}）`;
@@ -2465,8 +2531,8 @@ function result() {
   // まちがえた問題だけのやり直し（opts.keys）は、全部正解しても「パーフェクト」ではなく「クリア」
   const retry = !!quiz.opts.keys;
   const msg = newMaster ? `${ic("crown")}<span class="mt">${masterHtml(course.master, "！")}</span>` : newStage ? `${ic("crown")}${quiz.area.name}ステージ パーフェクト！` : retry && correct === total ? "クリア！" : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしでマスターを目指そう！" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
-  const next = nextUnit(course, quiz.area, !!quiz.stage, retry);
-  const label = l => course.id === "treasure" ? treasureOf(l.key).name : course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? (String(l.key).startsWith("inland:") ? byCode(l.pref).name : TERRAIN.find(f => f.id === l.key).name) : course.id === "industry" ? (String(l.key).startsWith("kogai") ? KOGAI.find(k => k.id === l.key.split(":")[1]).name : `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）`) : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
+  const next = course.id === "weak" ? null : nextUnit(course, quiz.area, !!quiz.stage, retry);
+  const label = l => l.label || keyLabel(course.id, l.key, l.pref);
   top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta"><span class="nm">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">けっか</span></span></div>${themeBtn()}${muteBtn()}`;
   bindBar();
   // 文の最初のすきま（タグの外）で改行する。王冠はSVGなので innerHTML で入れる
@@ -2478,15 +2544,15 @@ function result() {
     ${missed.length ? `<h2>まちがえた問題</h2><div class="misslist">${missed.map(l => `<span>${label(l)}</span>`).join("")}</div>` : ""}
     <div class="row">
       ${missed.length ? `<button class="btn primary" id="retryMiss" type="button"><span class="nw">まちがえた問題だけ</span> <span class="nw">もう一回</span></button>` : ""}
-      <button class="btn${missed.length ? "" : " primary"}" id="retry" type="button">もう一回</button>
+      ${course.id !== "weak" ? `<button class="btn${missed.length ? "" : " primary"}" id="retry" type="button">もう一回</button>` : weakDue().length ? `<button class="btn${missed.length ? "" : " primary"}" id="retry" type="button">つづきを復習</button>` : ""}
       ${next ? `<button class="btn nextbtn" id="nextStage" type="button"><span>${next.label}</span><span class="nx">${NEXT2}${brkDot(next.name)}</span></button>` : ""}
-      <button class="btn" id="back" type="button">コースにもどる</button>
+      <button class="btn" id="back" type="button">${course.id === "weak" ? "コース一覧にもどる" : "コースにもどる"}</button>
     </div>`;
   const area = quiz.area, opts = quiz.opts, missKeys = missed.map(l => l.key);
   if (next) byId("nextStage").onclick = next.go;
   if (missed.length) byId("retryMiss").onclick = () => startQuiz(course, area, area.codes, {keys: missKeys});
-  byId("retry").onclick = () => startQuiz(course, area, area.codes, opts);
-  byId("back").onclick = () => coursePage(course);
+  if (byId("retry")) byId("retry").onclick = () => course.id === "weak" ? startWeak() : startQuiz(course, area, area.codes, opts);
+  byId("back").onclick = () => course.id === "weak" ? home() : coursePage(course);
   // 👑マスターを初めて取ったときだけ、称号をたたえる画面と花火を出す（cheered を記録して二度は出さない）
   if (newMaster && !newMaster.cheered) { newMaster.cheered = true; save(); celebrateMaster(course); }
   // ステージクリア・パーフェクトのとき：結果の札のまわりに花火を打ち上げ、クリアの音を鳴らす（👑マスターのときはお祝い画面のほうで鳴らす）
