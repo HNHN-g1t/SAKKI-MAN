@@ -356,10 +356,10 @@ svg:not(.explore) .region-line{display:none}
 .fb .txt .head{display:block;color:var(--ink);font-size:var(--fs16);font-weight:700;line-height:1.5}
 .fb .txt .head b{display:inline;font-size:var(--fs20)}
 /* ふえた野菜の1〜3位の表（解説のかわり）。答えの県の行に黄色のマーカー */
-.fb .rank3{list-style:none;margin:var(--s4) 0 0;padding:0;display:grid;grid-template-columns:auto auto auto;justify-content:start;gap:3px var(--s8);font-size:var(--fs14);font-weight:700;color:var(--ink)}
+.fb .rank3{list-style:none;margin:var(--s4) 0 0;padding:0;display:grid;grid-template-columns:auto auto auto;justify-content:start;gap:4px var(--s12);font-size:calc(var(--fs14) * 1.5);font-weight:700;color:var(--ink)}
 .fb .rank3 li{display:contents}
 .fb .rank3 b{display:grid;place-items:center;width:1.4em;height:1.4em;border-radius:50%;background:var(--cream);color:var(--ink);font-family:var(--display);font-weight:400;font-size:.85em}
-.fb .rank3 span{display:block;color:var(--ink);font-size:inherit}
+.fb .rank3 span{display:block;justify-self:start;color:var(--ink);font-size:inherit}
 .fb .rank3 em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums}
 .fb .rank3 li.hit span{box-shadow:inset 0 -.45em 0 var(--brand)}
 .fb .txt .head span{display:inline;color:var(--ink);font-size:inherit}
@@ -639,7 +639,7 @@ const QUIZ_TYPES = {
     // area.cat（farm／fruit／sea／maker／craft）の問題。地図で答えの都道府県をタップ
     // 出題停止（status:"stop"）の問題は出さない。出題数・完了・👑の判定もこの数で行う
     make: (codes, area) => industryLive().filter(f => (!area || !area.cat || f.cat === area.cat) && codes.includes(f.pref)).map(f => (
-      { key: f.id, prefs: [f.pref], top3: f.cat === "veg" ? VEG_TOP3[f.id.replace(/\d$/, "")] : null, text: phraseBreak(f.q || INDUSTRY_CATS[f.cat].ask(f.word)), sub: f.kana, answers: [f.pref], explain: f.note }))
+      { key: f.id, prefs: [f.pref], top3: f.cat === "veg" || f.cat === "chiku" ? TOP3[f.id.replace(/\d$/, "")] : null, text: phraseBreak(f.q || INDUSTRY_CATS[f.cat].ask(f.word)), sub: f.kana, answers: [f.pref], explain: f.note }))
   },
   climate: {
     title: "気候", kind: "choice",
@@ -924,12 +924,18 @@ const INDUSTRY = [
 ].map(f => Object.assign({checked: IND_CHECKED}, f));
 // 長い問題文を言葉の途中で折らない：文字のあいだでは折らず（keep-all）、「の」「を」「が」「、」「がある」のあとと「（」「都道府県」の前でだけ折る。ふりがなつきの言葉（em）は1つのまとまり
 const phraseBreak = html => `<span class="kb">${html.split(/(<[^>]+>)/).map(t => t.startsWith("<") ? t : t.replace(/がある/g, "\u0001").replace(/([のをが、])(?=.)/g, "$1<wbr>").replace(/\u0001/g, "がある<wbr>").replace(/（/g, "<wbr>（").replace(/([^>])(都道府県)/g, "$1<wbr>$2")).join("")}</span>`;
-// ふえた野菜：令和6年産の収穫量の1〜3位と全国にしめる割合（％、e-Stat 野菜生産出荷統計の都道府県別の値から計算）。答えのあとは解説文のかわりにこの表を出す
-const VEG_TOP3 = {
+// ふえた野菜・畜産：1〜3位と全国にしめる割合（％）。答えのあとは解説文のかわりにこの表を出す
+//   野菜は令和6年産の収穫量（e-Stat 野菜生産出荷統計の都道府県別の値から計算）
+//   畜産は乳用牛・肉用牛が令和7年2月1日、豚・ブロイラーが令和6年2月1日の飼養頭羽数（畜産統計。東北農政局の全国順位表の値から計算）
+const TOP3 = {
   lettuce:  [[20, 33.3], [8, 16.3], [10, 11.0]],
   broccoli: [[1, 18.5], [11, 9.0], [37, 8.2]],
   onion:    [[1, 66.8], [41, 7.3], [28, 6.9]],
   carrot:   [[1, 33.2], [12, 15.6], [36, 8.2]],
+  dairy:    [[1, 63.2], [9, 4.0], [43, 3.2]],
+  beef:     [[1, 21.0], [46, 13.9], [45, 9.6]],
+  pig:      [[46, 13.6], [1, 8.5], [45, 8.2]],
+  broiler:  [[46, 22.1], [45, 19.4], [3, 16.3]],
 };
 const rankTable = (top3, ans) => `<ol class="rank3">${top3.map(([c, pct], i) => `<li${c === ans ? ` class="hit"` : ""}><b>${i + 1}</b><span>${byCode(c).name}</span><em>${pct.toFixed(1)}%</em></li>`).join("")}</ol>`;
 const industryOf = id => INDUSTRY.find(f => f.id === id);
