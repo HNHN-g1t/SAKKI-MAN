@@ -216,6 +216,10 @@ svg:not(.explore) .region-line{display:none}
 .feat.range{fill:none;stroke:var(--mount);stroke-width:16px;stroke-opacity:.9}
 .feat.river.case{stroke:var(--paper);stroke-width:8px}
 .feat.river{fill:none;stroke:var(--river);stroke-width:4px}
+/* 海流：暖流は赤、寒流は青の太い線と矢印（ぼかさない） */
+.feat.current{fill:none;stroke-width:7px;stroke-linecap:round}
+.feat.current.warm{stroke:#E53935}.feat.current.cold{stroke:#1E6FD9}
+.feat.chead{stroke:none}.feat.chead.warm{fill:#E53935}.feat.chead.cold{fill:#1E6FD9}
 .feat.peak{fill:var(--volcano);stroke:var(--ink);stroke-width:2.5px}   /* 火山（富士山もふくむ）は赤の三角 */
 /* 平野・半島・湾・台地などの「範囲」は、差し色のピンクで、ふちどりの線を付けずに縁をぼかす（SVG のぼかしフィルター #featSoft） */
 .feat.plain{fill:var(--pin);stroke:none;fill-opacity:.9}
@@ -637,7 +641,7 @@ const QUIZ_TYPES = {
   terrain: {
     title: "山・河川・平野", kind: "choice",
     // area.cat（mount／river／plain）の図形を出題。選択肢は同じ種類からほかに3つ
-    make: (codes, area) => area && area.cat === "inland" ? inlandQs() : TERRAIN.filter(f => !area || !area.cat || f.cat === area.cat).map(f => {
+    make: (codes, area) => area && area.cat === "inland" ? inlandQs() : area && area.cat === "current" ? currentQs() : TERRAIN.filter(f => !area || !area.cat || f.cat === area.cat).map(f => {
       const pool = shuffle(TERRAIN.filter(g => g.cat === f.cat && g.id !== f.id)).slice(0, 3);
       return { key: f.id, prefs: [f.pref], focus: f.pref, feature: f.id, sub: "", choices: [[f.name, f.kana], ...pool.map(g => [g.name, g.kana])], correct: f.name,
         // 地形の用語は「何という？」。解説（note）があれば出す
@@ -1128,6 +1132,16 @@ const TREASURE = [
 ].map(([id, stage, name, kana, pref, lat, lon, note]) => ({id, stage, name, kana, pref, ll: [lat, lon], note}));
 const treasureOf = id => TREASURE.find(t => t.id === id);
 
+// 海流：4つの海流それぞれで「名前」（4択）と「暖流か寒流か」（2択）を出す＝8問
+function currentQs() {
+  const cs = TERRAIN.filter(f => f.cat === "current");
+  return cs.flatMap(f => [
+    { key: f.id, prefs: [f.pref], focus: f.pref, feature: f.id, sub: "", choices: cs.map(g => [g.name, g.kana]), correct: f.name,
+      text: "この<em>海流</em>の名前は？", explain: `${f.name}：${f.note}` },
+    { key: f.id + ":t", prefs: [f.pref], focus: f.pref, feature: f.id, sub: "", choices: [["暖流", "だんりゅう"], ["寒流", "かんりゅう"]], correct: f.flow === "warm" ? "暖流" : "寒流",
+      text: "この<em>海流</em>は暖流？ 寒流？", explain: `${f.name}：${f.note}` },
+  ]);
+}
 // 海なし県（海に面していない8県）：毎回8問で8県を1回ずつ。1問ずつ、県名を出して地図をタップする形と、
 // 県を光らせて県名を4択で答える形をランダムにまぜる。key は "inland:県コード"（どちらの形でも同じ県は同じ key）
 const INLAND = [9, 10, 11, 19, 20, 21, 25, 29];
@@ -1144,7 +1158,7 @@ function inlandQs() {
       text: "光っている<em>海なし県</em>は？", explain: INLAND_NOTE };
   });
 }
-const TERRAIN_CATS = { mount: "山地・山脈・山", river: "川", plain: "平野", basin: "盆地", lake: "湖", volcano: "火山", island: "島", hanto: "半島", coast: "海岸・湾", land: "地形" };
+const TERRAIN_CATS = { current: "海流", mount: "山地・山脈・山", river: "川", plain: "平野", basin: "盆地", lake: "湖", volcano: "火山", island: "島", hanto: "半島", coast: "海岸・湾", land: "地形" };
 
 /* ---------- 気候（気候区分・雨温図） ----------
    CLIMATE_ZONES：日本の6つの気候区分。codes は地図で色をつける「その気候の代表的な都道府県」（県の一部だけがあてはまる県は入れない）
@@ -1267,7 +1281,7 @@ const COURSES = [
    stageList:[{id:"mount", cat:"mount", name:"山地・山脈", codes:range(1,47)}, {id:"river", cat:"river", name:"川", codes:range(1,47)}, {id:"plain", cat:"plain", name:"平野", codes:range(1,47)},
      {id:"basin", cat:"basin", name:"盆地", codes:range(1,47)}, {id:"lake", cat:"lake", name:"湖", codes:range(1,47)}, {id:"volcano", cat:"volcano", name:"火山", codes:range(1,47)},
      {id:"island", cat:"island", name:"島", codes:range(1,47)}, {id:"hanto", cat:"hanto", name:"半島", codes:range(1,47)}, {id:"coast", cat:"coast", name:"海岸・湾", codes:range(1,47)},
-     {id:"land", cat:"land", name:"地形の用語", codes:range(1,47)}, {id:"inland", cat:"inland", name:"海なし県", codes:range(1,47)}],
+     {id:"current", cat:"current", name:"海流", codes:range(1,47)}, {id:"land", cat:"land", name:"地形の用語", codes:range(1,47)}, {id:"inland", cat:"inland", name:"海なし県", codes:range(1,47)}],
    rules:["山地・山脈（11）・川（10）・平野（10）の3ステージ。地図に出た図形の名前を4択で答える", "ステージ👑：そのステージをヒントなしで全問正解",
           "👑地形マスター：3ステージすべて👑", "完了：3ステージすべてを最後まで解く",
           "図形は教材の略地図程度のおおまかな形（石狩川・最上川・利根川は Natural Earth の線）"]},
@@ -1566,8 +1580,9 @@ TERRAIN.forEach(f => {
   const els = [];
   // 線の図形は、地図の上で見えるよう下に縁取りの線を敷く
   if (f.kind === "river") els.push("feat river case");
-  els.push(`feat ${f.kind}`);
-  featEls[f.id] = els.map(cls => { const p = document.createElementNS(NS, "path"); p.setAttribute("d", f.d); p.setAttribute("class", cls); if (f.kind === "plain" || f.kind === "coastline" || f.kind === "range") p.setAttribute("filter", "url(#featSoft)"); gTerrain.appendChild(p); return p; });
+  els.push(f.kind === "current" ? `feat current ${f.flow}` : `feat ${f.kind}`);
+  if (f.a) els.push(`feat chead ${f.flow}`);   // 海流の矢印の頭
+  featEls[f.id] = els.map((cls, i) => { const p = document.createElementNS(NS, "path"); p.setAttribute("d", cls.includes("chead") ? f.a : f.d); p.setAttribute("class", cls); if (f.kind === "plain" || f.kind === "coastline" || f.kind === "range") p.setAttribute("filter", "url(#featSoft)"); gTerrain.appendChild(p); return p; });
 });
 const chartEl = document.getElementById("chart");
 // withNote：答えたあとは雨温図に印と説明をつける
@@ -2082,7 +2097,7 @@ function weakQs() {
     const bar = id.indexOf("|"), c = courseOf(id.slice(0, bar)), k = id.slice(bar + 1);
     if (!c || !QUIZ_TYPES[c.id]) continue;
     const type = QUIZ_TYPES[c.id];
-    const qs = k.startsWith("inland:") ? inlandQs() : k.startsWith("kogai") ? kogaiQs() : type.make(range(1, 47), null);
+    const qs = k.startsWith("inland:") ? inlandQs() : k.startsWith("kogai") ? kogaiQs() : k.startsWith("o_") ? currentQs() : type.make(range(1, 47), null);
     const q = qs.find(x => String(x.key) === k); if (!q) continue;
     out.push(Object.assign(q, {kind: q.kind || type.kind, wc: c.id, wk: q.key, key: id, label: keyLabel(c.id, q.key, q.prefs[0])}));
   }
@@ -2484,7 +2499,7 @@ function handleTap(code) {
 // 結果の「まちがえた問題」などに出す、問題の短い名前（コースID・問題の key・答えの県から）
 function keyLabel(courseId, key, pref) {
   const course = {id: courseId}, l = {key, pref};
-  return course.id === "treasure" ? treasureOf(l.key).name : course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? (String(l.key).startsWith("inland:") ? byCode(l.pref).name : TERRAIN.find(f => f.id === l.key).name) : course.id === "industry" ? (String(l.key).startsWith("kogai") ? KOGAI.find(k => k.id === l.key.split(":")[1]).name : `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）`) : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
+  return course.id === "treasure" ? treasureOf(l.key).name : course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? (String(l.key).startsWith("inland:") ? byCode(l.pref).name : TERRAIN.find(f => f.id === String(l.key).replace(/:t$/, "")).name) : course.id === "industry" ? (String(l.key).startsWith("kogai") ? KOGAI.find(k => k.id === l.key.split(":")[1]).name : `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）`) : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
 }
 function generalLabel(l) {
   const [k, id] = String(l.key).split(":");

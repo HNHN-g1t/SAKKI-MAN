@@ -173,6 +173,36 @@ LANDFORMS += [
     ("b_nara", "basin", "奈良盆地", "ならぼんち", 29, "area", (34.6, 135.8), 0.1, 0.15, 0, "奈良県の北部の盆地。平城京や藤原京がおかれた。"),
 ]
 
+# 海流（矢印つきの線。warm＝暖流、cold＝寒流）。線の点は流れる向きの順
+CURRENTS = [
+    ("o_kuroshio", "黒潮（日本海流）", "くろしお（にほんかいりゅう）", 39, "warm", [(27.6, 128.6), (29.6, 130.6), (31.4, 132.4), (32.6, 134.4), (33.4, 136.6), (34.2, 138.8), (35.2, 140.8), (36.0, 142.0), (36.6, 143.8)],
+     "暖流。太平洋側を南から北へ流れる。まわりの気候をあたたかくする。"),
+    ("o_oyashio", "親潮（千島海流）", "おやしお（ちしまかいりゅう）", 3, "cold", [(44.6, 149.2), (43.4, 147.4), (42.3, 145.4), (41.3, 143.6), (40.1, 142.6), (38.8, 142.4), (37.6, 141.9)],
+     "寒流。千島列島から南へ流れる。栄養が多く魚が育つ。黒潮とぶつかる三陸沖の潮目（潮境）はよい漁場。"),
+    ("o_tsushima", "対馬海流", "つしまかいりゅう", 42, "warm", [(32.4, 128.4), (33.9, 129.6), (35.4, 131.6), (36.6, 134.2), (37.9, 136.8), (39.6, 138.6), (41.4, 139.3), (43.2, 139.7), (44.8, 140.6)],
+     "暖流。黒潮から分かれて日本海を北へ流れる。冬の北西の季節風がこの上で水分をふくみ、日本海側に大雪をふらせる。"),
+    ("o_liman", "リマン海流", "りまんかいりゅう", 15, "cold", [(45.6, 138.2), (44.0, 136.2), (42.6, 133.8), (41.6, 131.6), (40.4, 130.0)],
+     "寒流。日本海の大陸ぞいを北から南へ流れる。"),
+]
+
+CURRENT_CTX = {"o_liman": [(38.0, 139.5), (42.0, 141.0)], "o_oyashio": [(40.0, 140.5)], "o_kuroshio": [(34.5, 135.5)], "o_tsushima": [(36.0, 136.0)]}
+
+
+def currents():
+    out = []
+    for fid, name, kana, pref, kind, line, note in CURRENTS:
+        pts = [proj(*p) for p in line]
+        (x1, y1), (x2, y2) = pts[-2], pts[-1]
+        bx = bbox(pts); size = max(bx[2] - bx[0], bx[3] - bx[1])
+        a = math.atan2(y2 - y1, x2 - x1); L = size * 0.09; W = size * 0.05   # 矢印の頭は線の長さに合わせた大きさ
+        tip = (x2 + math.cos(a) * L * 0.6, y2 + math.sin(a) * L * 0.6)
+        head = [tip, (x2 - math.cos(a) * L * 0.4 + math.sin(a) * W, y2 - math.sin(a) * L * 0.4 - math.cos(a) * W),
+                (x2 - math.cos(a) * L * 0.4 - math.sin(a) * W, y2 - math.sin(a) * L * 0.4 + math.cos(a) * W)]
+        ctx = [proj(*p) for p in CURRENT_CTX.get(fid, [])]   # 表示の範囲に日本の陸も入れる点（位置が分かるように）
+        out.append({"id": fid, "cat": "current", "kind": "current", "flow": kind, "name": name, "kana": kana, "pref": pref,
+                    "d": path_d(pts), "a": path_d(head) + "Z", "b": bbox(pts + head + ctx), "note": note})
+    return out
+
 
 def ellipse(lat, lon, rx, ry, rot):
     a = math.radians(rot)
@@ -291,6 +321,7 @@ def main():
                         for o in json.load(open(DATA / "paths.json", encoding="utf-8")) for part in re.findall(r"M([^Z]+)Z", o["d"])
                         if len(part.split("L")) >= 3])
     feats += landforms(L, Lraw)
+    feats += currents()
     (DATA / "terrain.json").write_text(json.dumps(feats, ensure_ascii=False, separators=(",", ":")), encoding="utf-8", newline="\n")
     print("wrote terrain.json:", len(feats), "features")
 
