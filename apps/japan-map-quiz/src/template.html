@@ -628,7 +628,7 @@ const QUIZ_TYPES = {
   terrain: {
     title: "山・河川・平野", kind: "choice",
     // area.cat（mount／river／plain）の図形を出題。選択肢は同じ種類からほかに3つ
-    make: (codes, area) => TERRAIN.filter(f => !area || !area.cat || f.cat === area.cat).map(f => {
+    make: (codes, area) => area && area.cat === "inland" ? inlandQs() : TERRAIN.filter(f => !area || !area.cat || f.cat === area.cat).map(f => {
       const pool = shuffle(TERRAIN.filter(g => g.cat === f.cat && g.id !== f.id)).slice(0, 3);
       return { key: f.id, prefs: [f.pref], focus: f.pref, feature: f.id, sub: "", choices: [[f.name, f.kana], ...pool.map(g => [g.name, g.kana])], correct: f.name,
         // 地形の用語は「何という？」。解説（note）があれば出す
@@ -1084,6 +1084,22 @@ const TREASURE = [
 ].map(([id, stage, name, kana, pref, lat, lon, note]) => ({id, stage, name, kana, pref, ll: [lat, lon], note}));
 const treasureOf = id => TREASURE.find(t => t.id === id);
 
+// 海なし県（海に面していない8県）：毎回8問で8県を1回ずつ。1問ずつ、県名を出して地図をタップする形と、
+// 県を光らせて県名を4択で答える形をランダムにまぜる。key は "inland:県コード"（どちらの形でも同じ県は同じ key）
+const INLAND = [9, 10, 11, 19, 20, 21, 25, 29];
+const INLAND_NOTE = "海に面していない県（海なし県）は、栃木県・群馬県・埼玉県・山梨県・長野県・岐阜県・滋賀県・奈良県の8つ。";
+// 地図は8県がまるごと入る範囲（まわりの海と県も少し見える）に寄せる（q.box）
+function inlandQs() {
+  const u = unionBox(INLAND), m = 40, box = [u[0] - m, u[1] - m, u[2] + m, u[3] + m];
+  return shuffle(INLAND).map(c => {
+    const p = byCode(c), key = "inland:" + c;
+    if (Math.random() < 0.5) return { key, kind: "tap", prefs: [c], answers: [c], sub: p.kana, box,
+      text: `海なし県の<em>${p.name}</em>はどこ？`, explain: INLAND_NOTE };
+    const pool = shuffle(INLAND.filter(o => o !== c)).slice(0, 3).map(o => [byCode(o).name, byCode(o).kana]);
+    return { key, kind: "choice", prefs: [c], focus: c, sub: "", box, choices: [[p.name, p.kana], ...pool], correct: p.name,
+      text: "光っている<em>海なし県</em>は？", explain: INLAND_NOTE };
+  });
+}
 const TERRAIN_CATS = { mount: "山地・山脈・山", river: "川", plain: "平野", land: "地形", coast: "海岸・湾・半島" };
 
 /* ---------- 気候（気候区分・雨温図） ----------
@@ -1203,7 +1219,7 @@ const COURSES = [
           "都市そのものの位置を答える問題は準備中（記録は別に分けて持つ）"]},
   {id:"terrain", name:"山・河川・平野", master:"地形マスター", from:"g5", ready:true, stages:true, unlock:{course:"designated", need:"complete"},
    stageList:[{id:"mount", cat:"mount", name:"山地・山脈", codes:range(1,47)}, {id:"river", cat:"river", name:"川", codes:range(1,47)}, {id:"plain", cat:"plain", name:"平野", codes:range(1,47)},
-     {id:"land", cat:"land", name:"地形の用語", codes:range(1,47)}, {id:"coast", cat:"coast", name:"海岸・湾・半島", codes:range(1,47)}],
+     {id:"land", cat:"land", name:"地形の用語", codes:range(1,47)}, {id:"inland", cat:"inland", name:"海なし県", codes:range(1,47)}, {id:"coast", cat:"coast", name:"海岸・湾・半島", codes:range(1,47)}],
    rules:["山地・山脈（11）・川（10）・平野（10）の3ステージ。地図に出た図形の名前を4択で答える", "ステージ👑：そのステージをヒントなしで全問正解",
           "👑地形マスター：3ステージすべて👑", "完了：3ステージすべてを最後まで解く",
           "図形は教材の略地図程度のおおまかな形（石狩川・最上川・利根川は Natural Earth の線）"]},
@@ -2109,6 +2125,7 @@ function nextQ() {
   eyeOff(); clearTag(); clearNextTri(); rotFace(false);
   if (quiz.i >= quiz.qs.length) return result();
   const q = quiz.q = quiz.qs[quiz.i]; q.hint = false; quiz.answered = false;
+  if (q.box) fitLater(q.box);   // 問題ごとに見せる範囲が決まっているもの（海なし県）
   // 出題文はどのコースも下段（シート）に置き、上のバーには進み具合だけを出す。4択は出題文のすぐ下に選択肢
   // 上の帯：左端に✕（やめる）、小さい文字で「関東　3 / 7」、右に DBG とタイトルへ戻る家のボタン
   top_.innerHTML = `<button class="iconbtn" id="quit" type="button" aria-label="やめる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><div class="ask"><span class="meta"><span class="nm">${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">${quiz.i+1} / ${quiz.qs.length}</span></span></div>${themeBtn()}${muteBtn()}${titleBtn()}`;
@@ -2405,7 +2422,7 @@ function result() {
   const retry = !!quiz.opts.keys;
   const msg = newMaster ? `${ic("crown")}<span class="mt">${masterHtml(course.master, "！")}</span>` : newStage ? `${ic("crown")}${quiz.area.name}ステージ パーフェクト！` : retry && correct === total ? "クリア！" : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしでマスターを目指そう！" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
   const next = nextUnit(course, quiz.area, !!quiz.stage, retry);
-  const label = l => course.id === "treasure" ? treasureOf(l.key).name : course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? TERRAIN.find(f => f.id === l.key).name : course.id === "industry" ? `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）` : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
+  const label = l => course.id === "treasure" ? treasureOf(l.key).name : course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? (String(l.key).startsWith("inland:") ? byCode(l.pref).name : TERRAIN.find(f => f.id === l.key).name) : course.id === "industry" ? `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）` : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
   top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta"><span class="nm">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">けっか</span></span></div>${themeBtn()}${muteBtn()}`;
   bindBar();
   // 文の最初のすきま（タグの外）で改行する。王冠はSVGなので innerHTML で入れる
