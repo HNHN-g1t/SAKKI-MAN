@@ -140,7 +140,7 @@ def landforms(L, Lraw):
     for fid, cat, name, kana, pref, shape, geo, rx, ry, rot, note in LANDFORMS:
         if shape == "line":
             pts = [proj(*p) for p in geo]
-            out.append({"id": fid, "cat": cat, "kind": "range", "name": name, "kana": kana, "pref": pref, "d": path_d(pts), "b": bbox(pts), "note": note})
+            out.append({"id": fid, "cat": cat, "kind": "coastline", "name": name, "kana": kana, "pref": pref, "d": path_d(pts), "b": bbox(pts), "note": note})
             continue
         e = Polygon([proj(*p) for p in geo]) if shape == "poly" else ellipse(geo[0], geo[1], rx, ry, rot)
         g = e.difference(Lraw) if shape == "sea" else e.intersection(L)

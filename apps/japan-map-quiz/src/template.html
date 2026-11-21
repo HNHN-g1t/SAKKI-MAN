@@ -219,6 +219,8 @@ svg:not(.explore) .region-line{display:none}
 .feat.peak{fill:var(--brand);stroke:var(--ink);stroke-width:2.5px}
 /* 平野・半島・湾・台地などの「範囲」は、差し色のピンクで、ふちどりの線を付けずに縁をぼかす（SVG のぼかしフィルター #featSoft） */
 .feat.plain{fill:var(--pin);stroke:none;fill-opacity:.9}
+/* 海岸線（三陸海岸・九十九里浜など）も、ピンクの太い線で縁をぼかす（ふちどりの線なし） */
+.feat.coastline{fill:none;stroke:var(--pin);stroke-width:16px;stroke-opacity:.9}
 /* 県庁所在地の位置：ピンクの円が光る（画面上で同じ大きさ。apply() で scale をかける） */
 .cap-pin{pointer-events:none}
 .cap-pin .dot{fill:var(--pin);stroke:#fff;stroke-width:2}
@@ -1521,7 +1523,7 @@ TERRAIN.forEach(f => {
   // 線の図形は、地図の上で見えるよう下に縁取りの線を敷く
   if (f.kind === "range" || f.kind === "river") els.push(f.kind === "river" ? "feat river case" : "feat case");
   els.push(`feat ${f.kind}`);
-  featEls[f.id] = els.map(cls => { const p = document.createElementNS(NS, "path"); p.setAttribute("d", f.d); p.setAttribute("class", cls); if (f.kind === "plain") p.setAttribute("filter", "url(#featSoft)"); gTerrain.appendChild(p); return p; });
+  featEls[f.id] = els.map(cls => { const p = document.createElementNS(NS, "path"); p.setAttribute("d", f.d); p.setAttribute("class", cls); if (f.kind === "plain" || f.kind === "coastline") p.setAttribute("filter", "url(#featSoft)"); gTerrain.appendChild(p); return p; });
 });
 const chartEl = document.getElementById("chart");
 // withNote：答えたあとは雨温図に印と説明をつける
