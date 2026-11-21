@@ -355,6 +355,13 @@ svg:not(.explore) .region-line{display:none}
 .fb .txt span{display:block;color:var(--muted);font-size:var(--fs14);font-weight:700}
 .fb .txt .head{display:block;color:var(--ink);font-size:var(--fs16);font-weight:700;line-height:1.5}
 .fb .txt .head b{display:inline;font-size:var(--fs20)}
+/* ふえた野菜の1〜3位の表（解説のかわり）。答えの県の行に黄色のマーカー */
+.fb .rank3{list-style:none;margin:var(--s4) 0 0;padding:0;display:grid;grid-template-columns:auto auto auto;justify-content:start;gap:3px var(--s8);font-size:var(--fs14);font-weight:700;color:var(--ink)}
+.fb .rank3 li{display:contents}
+.fb .rank3 b{display:grid;place-items:center;width:1.4em;height:1.4em;border-radius:50%;background:var(--cream);color:var(--ink);font-family:var(--display);font-weight:400;font-size:.85em}
+.fb .rank3 span{display:block;color:var(--ink);font-size:inherit}
+.fb .rank3 em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums}
+.fb .rank3 li.hit span{box-shadow:inset 0 -.45em 0 var(--brand)}
 .fb .txt .head span{display:inline;color:var(--ink);font-size:inherit}
 .fb .txt .head em{font-style:normal;box-shadow:inset 0 calc(-1 * var(--marker)) 0 var(--brand)}
 .fb .txt .desc{margin-top:var(--s4)}
@@ -632,7 +639,7 @@ const QUIZ_TYPES = {
     // area.cat（farm／fruit／sea／maker／craft）の問題。地図で答えの都道府県をタップ
     // 出題停止（status:"stop"）の問題は出さない。出題数・完了・👑の判定もこの数で行う
     make: (codes, area) => industryLive().filter(f => (!area || !area.cat || f.cat === area.cat) && codes.includes(f.pref)).map(f => (
-      { key: f.id, prefs: [f.pref], text: phraseBreak(f.q || INDUSTRY_CATS[f.cat].ask(f.word)), sub: f.kana, answers: [f.pref], explain: f.note }))
+      { key: f.id, prefs: [f.pref], top3: f.cat === "veg" ? VEG_TOP3[f.id.replace(/\d$/, "")] : null, text: phraseBreak(f.q || INDUSTRY_CATS[f.cat].ask(f.word)), sub: f.kana, answers: [f.pref], explain: f.note }))
   },
   climate: {
     title: "気候", kind: "choice",
@@ -917,6 +924,14 @@ const INDUSTRY = [
 ].map(f => Object.assign({checked: IND_CHECKED}, f));
 // 長い問題文を言葉の途中で折らない：文字のあいだでは折らず（keep-all）、「の」「を」「が」「、」「がある」のあとと「（」「都道府県」の前でだけ折る。ふりがなつきの言葉（em）は1つのまとまり
 const phraseBreak = html => `<span class="kb">${html.split(/(<[^>]+>)/).map(t => t.startsWith("<") ? t : t.replace(/がある/g, "\u0001").replace(/([のをが、])(?=.)/g, "$1<wbr>").replace(/\u0001/g, "がある<wbr>").replace(/（/g, "<wbr>（").replace(/([^>])(都道府県)/g, "$1<wbr>$2")).join("")}</span>`;
+// ふえた野菜：令和6年産の収穫量の1〜3位と全国にしめる割合（％、e-Stat 野菜生産出荷統計の都道府県別の値から計算）。答えのあとは解説文のかわりにこの表を出す
+const VEG_TOP3 = {
+  lettuce:  [[20, 33.3], [8, 16.3], [10, 11.0]],
+  broccoli: [[1, 18.5], [11, 9.0], [37, 8.2]],
+  onion:    [[1, 66.8], [41, 7.3], [28, 6.9]],
+  carrot:   [[1, 33.2], [12, 15.6], [36, 8.2]],
+};
+const rankTable = (top3, ans) => `<ol class="rank3">${top3.map(([c, pct], i) => `<li${c === ans ? ` class="hit"` : ""}><b>${i + 1}</b><span>${byCode(c).name}</span><em>${pct.toFixed(1)}%</em></li>`).join("")}</ol>`;
 const industryOf = id => INDUSTRY.find(f => f.id === id);
 const industryLive = () => INDUSTRY.filter(f => f.status !== "stop");   // 出題する問題（出題停止を除く）
 const industryName = f => (f.word.match(/<em>(.*?)<\/em>/) || [0, f.word])[1];   // 結果の一覧に出す短い名前
@@ -2276,13 +2291,13 @@ function handleTap(code) {
   if (ok) {
     pathEl[code].classList.add("flash-ok");
     quizTimeout(() => { pathEl[code].classList.remove("flash-ok"); pathEl[code].classList.add("ok"); }, 450);
-    afterAnswer(true, `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans.name}</b><span class="desc">${q.hint ? "（ヒントを見て正解）" : ""}${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}</div></div>`,
+    afterAnswer(true, `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans.name}</b>${q.top3 ? `${q.hint ? `<span class="desc">（ヒントを見て正解）</span>` : ""}${rankTable(q.top3, ans.code)}` : `<span class="desc">${q.hint ? "（ヒントを見て正解）" : ""}${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}`}</div></div>`,
       {kind: "tap", burst: () => { const r = pathEl[code].getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; }});
   } else {
     pathEl[code].classList.add("flash-ng"); showTag(code, p.short);
     pathEl[ans.code].classList.add("miss");
     JapanMap.highlightPrefecture(ans.code);
-    afterAnswer(false, `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　正解は <em>${ans.name}</em>。キミが指したのは ${p.name}。</span><span class="desc">${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}</div></div>`, {kind: "tap"});
+    afterAnswer(false, `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　正解は <em>${ans.name}</em>。<span class="nw">キミが指したのは</span> <span class="nw">${p.name}。</span></span>${q.top3 ? rankTable(q.top3, ans.code) : `<span class="desc">${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}`}</div></div>`, {kind: "tap"});
   }
 }
 
