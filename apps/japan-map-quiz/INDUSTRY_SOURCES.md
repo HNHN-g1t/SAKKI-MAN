@@ -1,32 +1,26 @@
 # 農林水産業・工業コース 問題データの出典一覧
 
-`src/template.html` の `INDUSTRY` から作った一覧（最終確認日 2026-11-20）。データを直したら作り直す。
+`src/template.html` の `INDUSTRY` から作った一覧（最終確認日 2026-11-21）。データを直したら作り直す。答えのあとに出す1〜3位の表（`TOP3`）の年と出どころは HANDOFF.md を参照。
 
 - 確認済み：答え・統計年・出典を国や県などの公式資料で確認した（出題する）
 - 要確認：答えは確認済みだが、最新の年次などに確認が残る（出題する）
 - 出題停止：根拠が足りないので出さない
 
-2026-11-20 から、作業環境で農林水産省・e-Stat・経済産業省のサイトを直接開けるようになった（環境「SAKKI-MAN（統計サイト許可）」）。毎年の更新のときは、各URLの原本で数値を確かめ直すこと。
+公害のステージ（四大公害病）は `KOGAI` にあり、この一覧には入れていない。
 
 
-## 農業（米・野菜・花）
+## 野菜
 
 | ID | 問題 | 答え | 指標 | 統計年 | 出典 | 状態 |
 |---|---|---|---|---|---|---|
-| rice | 米の収穫量が全国一の都道府県は？ | 新潟県 | 水稲の収穫量（主食用） | 令和7年産 | [農林水産省「作物統計調査 令和7年産水陸稲の収穫量」](https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kome/pdf/syukaku_suiriku_25.pdf) | 確認済み |
 | potato | じゃがいもの収穫量が全国一の都道府県は？ | 北海道 | 春植えばれいしょの収穫量 | 令和7年産 | [農林水産省「作物統計調査 令和7年産春植えばれいしょの作付面積、収穫量及び出荷量」](https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_yasai/pdf/syukaku_barei_25.pdf) | 確認済み |
 | pepper | ピーマンの収穫量が全国一の都道府県は？ | 茨城県 | ピーマンの収穫量 | 令和5年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-08.pdf) | 確認済み |
 | strawberry | いちごの収穫量が全国一の都道府県は？ | 栃木県 | いちごの収穫量 | 令和5年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-09.pdf) | 確認済み |
-| peanut | 落花生の収穫量が全国一の都道府県は？ | 千葉県 | らっかせいの収穫量 | 未確認（令和7年版の概要に掲載の年次） | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-12.pdf) | 要確認 |
-| konjac | こんにゃくいもの収穫量が全国一の都道府県は？ | 群馬県 | こんにゃくいもの収穫量 | 令和6年産 | [農林水産省「こんにゃくをめぐる事情」（令和7年7月）](https://www.maff.go.jp/j/seisan/tokusan/attach/pdf/konnyaku-17.pdf) | 確認済み |
-| sugarcane | さとうきびの収穫量が全国一の都道府県は？ | 沖縄県 | さとうきびの収穫量 | 令和5年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-47.pdf) | 確認済み |
-| chrysanthemum | 菊（切り花）の出荷量が全国一の都道府県は？（令和6年産） | 愛知県 | きく（切り花）の出荷量 | 令和6年産 | [農林水産省「令和6年産花きの作付（収穫）面積及び出荷量」](https://www.maff.go.jp/j/tokei/kekka_gaiyou/sakumotu/sakkyou_kaki/sakutuke/r6/index.html) | 確認済み |
 | tomato | トマトの収穫量が全国一の都道府県は？ | 熊本県 | トマトの収穫量 | 令和5年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-43.pdf) | 確認済み |
 | suika | すいかの収穫量が全国一の都道府県は？ | 熊本県 | すいかの収穫量 | 令和5年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-43.pdf) | 確認済み |
-| igusa | たたみ表の原料、い草の収穫量が全国一の都道府県は？ | 熊本県 | い（い草）の収穫量 | 令和5年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-43.pdf) | 確認済み |
 | cucumber | きゅうりの収穫量が全国一の都道府県は？ | 宮崎県 | きゅうりの収穫量 | 令和6年産 | [九州農政局宮崎県拠点「てげ がんばっちょる 宮崎の農業」（令和8年4月）](https://www.maff.go.jp/kyusyu/miyazaki/attach/pdf/250528_tege-3.pdf) | 確認済み |
-| satsumaimo | さつまいもの収穫量が全国一の都道府県は？（令和7年産） | 鹿児島県 | かんしょ（さつまいも）の収穫量 | 令和7年産 | [農林水産省「都道府県の農林水産業の概要（2026年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/2026PDF/todouhuken_gaiyou2026-46.pdf) | 確認済み |
-| tea | 茶（荒茶）の生産量が全国一の都道府県は？（令和7年産） | 鹿児島県 | 荒茶の生産量（主産県） | 令和7年産 | [農林水産省「都道府県の農林水産業の概要（2026年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/2026PDF/todouhuken_gaiyou2026-46.pdf) | 確認済み |
+| negi | ねぎ（長ねぎなど）の収穫量が全国一の都道府県は？（令和6年産） | 茨城県 | ねぎの収穫量 | 令和6年産 | [農林水産省「野菜生産出荷統計」品目別作付面積、収穫量及び出荷量累年統計（令和6年産まで）](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00500215&tstat=000001013427&cycle=0&tclass1=000001032286&tclass2=000001037845&layout=datalist&tclass3val=0) | 確認済み |
+| spinach | ほうれんそうの収穫量が全国一の都道府県は？（令和6年産） | 群馬県 | ほうれんそうの収穫量 | 令和6年産 | [農林水産省「野菜生産出荷統計」品目別作付面積、収穫量及び出荷量累年統計（令和6年産まで）](https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00500215&tstat=000001013427&cycle=0&tclass1=000001032286&tclass2=000001037845&layout=datalist&tclass3val=0) | 確認済み |
 
 ## くだもの
 
@@ -38,11 +32,25 @@
 | peach | ももの収穫量が全国一の都道府県は？ | 山梨県 | ももの収穫量 | 令和7年産 | [農林水産省「作物統計調査 令和7年産もも、すももの栽培面積、結果樹面積、収穫量及び出荷量」](https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_momo_25.pdf) | 確認済み |
 | cherry | さくらんぼの収穫量が全国一の都道府県は？ | 山形県 | おうとう（さくらんぼ）の収穫量 | 令和7年産 | [農林水産省「作物統計調査 令和7年産びわ、おうとう、うめの栽培面積、結果樹面積、収穫量及び出荷量」](https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_biwa_25.pdf) | 確認済み |
 | pear | 西洋なしの収穫量が全国一の都道府県は？ | 山形県 | 西洋なしの収穫量 | 令和6年産 | [農林水産省「作物統計調査 令和6年産西洋なし、かき、くりの結果樹面積、収穫量及び出荷量」](https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_senasi_24.pdf) | 確認済み |
+| nashi | 日本なしの収穫量が全国一の都道府県は？ | 千葉県 | 日本なしの収穫量 | 令和7年産 | [農林水産省「作物統計調査 令和7年産日本なし、ぶどうの栽培面積、結果樹面積、収穫量及び出荷量」](https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_ninasi_25.pdf) | 確認済み |
 | ume | うめの収穫量が全国一の都道府県は？ | 和歌山県 | うめの収穫量 | 令和7年産 | [農林水産省「作物統計調査 令和7年産びわ、おうとう、うめの栽培面積、結果樹面積、収穫量及び出荷量」](https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_biwa_25.pdf) | 確認済み |
 | melon | メロンの収穫量が全国一の都道府県は？ | 茨城県 | メロンの収穫量 | 令和5年産 | [関東農政局茨城県拠点「茨城県のメロン生産」（令和7年10月）](https://www.maff.go.jp/kanto/chiikinet/ibaraki/ibarakitokei_bunnseki/attach/pdf/ibarakibunseki-3.pdf) | 確認済み |
 | pineapple | パイナップルの収穫量が全国一の都道府県は？ | 沖縄県 | パインアップルの収穫量 | 令和5年産 | [農林水産省「令和5年産パインアップルの収穫面積、収穫量及び出荷量（沖縄県）」](https://www.maff.go.jp/j/tokei/kekka_gaiyou/sakumotu/sakkyou_kajyu/paineapp/r5/index.html) | 確認済み |
 | dekopon | デコポン（不知火）の収穫量が全国一の都道府県は？ | 熊本県 | 不知火（しらぬい）の収穫量 | 未確認（令和7年版の概要に掲載の年次） | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-43.pdf) | 要確認 |
 | biwa | びわの収穫量が全国一の都道府県は？ | 長崎県 | びわの収穫量 | 令和7年産 | [農林水産省「作物統計調査 令和7年産びわ、おうとう、うめの栽培面積、結果樹面積、収穫量及び出荷量」](https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_biwa_25.pdf) | 確認済み |
+
+## 農作物総合
+
+| ID | 問題 | 答え | 指標 | 統計年 | 出典 | 状態 |
+|---|---|---|---|---|---|---|
+| rice | 米の収穫量が全国一の都道府県は？ | 新潟県 | 水稲の収穫量（主食用） | 令和7年産 | [農林水産省「作物統計調査 令和7年産水陸稲の収穫量」](https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kome/pdf/syukaku_suiriku_25.pdf) | 確認済み |
+| peanut | 落花生の収穫量が全国一の都道府県は？ | 千葉県 | らっかせいの収穫量 | 未確認（令和7年版の概要に掲載の年次） | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-12.pdf) | 要確認 |
+| konjac | こんにゃくいもの収穫量が全国一の都道府県は？ | 群馬県 | こんにゃくいもの収穫量 | 令和6年産 | [農林水産省「こんにゃくをめぐる事情」（令和7年7月）](https://www.maff.go.jp/j/seisan/tokusan/attach/pdf/konnyaku-17.pdf) | 確認済み |
+| sugarcane | さとうきびの収穫量が全国一の都道府県は？ | 沖縄県 | さとうきびの収穫量 | 令和5年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-47.pdf) | 確認済み |
+| chrysanthemum | 菊（切り花）の出荷量が全国一の都道府県は？（令和6年産） | 愛知県 | きく（切り花）の出荷量 | 令和6年産 | [農林水産省「令和6年産花きの作付（収穫）面積及び出荷量」](https://www.maff.go.jp/j/tokei/kekka_gaiyou/sakumotu/sakkyou_kaki/sakutuke/r6/index.html) | 確認済み |
+| igusa | たたみ表の原料、い草の収穫量が全国一の都道府県は？ | 熊本県 | い（い草）の収穫量 | 令和5年産 | [農林水産省「都道府県の農林水産業の概要（令和7年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/todouhuken_gaiyou2025-43.pdf) | 確認済み |
+| satsumaimo | さつまいもの収穫量が全国一の都道府県は？（令和7年産） | 鹿児島県 | かんしょ（さつまいも）の収穫量 | 令和7年産 | [農林水産省「都道府県の農林水産業の概要（2026年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/2026PDF/todouhuken_gaiyou2026-46.pdf) | 確認済み |
+| tea | 茶（荒茶）の生産量が全国一の都道府県は？（令和7年産） | 鹿児島県 | 荒茶の生産量（主産県） | 令和7年産 | [農林水産省「都道府県の農林水産業の概要（2026年版）」](https://www.maff.go.jp/j/kanbo/tiho/15sonota/2026PDF/todouhuken_gaiyou2026-46.pdf) | 確認済み |
 
 ## ふえた野菜
 

@@ -644,7 +644,7 @@ const QUIZ_TYPES = {
     title: "農林水産業・工業", kind: "tap",
     // area.cat（farm／fruit／sea／maker／craft）の問題。地図で答えの都道府県をタップ
     // 出題停止（status:"stop"）の問題は出さない。出題数・完了・👑の判定もこの数で行う
-    make: (codes, area) => industryLive().filter(f => (!area || !area.cat || f.cat === area.cat) && codes.includes(f.pref)).map(f => (
+    make: (codes, area) => area && area.cat === "kogai" ? kogaiQs() : industryLive().filter(f => (!area || !area.cat || f.cat === area.cat) && codes.includes(f.pref)).map(f => (
       { key: f.id, prefs: [f.pref], top3: TOP3[f.id.replace(/\d$/, "")] || null, text: phraseBreak(f.q || INDUSTRY_CATS[f.cat].ask(f.word)), sub: f.kana, answers: [f.pref], explain: f.note }))
   },
   climate: {
@@ -672,7 +672,7 @@ const QUIZ_TYPES = {
       const ter = [...pick(ters.filter(q => TERRAIN.find(f => f.id === q.key).cat === "river"), 2), ...pick(ters.filter(q => TERRAIN.find(f => f.id === q.key).cat !== "river"), 2)].slice(0, 2)
         .map(q => Object.assign(q, {key: "ter:" + q.key, kind: "choice"}));
       const inds = QUIZ_TYPES.industry.make(codes, null).map(q => Object.assign(q, {cat: industryOf(q.key).cat, key: "ind:" + q.key, kind: "tap"}));
-      const agri = pick(inds.filter(q => ["farm", "fruit", "veg", "chiku", "sea"].includes(q.cat)), 2), make = pick(inds.filter(q => ["maker", "semi", "craft"].includes(q.cat)), 2);
+      const agri = pick(inds.filter(q => ["yasai", "farm", "fruit", "veg", "chiku", "sea"].includes(q.cat)), 2), make = pick(inds.filter(q => ["maker", "semi", "craft"].includes(q.cat)), 2);
       return [...cap, ...ter, ...agri, ...make];
     }
   },
@@ -719,13 +719,15 @@ const QUIZ_TYPES = {
      status  "ok"＝確認済み（出題する） "check"＝要確認（出題する。答えは確認済みだが、解説・年次などに確認が残る） "stop"＝出題停止（出題しない）
    答えが1県に決まるものだけ入れる。年によって入れかわりうる品目（茶・さつまいも、2・3位など）は問題文に統計の年を書く。僅差で入れかわる品目（キャベツ・日本なし・ほたて・真珠など）は入れない */
 const INDUSTRY_CATS = {
-  farm:  {name:"農業（米・野菜・花）", ask: w => `<em>${w}</em>の収穫量が全国一の都道府県は？`},
+  yasai: {name:"野菜", ask: w => `<em>${w}</em>の収穫量が全国一の都道府県は？`},
   fruit: {name:"くだもの", ask: w => `<em>${w}</em>の収穫量が全国一の都道府県は？`},
+  farm:  {name:"農作物総合", ask: w => `<em>${w}</em>の収穫量が全国一の都道府県は？`},
   veg:   {name:"ふえた野菜", ask: w => w},
   chiku: {name:"畜産", ask: w => w},
   sea:   {name:"林業・水産業", ask: w => w},
   maker: {name:"工業地帯・地場産業", ask: w => w},
   semi:  {name:"半導体", ask: w => w},
+  kogai: {name:"公害", ask: w => w},
   craft: {name:"伝統工芸品", ask: w => `<em>${w}</em>がつくられている都道府県は？`},
 };
 const IND_CHECKED = "2026-11-02";
@@ -741,11 +743,11 @@ const INDUSTRY = [
   // ---- 農業（米・野菜・花） ----
   {id:"rice", cat:"farm", word:"米", kana:"こめ", pref:15, note:"新潟県（令和7年産で全国一）。2位は北海道、3位は秋田県",
    basis:"水稲の収穫量（主食用）", year:"令和7年産", source:"農林水産省「作物統計調査 令和7年産水陸稲の収穫量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kome/pdf/syukaku_suiriku_25.pdf", status:"ok"},
-  {id:"potato", cat:"farm", word:"じゃがいも", kana:"", pref:1, note:"北海道（令和7年産の春植えばれいしょで全国の82％）。2位は鹿児島県",
+  {id:"potato", cat:"yasai", word:"じゃがいも", kana:"", pref:1, note:"北海道（令和7年産の春植えばれいしょで全国の82％）。2位は鹿児島県",
    basis:"春植えばれいしょの収穫量", year:"令和7年産", source:"農林水産省「作物統計調査 令和7年産春植えばれいしょの作付面積、収穫量及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_yasai/pdf/syukaku_barei_25.pdf", status:"ok"},
-  {id:"pepper", cat:"farm", word:"ピーマン", kana:"", pref:8, note:"茨城県（令和5年産で全国一）",
+  {id:"pepper", cat:"yasai", word:"ピーマン", kana:"", pref:8, note:"茨城県（令和5年産で全国一）",
    basis:"ピーマンの収穫量", year:"令和5年産", ...SRC.gaiyou(8), status:"ok"},
-  {id:"strawberry", cat:"farm", word:"いちご", kana:"", pref:9, note:"栃木県（令和5年産で全国一。2位の福岡県の約1.5倍）。「とちおとめ」「とちあいか」などの品種がある",
+  {id:"strawberry", cat:"yasai", word:"いちご", kana:"", pref:9, note:"栃木県（令和5年産で全国一。2位の福岡県の約1.5倍）。「とちおとめ」「とちあいか」などの品種がある",
    basis:"いちごの収穫量", year:"令和5年産", ...SRC.gaiyou(9), status:"ok"},
   {id:"peanut", cat:"farm", word:"落花生", kana:"らっかせい", pref:12, note:"千葉県（全国の8割強）。八街市が主な産地",
    basis:"らっかせいの収穫量", year:"未確認（令和7年版の概要に掲載の年次）", ...SRC.gaiyou(12), status:"check"},
@@ -756,14 +758,18 @@ const INDUSTRY = [
   {id:"chrysanthemum", cat:"farm", word:"菊", q:"<em>菊</em>（切り花）の出荷量が全国一の都道府県は？（令和6年産）", kana:"きく", pref:23,
    note:"愛知県（令和6年産で全国の36％）。照明や光をさえぎる技術を組み合わせて、一年じゅう出荷している。2位は沖縄県",
    basis:"きく（切り花）の出荷量", year:"令和6年産", source:"農林水産省「令和6年産花きの作付（収穫）面積及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kekka_gaiyou/sakumotu/sakkyou_kaki/sakutuke/r6/index.html", status:"ok"},
-  {id:"tomato", cat:"farm", word:"トマト", kana:"", pref:43, note:"熊本県（令和5年産で全国の約20％）。八代・玉名の冬春トマトと、阿蘇などの夏秋トマトで一年じゅうつくる",
+  {id:"tomato", cat:"yasai", word:"トマト", kana:"", pref:43, note:"熊本県（令和5年産で全国の約20％）。八代・玉名の冬春トマトと、阿蘇などの夏秋トマトで一年じゅうつくる",
    basis:"トマトの収穫量", year:"令和5年産", ...SRC.gaiyou(43), status:"ok"},
-  {id:"suika", cat:"farm", word:"すいか", kana:"", pref:43, note:"熊本県（令和5年産で全国の約15％）。2位は千葉県、3位は山形県",
+  {id:"suika", cat:"yasai", word:"すいか", kana:"", pref:43, note:"熊本県（令和5年産で全国の約15％）。2位は千葉県、3位は山形県",
    basis:"すいかの収穫量", year:"令和5年産", ...SRC.gaiyou(43), status:"ok"},
   {id:"igusa", cat:"farm", word:"い草", q:"たたみ表の原料、<em>い草</em>の収穫量が全国一の都道府県は？", kana:"いぐさ", pref:43, note:"熊本県（八代市など。国内のい草のほとんどをつくる）。「くまもと県産い草畳表」は地理的表示（GI）に登録",
    basis:"い（い草）の収穫量", year:"令和5年産", ...SRC.gaiyou(43), status:"ok"},
-  {id:"cucumber", cat:"farm", word:"きゅうり", kana:"", pref:45, note:"宮崎県（令和6年産で全国一）。あたたかい気候を生かし、冬から春にビニールハウスでつくる促成栽培がさかん",
+  {id:"cucumber", cat:"yasai", word:"きゅうり", kana:"", pref:45, note:"宮崎県（令和6年産で全国一）。あたたかい気候を生かし、冬から春にビニールハウスでつくる促成栽培がさかん",
    basis:"きゅうりの収穫量", year:"令和6年産", source:"九州農政局宮崎県拠点「てげ がんばっちょる 宮崎の農業」（令和8年4月）", url:"https://www.maff.go.jp/kyusyu/miyazaki/attach/pdf/250528_tege-3.pdf", status:"ok"},
+  {id:"negi", cat:"yasai", word:"ねぎ", q:"<em>ねぎ</em>（長ねぎなど）の収穫量が全国一の都道府県は？（令和6年産）", kana:"", pref:8, note:"茨城県（令和6年産で全国の12.6％）。2位は埼玉県、3位は千葉県で、毎年の差は小さい。関東の大都市の近くでつくる近郊農業",
+   basis:"ねぎの収穫量", year:"令和6年産", ...SRC.vegst, status:"ok"},
+  {id:"spinach", cat:"yasai", word:"ほうれんそう", q:"<em>ほうれんそう</em>の収穫量が全国一の都道府県は？（令和6年産）", kana:"", pref:10, note:"群馬県（令和6年産で全国の11.9％）。2位は埼玉県、3位は千葉県。関東の大都市の近くでつくる近郊農業",
+   basis:"ほうれんそうの収穫量", year:"令和6年産", ...SRC.vegst, status:"ok"},
   {id:"satsumaimo", cat:"farm", word:"さつまいも", q:"<em>さつまいも</em>の収穫量が全国一の都道府県は？（令和7年産）", kana:"", pref:46, note:"鹿児島県（令和7年産で約21.9万t、全国の31％）。水はけのよいシラス台地に向く。でんぷん・焼酎・食品加工などに使う。2位は茨城県",
    basis:"かんしょ（さつまいも）の収穫量", year:"令和7年産", ...SRC.gaiyou26(46), status:"ok"},
   {id:"tea", cat:"farm", word:"茶", q:"<em>茶</em>（荒茶）の生産量が全国一の都道府県は？（令和7年産）", kana:"ちゃ", pref:46, note:"鹿児島県（令和7年産で3万t）。長く静岡県が1位だったが、令和6年産で初めて鹿児島県が1位になり、令和7年産も1位。2位は静岡県",
@@ -806,6 +812,8 @@ const INDUSTRY = [
    basis:"おうとう（さくらんぼ）の収穫量", year:"令和7年産", source:"農林水産省「作物統計調査 令和7年産びわ、おうとう、うめの栽培面積、結果樹面積、収穫量及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_biwa_25.pdf", status:"ok"},
   {id:"pear", cat:"fruit", word:"西洋なし", kana:"せいようなし", pref:6, note:"山形県（令和6年産で全国の70％）",
    basis:"西洋なしの収穫量", year:"令和6年産", source:"農林水産省「作物統計調査 令和6年産西洋なし、かき、くりの結果樹面積、収穫量及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_senasi_24.pdf", status:"ok"},
+  {id:"nashi", cat:"fruit", word:"日本なし", kana:"にほんなし", pref:12, note:"千葉県（令和7年産で全国の13％）。2位は茨城県、3位は栃木県。千葉県では「幸水」「豊水」が多い",
+   basis:"日本なしの収穫量", year:"令和7年産", source:"農林水産省「作物統計調査 令和7年産日本なし、ぶどうの栽培面積、結果樹面積、収穫量及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_ninasi_25.pdf", status:"ok"},
   {id:"ume", cat:"fruit", word:"うめ", kana:"", pref:30, note:"和歌山県（令和7年産で全国の58％）。みなべ町・田辺市が中心で、主な品種は「南高」",
    basis:"うめの収穫量", year:"令和7年産", source:"農林水産省「作物統計調査 令和7年産びわ、おうとう、うめの栽培面積、結果樹面積、収穫量及び出荷量」", url:"https://www.maff.go.jp/j/tokei/kouhyou/sakumotu/sakkyou_kazyu/pdf/syukaku_biwa_25.pdf", status:"ok"},
   {id:"melon", cat:"fruit", word:"メロン", kana:"", pref:8, note:"茨城県（令和5年産で全国一。2位の熊本県の約1.5倍）",
@@ -964,6 +972,9 @@ const TOP3 = {
   grape:    {y: "令和7年産", r: [[19, 25.9], [20, 19.5], [33, 8.5]]},
   peach:    {y: "令和7年産", r: [[19, 32.0], [7, 23.2], [20, 9.5]]},
   cherry:   {y: "令和7年産", r: [[6, 74.2], [1, 10.0]]},
+  negi:     {y: "令和6年産", r: [[8, 12.6], [11, 11.6], [12, 10.9]]},
+  spinach:  {y: "令和6年産", r: [[10, 11.9], [11, 10.3], [12, 9.8]]},
+  nashi:    {y: "令和7年産", r: [[12, 13.0], [8, 9.4], [9, 8.6]]},
   pear:     {y: "令和6年産", r: [[6, 70.1], [2, 7.0], [15, 6.4]]},
   ume:      {y: "令和7年産", r: [[30, 58.2], [10, 7.0], [18, 2.8]]},
   melon:    {y: "令和6年産", r: [[8, 26.8], [43, 15.2], [1, 13.9]]},
@@ -973,6 +984,25 @@ const TOP3 = {
 };
 const rankYear = t => t ? ` <small class="rank3y">${t.y}</small>` : "";
 const rankTable = (t, ans) => `<ol class="rank3">${t.r.map(([c, pct], i) => `<li${[].concat(c).includes(ans) ? ` class="hit"` : ""}><b>${i + 1}</b><span>${[].concat(c).map(x => byCode(x).name).join("・")}</span><em>${pct.toFixed(1)}%</em></li>`).join("")}</ol>`;
+// 公害（四大公害病）：4つの病気を、地図をタップする形（どこでおきた？）と、光る印の場所の病気を4択で答える形の両方で出す（8問）
+const KOGAI = [
+  {id: "minamata", name: "水俣病", kana: "みなまたびょう", pref: 43, ll: [32.213, 130.405],
+   note: "熊本県水俣市の工場から海に流された有機水銀（メチル水銀）が原因。よごれた魚や貝を食べた人に、手足のしびれなどがおこった。鹿児島県の海ぞいでも被害が出た。"},
+  {id: "niigata", name: "新潟水俣病", kana: "にいがたみなまたびょう", pref: 15, ll: [37.84, 139.26],
+   note: "新潟県の阿賀野川の下流でおこった。上流の工場から流された有機水銀が原因。第二水俣病ともよばれる。"},
+  {id: "itai", name: "イタイイタイ病", kana: "", pref: 16, ll: [36.65, 137.16],
+   note: "富山県の神通川の下流でおこった。上流の鉱山から流れ出たカドミウムが原因。骨がもろくなり、はげしい痛みに苦しんだ。"},
+  {id: "yokkaichi", name: "四日市ぜんそく", kana: "よっかいちぜんそく", pref: 24, ll: [34.965, 136.625],
+   note: "三重県四日市市の石油化学コンビナートから出た亜硫酸ガス（硫黄酸化物）が原因。空気がよごれ、ぜんそくに苦しむ人が多く出た。"},
+];
+function kogaiQs() {
+  return shuffle(KOGAI.flatMap(k => [
+    { key: "kogai-t:" + k.id, kind: "tap", prefs: [k.pref], answers: [k.pref], sub: k.kana, text: phraseBreak(`<em>${k.name}</em>がおこった都道府県は？`), explain: k.note },
+    { key: "kogai-c:" + k.id, kind: "choice", prefs: [k.pref], focus: k.pref, pinLL: k.ll, sub: "",
+      choices: [[k.name, k.kana], ...KOGAI.filter(o => o !== k).map(o => [o.name, o.kana])], correct: k.name,
+      text: "光る場所の<em>公害病</em>は？", explain: k.note },
+  ]));
+}
 const industryOf = id => INDUSTRY.find(f => f.id === id);
 const industryLive = () => INDUSTRY.filter(f => f.status !== "stop");   // 出題する問題（出題停止を除く）
 const industryName = f => (f.word.match(/<em>(.*?)<\/em>/) || [0, f.word])[1];   // 結果の一覧に出す短い名前
@@ -2429,7 +2459,7 @@ function result() {
   const retry = !!quiz.opts.keys;
   const msg = newMaster ? `${ic("crown")}<span class="mt">${masterHtml(course.master, "！")}</span>` : newStage ? `${ic("crown")}${quiz.area.name}ステージ パーフェクト！` : retry && correct === total ? "クリア！" : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしでマスターを目指そう！" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
   const next = nextUnit(course, quiz.area, !!quiz.stage, retry);
-  const label = l => course.id === "treasure" ? treasureOf(l.key).name : course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? (String(l.key).startsWith("inland:") ? byCode(l.pref).name : TERRAIN.find(f => f.id === l.key).name) : course.id === "industry" ? `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）` : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
+  const label = l => course.id === "treasure" ? treasureOf(l.key).name : course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? (String(l.key).startsWith("inland:") ? byCode(l.pref).name : TERRAIN.find(f => f.id === l.key).name) : course.id === "industry" ? (String(l.key).startsWith("kogai") ? KOGAI.find(k => k.id === l.key.split(":")[1]).name : `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）`) : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
   top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta"><span class="nm">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">けっか</span></span></div>${themeBtn()}${muteBtn()}`;
   bindBar();
   // 文の最初のすきま（タグの外）で改行する。王冠はSVGなので innerHTML で入れる
