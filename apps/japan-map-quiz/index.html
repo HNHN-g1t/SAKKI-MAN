@@ -653,7 +653,7 @@ const QUIZ_TYPES = {
     title: "農林水産業・工業", kind: "tap",
     // area.cat（farm／fruit／sea／maker／craft）の問題。地図で答えの都道府県をタップ
     // 出題停止（status:"stop"）の問題は出さない。出題数・完了・👑の判定もこの数で行う
-    make: (codes, area) => area && area.cat === "kogai" ? kogaiQs() : industryLive().filter(f => (!area || !area.cat || f.cat === area.cat) && codes.includes(f.pref)).map(f => (
+    make: (codes, area) => area && area.cat === "kogai" ? kogaiQs() : area && area.cat === "city" ? cityQs() : industryLive().filter(f => (!area || !area.cat || f.cat === area.cat) && codes.includes(f.pref)).map(f => (
       { key: f.id, prefs: [f.pref], top3: TOP3[f.id.replace(/\d$/, "")] || null, text: phraseBreak(f.q || INDUSTRY_CATS[f.cat].ask(f.word)), sub: f.kana, answers: [f.pref], explain: f.note }))
   },
   climate: {
@@ -739,6 +739,7 @@ const INDUSTRY_CATS = {
   chiku: {name:"畜産", ask: w => w},
   sea:   {name:"林業・水産業", ask: w => w},
   maker: {name:"工業地帯・地場産業", ask: w => w},
+  city:  {name:"工業都市", ask: w => w},
   semi:  {name:"半導体", ask: w => w},
   kogai: {name:"公害", ask: w => w},
   craft: {name:"伝統工芸品", ask: w => `<em>${w}</em>がつくられている都道府県は？`},
@@ -1008,10 +1009,33 @@ const KOGAI = [
   {id: "yokkaichi", name: "四日市ぜんそく", kana: "よっかいちぜんそく", pref: 24, ll: [34.965, 136.625],
    note: "三重県四日市市の石油化学コンビナートから出た亜硫酸ガス（硫黄酸化物）が原因。空気がよごれ、ぜんそくに苦しむ人が多く出た。"},
 ];
+// 工業都市：10都市を1回ずつ。1問ずつ、地図をタップする形（その都市がある都道府県は？）と、光る印の都市を4択で答える形をランダムにまぜる
+const CITY_IND = [
+  {id: "toyota", name: "豊田市", kana: "とよたし", what: "自動車工業", pref: 23, ll: [35.0826, 137.156], note: "愛知県の都市。自動車会社の本社と工場が集まる「自動車の町」。中京工業地帯の中心。"},
+  {id: "hamamatsu", name: "浜松市", kana: "はままつし", what: "楽器やオートバイ", pref: 22, ll: [34.7108, 137.7261], note: "静岡県の都市。ピアノなどの楽器や、オートバイの生産で知られる。東海工業地域。"},
+  {id: "ichihara", name: "市原市", kana: "いちはらし", what: "石油化学工業", pref: 12, ll: [35.498, 140.1155], note: "千葉県の都市。東京湾ぞいに石油化学コンビナートが広がる。京葉工業地域。"},
+  {id: "kitakyushu", name: "北九州市", kana: "きたきゅうしゅうし", what: "鉄鋼業", pref: 40, ll: [33.8834, 130.8752], note: "福岡県の都市。1901年に官営の八幡製鉄所がつくられ、鉄鋼業で栄えた。北九州工業地帯（地域）の中心。"},
+  {id: "yokkaichi", name: "四日市市", kana: "よっかいちし", what: "石油化学工業", pref: 24, ll: [34.9652, 136.6245], note: "三重県の都市。石油化学コンビナートがある。中京工業地帯。高度経済成長のころ、四日市ぜんそくの公害がおこった。"},
+  {id: "hitachi", name: "日立市", kana: "ひたちし", what: "電気機械工業", pref: 8, ll: [36.5991, 140.651], note: "茨城県の都市。電気機械をつくる大きな会社がこの町で生まれた。"},
+  {id: "ota", name: "太田市", kana: "おおたし", what: "自動車工業", pref: 10, ll: [36.2912, 139.3754], note: "群馬県の都市。自動車の工場があり、北関東工業地域の中心の一つ。"},
+  {id: "fuji", name: "富士市", kana: "ふじし", what: "製紙・パルプ工業", pref: 22, ll: [35.1614, 138.6763], note: "静岡県の都市。富士山のわき水を使った製紙業（紙・パルプ）がさかん。"},
+  {id: "muroran", name: "室蘭市", kana: "むろらんし", what: "鉄鋼業", pref: 1, ll: [42.3152, 140.9737], note: "北海道の都市。鉄鋼業がさかんな港町。"},
+  {id: "fukuyama", name: "福山市", kana: "ふくやまし", what: "鉄鋼業", pref: 34, ll: [34.4858, 133.3623], note: "広島県の都市。大きな製鉄所がある。瀬戸内工業地域。"},
+];
+function cityQs() {
+  return shuffle(CITY_IND).map(c => {
+    const key = "city:" + c.id;
+    if (Math.random() < 0.5) return { key, kind: "tap", prefs: [c.pref], answers: [c.pref], sub: c.kana, box: FULL,   // タップは全国表示にもどす
+      text: phraseBreak(`${c.what}がさかんな<em>${c.name}</em>がある都道府県は？`), explain: c.note };
+    const pool = shuffle(CITY_IND.filter(o => o !== c)).slice(0, 3).map(o => [o.name, o.kana]);
+    return { key, kind: "choice", prefs: [c.pref], focus: c.pref, pinLL: c.ll, sub: "", choices: [[c.name, c.kana], ...pool], correct: c.name,
+      text: `光る場所の<em>工業都市</em>は？`, explain: c.note };
+  });
+}
 const somber = () => !!(quiz && ((quiz.area && quiz.area.cat === "kogai") || (quiz.q && String(quiz.q.wk || "").startsWith("kogai"))));   // 苦手だけドリルに出た公害の問題も   // キャラを出さないステージ（公害）
 function kogaiQs() {
   return shuffle(KOGAI.flatMap(k => [
-    { key: "kogai-t:" + k.id, kind: "tap", prefs: [k.pref], answers: [k.pref], sub: k.kana, text: phraseBreak(`<em>${k.name}</em>がおこった都道府県は？`), explain: k.note },
+    { key: "kogai-t:" + k.id, kind: "tap", prefs: [k.pref], answers: [k.pref], sub: k.kana, box: FULL, text: phraseBreak(`<em>${k.name}</em>がおこった都道府県は？`), explain: k.note },
     { key: "kogai-c:" + k.id, kind: "choice", prefs: [k.pref], focus: k.pref, pinLL: k.ll, sub: "",
       choices: [[k.name, k.kana], ...KOGAI.filter(o => o !== k).map(o => [o.name, o.kana])], correct: k.name,
       text: "光る場所の<em>公害病</em>は？", explain: k.note },
@@ -2097,7 +2121,7 @@ function weakQs() {
     const bar = id.indexOf("|"), c = courseOf(id.slice(0, bar)), k = id.slice(bar + 1);
     if (!c || !QUIZ_TYPES[c.id]) continue;
     const type = QUIZ_TYPES[c.id];
-    const qs = k.startsWith("inland:") ? inlandQs() : k.startsWith("kogai") ? kogaiQs() : k.startsWith("o_") ? currentQs() : type.make(range(1, 47), null);
+    const qs = k.startsWith("inland:") ? inlandQs() : k.startsWith("kogai") ? kogaiQs() : k.startsWith("o_") ? currentQs() : k.startsWith("city:") ? cityQs() : type.make(range(1, 47), null);
     const q = qs.find(x => String(x.key) === k); if (!q) continue;
     out.push(Object.assign(q, {kind: q.kind || type.kind, wc: c.id, wk: q.key, key: id, label: keyLabel(c.id, q.key, q.prefs[0])}));
   }
@@ -2499,7 +2523,7 @@ function handleTap(code) {
 // 結果の「まちがえた問題」などに出す、問題の短い名前（コースID・問題の key・答えの県から）
 function keyLabel(courseId, key, pref) {
   const course = {id: courseId}, l = {key, pref};
-  return course.id === "treasure" ? treasureOf(l.key).name : course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? (String(l.key).startsWith("inland:") ? byCode(l.pref).name : TERRAIN.find(f => f.id === String(l.key).replace(/:t$/, "")).name) : course.id === "industry" ? (String(l.key).startsWith("kogai") ? KOGAI.find(k => k.id === l.key.split(":")[1]).name : `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）`) : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
+  return course.id === "treasure" ? treasureOf(l.key).name : course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? (String(l.key).startsWith("inland:") ? byCode(l.pref).name : TERRAIN.find(f => f.id === String(l.key).replace(/:t$/, "")).name) : course.id === "industry" ? (String(l.key).startsWith("kogai") ? KOGAI.find(k => k.id === l.key.split(":")[1]).name : String(l.key).startsWith("city:") ? CITY_IND.find(c => c.id === l.key.slice(5)).name : `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）`) : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
 }
 function generalLabel(l) {
   const [k, id] = String(l.key).split(":");
