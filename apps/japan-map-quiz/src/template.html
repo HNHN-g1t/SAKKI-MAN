@@ -1632,7 +1632,7 @@ Object.entries(ZOOM_SPOTS).forEach(([id, ll]) => {
 });
 
 /* ---------- 表示範囲（ズーム・移動） ---------- */
-const FULL = [-108, 12, 870, 1010];
+const FULL = [-108, 12, 1020, 1010];   // 右はしは北方領土（択捉島）まで
 let view = {x:0, y:0, w:880, h:980};
 function box() { const r = svg.getBoundingClientRect(); return {w: Math.max(r.width,1), h: Math.max(r.height,1), l:r.left, t:r.top}; }
 function apply() {

@@ -42,13 +42,22 @@ for ft in d["features"]:
             c = 46
         by_code.setdefault(c, []).append(q)
 
+# 北方領土（択捉島・国後島・色丹島・歯舞群島）は Natural Earth の県境データに入っていないので、
+# 陸地データ（ne_10m_land）から切り出した data/hoppo.json を北海道として足す。小さな島も消さずに残す
+HOPPO = []
+_h = DATA / "hoppo.json"
+if _h.exists():
+    for ring in json.load(open(_h, encoding="utf-8"))["polys"]:
+        q = Polygon([tuple(c) for c in ring]).buffer(0)
+        HOPPO.append(q); by_code.setdefault(1, []).append(q)
+
 out = []
 proj_polys = {}   # 県コード -> 画面座標の Polygon（地方の外形線づくりに使う）
 for code in sorted(by_code):
     polys = [q for q in by_code[code] if keep(code, q)]
     biggest = max(polys, key=lambda q: q.area)
     # drop tiny islets except the main body
-    polys = [q for q in polys if q is biggest or q.area > 0.0015]
+    polys = [q for q in polys if q is biggest or q.area > 0.0015 or any(q is h for h in HOPPO)]
     parts = []
     xs, ys = [], []
     for q in polys:
