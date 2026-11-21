@@ -239,6 +239,12 @@ svg:not(.explore) .region-line{display:none}
 .zoom:hover circle{fill:var(--brand)}
 .zooms-off #zooms,.region-quiz #zooms{display:none}
 .labels{pointer-events:none;opacity:0;transition:opacity .12s}
+/* 県のシルエット：答えの県だけを墨のシルエットに。ほかの県・県名・地方の線・虫眼鏡・沖縄の枠・湖・印は隠す。
+   目のボタン（show-labels）を押している間だけ、まわりの県の形がうっすら浮かぶ（県名は出さない） */
+.silo .pref:not(.sel){visibility:hidden}
+.silo .pref.sel{fill:var(--ink)!important;stroke:var(--ink)}
+.silo .labels,.silo #regions,.silo #zooms,.silo #insetg,.silo #lakes,.silo .cap-pin,.silo #tag{display:none}
+.silo.show-labels .pref:not(.sel){visibility:visible;fill:var(--paper);stroke:var(--muted)}
 .show-labels .labels{opacity:1}
 .labels text{font-family:var(--body);font-weight:700;fill:var(--ink);stroke:var(--cream);stroke-width:3px;paint-order:stroke;vector-effect:non-scaling-stroke;text-anchor:middle;dominant-baseline:central}
 .labels text.off{display:none}
@@ -703,6 +709,16 @@ const QUIZ_TYPES = {
       const pool = [...same, ...other].slice(0, 3);
       return { key: t.id, prefs: [t.pref], focus: t.pref, pinLL: t.ll, sub: "", choices: [[t.name, t.kana], ...pool.map(o => [o.name, o.kana])], correct: t.name,
         text: TREASURE_STAGES[t.stage].ask, explain: t.note };
+    })
+  },
+  silhouette: {
+    title: "県のシルエット", kind: "choice",
+    // 県1つだけを黒いシルエットで見せ、県名を4択（選択肢は同じ地方から）。目のボタンを押している間だけ、まわりの県の形が浮かぶ（ヒント）
+    make: (codes, area) => codes.map(c => {
+      const p = byCode(c), same = (area && !area.wide ? codes : areaOfPref(c).codes).filter(o => o !== c);
+      const pool = shuffle(same.length >= 3 ? same : range(1, 47).filter(o => o !== c)).slice(0, 3).map(o => [byCode(o).name, byCode(o).kana]);
+      return { key: c, prefs: [c], focus: c, silo: true, sub: "", choices: [[p.name, p.kana], ...pool], correct: p.name,
+        text: "この形の<em>都道府県</em>は？", explain: `${p.name}（${p.kana}）は${p.region}地方` };
     })
   },
   weak: {
@@ -1291,6 +1307,7 @@ const COURSES = [
    rules:["全国の挑戦：47都道府県を1回ずつ、順番はランダム", "完了：全国47問を最後まで解く",
           "👑マスター：ヒントなしで全国47問すべて正解 → 県庁所在地コースが開く",
           "全国の挑戦がまだでも、地方ごとの練習を7地方すべてヒントなしで全問正解（パーフェクト）すれば、県庁所在地コースが開く"]},
+  {id:"silhouette", name:"県のシルエット", master:"シルエットマスター", from:"g4", ready:true, stages:true, unlock:{course:"prefName", need:"master"}},
   {id:"capital", name:"県庁所在地", master:"県庁所在地マスター", from:"g4", ready:true, stages:true, unlock:{course:"prefName", need:"master"},
    // 地方ごとの7ステージのあとに、県名と県庁所在地名がちがう18都道県だけのステージ（入試の定番）
    stageList:[...AREAS.filter(a => !a.wide), {id:"diff", cat:"diff", name:"名前ちがい", codes:[1, 3, 4, 8, 9, 10, 11, 14, 17, 19, 23, 24, 25, 28, 32, 37, 38, 47]}],
@@ -1740,7 +1757,7 @@ let pinchOn = false;
 function pinchGuide(force) {
   // 問題中はどのステージでも出す（全国の挑戦も、九州などの地方ステージも）。基準はアプリが問題ごとに合わせた表示（fitBaseW）
   // 雨温図のステージでは、指のアイコンはいつも出さない（ピンチで拡大する操作はそのまま使える）
-  const on = mode === "quiz" && quiz && quiz.area && quiz.area.cat !== "chart" && chartEl.hidden;
+  const on = mode === "quiz" && quiz && quiz.area && quiz.area.cat !== "chart" && chartEl.hidden && !(quiz.q && quiz.q.silo && !quiz.answered);   // シルエットの問題中も出さない
   if (!on) { pinchOn = false; pinchEl.hidden = true; return; }
   const zoom = (fitBaseW || fitTarget(homeBox).w) / view.w;
   if (force || zoom <= 1.1) pinchOn = true; else if (zoom > 1.6) pinchOn = false;
@@ -2062,7 +2079,7 @@ function placeDbg() {
 // ホーム系の画面（モード選択・コース一覧・コース）に共通：地図をコレクションの色で見せ、県をさわると名前を出す
 function toHomeScreen(box = FULL) {
   cancelQuizTimers(); eyeOff(); clearNextTri();
-  mode = "home"; pinchGuide(); bgmStop(); quiz = null; selected = null; clearTag(); combo.hidden = true; clearmsg.hidden = true; pbar.innerHTML = ""; showFeature(null); showChart(null); showPin(null);
+  mode = "home"; svg.classList.remove("silo"); pinchGuide(); bgmStop(); quiz = null; selected = null; clearTag(); combo.hidden = true; clearmsg.hidden = true; pbar.innerHTML = ""; showFeature(null); showChart(null); showPin(null);
   JapanMap.resetColors(); svg.classList.add("explore"); svg.classList.remove("region-quiz");
   Object.values(labelEl).forEach(t => t.classList.remove("off"));
   const lv = prefLevels();
@@ -2266,6 +2283,8 @@ function nextQ() {
   if (quiz.i >= quiz.qs.length) return result();
   const q = quiz.q = quiz.qs[quiz.i]; q.hint = false; quiz.answered = false;
   if (q.box) fitLater(q.box);   // 問題ごとに見せる範囲が決まっているもの（海なし県）
+  svg.classList.toggle("silo", !!q.silo);   // 県のシルエットの問題
+  pinchGuide();
   // 出題文はどのコースも下段（シート）に置き、上のバーには進み具合だけを出す。4択は出題文のすぐ下に選択肢
   // 上の帯：左端に✕（やめる）、小さい文字で「関東　3 / 7」、右に DBG とタイトルへ戻る家のボタン
   top_.innerHTML = `<button class="iconbtn" id="quit" type="button" aria-label="やめる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><div class="ask"><span class="meta"><span class="nm">${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">${quiz.i+1} / ${quiz.qs.length}</span></span></div>${themeBtn()}${muteBtn()}${titleBtn()}`;
@@ -2287,6 +2306,11 @@ function nextQ() {
     } else if (q.zone) {
       q.zone.forEach(c => pathEl[c].classList.add("sel"));
       fitLater(unionBox(q.zone));
+    } else if (q.silo) {
+      // シルエット：その県だけを画面のまん中に大きく。まわりの県・県名・地方の線などは隠す（CSS .silo）
+      pathEl[q.focus].classList.add("sel"); toFront(q.focus); showPin(null);
+      const b = boxOf[q.focus], cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2, h = Math.max(b[2] - b[0], b[3] - b[1]) * 0.85 + 6;
+      fitLater([cx - h, cy - h, cx + h, cy + h]);
     } else if (q.feature) {
       showFeature(q.feature);
       const tf = TERRAIN.find(f => f.id === q.feature), b = tf.b, cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2;
@@ -2378,6 +2402,7 @@ function noteHtml(code) {
 //   kind:"tap"    … 左に正誤の文、右に「つぎへ」
 function afterAnswer(ok, html, opt = {}) {
   const q = quiz.q;
+  if (q.silo) { svg.classList.remove("silo"); fitLater(pinBox(CAPITAL_LL[q.focus], q.focus)); }   // 答えたら、ふつうの地図にもどして場所を見せる
   if (ok) {
     sndOk(q.hint ? 1 : quiz.combo + 1);   // 正解が続くほど高く・長く・華やかに（ヒントを見た正解は1回目の音）
     // 正解のときは、問題のウインドウのいちばん右下にサッ記マンのうれしい顔を出す。
@@ -2539,7 +2564,7 @@ function result() {
   pbar.innerHTML = ""; showFeature(null); showChart(null); showPin(null);
   // 正解した県の色は、途中の遅延処理が取り消されても結果画面で付けそろえる
   quiz.log.forEach(l => l.ok && l.tap && pathEl[l.pref].classList.add("ok"));
-  mode = "result"; pinchGuide(); bgmStop(); combo.hidden = true; clearTag();
+  mode = "result"; svg.classList.remove("silo"); pinchGuide(); bgmStop(); combo.hidden = true; clearTag();
   const course = quiz.course, total = quiz.qs.length, correct = quiz.log.filter(l => l.ok).length, clean = quiz.log.filter(l => l.ok && !l.hint).length;
   const missed = quiz.log.filter(l => !l.ok);
   rotFace(!somber(), total > 0 && correct / total >= 0.8);   // 8割以上〜パーフェクトなら、うれしい顔だけ。公害のステージでは顔を出さない
