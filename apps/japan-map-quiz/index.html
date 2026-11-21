@@ -2320,7 +2320,7 @@ function result() {
   // まちがえた問題だけのやり直し（opts.keys）は、全部正解しても「パーフェクト」ではなく「クリア」
   const retry = !!quiz.opts.keys;
   const msg = newMaster ? `${ic("crown")}<span class="mt">${masterHtml(course.master, "！")}</span>` : newStage ? `${ic("crown")}${quiz.area.name}ステージ パーフェクト！` : retry && correct === total ? "クリア！" : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしでマスターを目指そう！" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
-  const nextStage = quiz.stage ? stagesOf(course)[stagesOf(course).indexOf(quiz.area) + 1] : null;
+  const next = nextUnit(course, quiz.area, !!quiz.stage, retry);
   const label = l => course.id === "treasure" ? treasureOf(l.key).name : course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? TERRAIN.find(f => f.id === l.key).name : course.id === "industry" ? `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）` : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
   top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta"><span class="nm">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">けっか</span></span></div>${themeBtn()}${muteBtn()}`;
   bindBar();
@@ -2332,13 +2332,13 @@ function result() {
     ${opened.map(c => `<p class="hint"><b>「${c.name}」コースが開いたよ！</b></p>`).join("")}
     ${missed.length ? `<h2>まちがえた問題</h2><div class="misslist">${missed.map(l => `<span>${label(l)}</span>`).join("")}</div>` : ""}
     <div class="row">
-      ${missed.length ? `<button class="btn primary" id="retryMiss" type="button">まちがえた問題だけ もう一回</button>` : ""}
+      ${missed.length ? `<button class="btn primary" id="retryMiss" type="button"><span class="nw">まちがえた問題だけ</span> <span class="nw">もう一回</span></button>` : ""}
       <button class="btn${missed.length ? "" : " primary"}" id="retry" type="button">もう一回</button>
-      ${nextStage ? `<button class="btn nextbtn" id="nextStage" type="button"><span>つぎのステージ</span><span class="nx">${NEXT2}${brkDot(nextStage.name)}</span></button>` : ""}
+      ${next ? `<button class="btn nextbtn" id="nextStage" type="button"><span>${next.label}</span><span class="nx">${NEXT2}${brkDot(next.name)}</span></button>` : ""}
       <button class="btn" id="back" type="button">コースにもどる</button>
     </div>`;
   const area = quiz.area, opts = quiz.opts, missKeys = missed.map(l => l.key);
-  if (nextStage) byId("nextStage").onclick = () => startQuiz(course, nextStage, nextStage.codes, {stage: true});
+  if (next) byId("nextStage").onclick = next.go;
   if (missed.length) byId("retryMiss").onclick = () => startQuiz(course, area, area.codes, {keys: missKeys});
   byId("retry").onclick = () => startQuiz(course, area, area.codes, opts);
   byId("back").onclick = () => coursePage(course);
@@ -2349,6 +2349,22 @@ function result() {
 }
 
 // つぎのステージの「▶▶」（三角は横幅を高さの6割にして、すっきり見せる）
+// 結果画面の「つぎへ」：ステージ→つぎのステージ、地方ごとの練習→つぎの地方（最後は全国の挑戦）、
+// 最後のステージ・全国の挑戦→つぎのコース（開いているものだけ）。まちがえた問題だけのやり直しのあとも同じ所へ進む
+function unitsOf(c) {
+  const type = QUIZ_TYPES[c.id];
+  return (c.stages ? stagesOf(c) : STAGES).filter(a => type.make(a.codes, a).length > 0);
+}
+function startUnit(c, a) { if (a.wide) startQuiz(c, a, a.codes, {master: true}); else startQuiz(c, a, a.codes, {stage: !!c.stages}); }
+function nextUnit(course, area, stage) {
+  const units = unitsOf(course), i = units.indexOf(area), zen = AREAS.find(a => a.wide);
+  if (i >= 0 && i + 1 < units.length) { const a = units[i + 1]; return {label: stage ? "つぎのステージ" : "つぎの地方", name: a.name, go: () => startUnit(course, a)}; }
+  if (i >= 0 && !course.stages) return {label: "つぎは", name: "全国の挑戦", go: () => startUnit(course, zen)};
+  const k = COURSES.indexOf(course), nc = COURSES.slice(k + 1).find(c => c.ready && inMode(c) && unlocked(c));
+  if (!nc) return null;
+  const first = unitsOf(nc)[0];
+  return {label: "つぎのコース", name: nc.name, go: () => first ? startUnit(nc, first) : coursePage(nc)};
+}
 const NEXT2 = `<svg class="ic ic-next2" viewBox="0 0 14.4 12" aria-hidden="true"><path d="M0 0 7.2 6 0 12z M7.2 0 14.4 6 7.2 12z"/></svg>`;
 // クリアの花火と音：札のまわりで5回、少しずつずらして打ち上げる
 function cheerClear() {
