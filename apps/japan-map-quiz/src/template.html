@@ -390,14 +390,15 @@ svg:not(.explore) .region-line{display:none}
   to{box-shadow:0 4px 0 var(--ink),0 0 18px 5px var(--brand)}}
 /* まだ一度も挑戦していないステージ：「つぎへ」の三角と同じキラッ（太・細2本のななめの帯。ぼかさず、くっきり）が、
    角丸の中いっぱいを文字の上もふくめて左から右へ横切る。帯は加算（plus-lighter）で重ねて光らせる。テンポは「つぎへ」の2倍（0.865秒） */
-.chip.zero{position:relative;overflow:hidden;isolation:isolate}
-.chip.zero::after{content:"";position:absolute;top:-50%;bottom:-50%;left:0;right:0;z-index:2;pointer-events:none;
+.chip.zero,.course.fresh{position:relative;overflow:hidden;isolation:isolate}
+/* コース一覧で、まだクリアが0のコース（新しく開いたものもふくむ）も同じキラッを横切らせる */
+.chip.zero::after,.course.fresh::after{content:"";position:absolute;top:-50%;bottom:-50%;left:0;right:0;z-index:2;pointer-events:none;
   background:linear-gradient(114deg,transparent 0 calc(50% - 26px),var(--zero-shine) calc(50% - 26px) calc(50% - 6px),transparent calc(50% - 6px) calc(50% + 4px),var(--zero-shine) calc(50% + 4px) calc(50% + 11px),transparent calc(50% + 11px));
   mix-blend-mode:screen;mix-blend-mode:plus-lighter;transform:translateX(-100%);animation:chipShine .865s cubic-bezier(.25,.1,.4,1) infinite}
 /* 帯はチップの左の外から出て、すぐ右の外へ抜ける（左はしで止まって見えない）。抜けたあとは外で待つ。
    帯を描く疑似要素は角を丸めず、上下にはみ出させておく（帯の端がチップの中で切れないように）。切りぬくのはチップの角丸（overflow:hidden）だけ */
 @keyframes chipShine{0%{transform:translateX(-100%)}55%,100%{transform:translateX(100%)}}
-@media (prefers-reduced-motion:reduce){.chip.zero::after{animation:none;display:none}}
+@media (prefers-reduced-motion:reduce){.chip.zero::after,.course.fresh::after{animation:none;display:none}}
 @media (prefers-reduced-motion:reduce){.course.fresh,.chip.fresh{animation:none;box-shadow:0 0 0 2px var(--brand),0 0 10px 2px var(--brand)}}
 .rules{margin:0;padding-left:1.2em;font-size:var(--fs14);color:var(--muted);font-weight:700;line-height:1.5}
 /* アイコン：文字と同じ大きさ。王冠はキーカラーの黄色に墨の細いふち（白地でも見える） */
@@ -1525,8 +1526,9 @@ function fitTarget(bb) {
   const cx = (bb[0]+bb[2])/2, cy = (bb[1]+bb[3])/2, Hfree = w / ar;
   return {x: cx - w/2, y: cy - Hfree/2, w};
 }
+let fitBaseW = 0;   // アプリが最後に合わせた表示の幅（ピンチの案内の基準）
 function fitBox(bb, animate=true) {
-  const target = fitTarget(bb);
+  const target = fitTarget(bb); fitBaseW = target.w;
   const token = ++fitToken;   // 新しい移動が始まったら、前の移動アニメは止める
   if (!animate || matchMedia("(prefers-reduced-motion: reduce)").matches) return setView(target.x, target.y, target.w);
   const from = {...view}, t0 = performance.now(), D = 420;
@@ -1543,15 +1545,16 @@ let homeBox = FULL;
 const withPin = (bb, ll) => { const [x, y] = toXY(...ll), m = 24; return [Math.min(bb[0], x - m), Math.min(bb[1], y - m), Math.max(bb[2], x + m), Math.max(bb[3], y + m)]; };
 function zoomArea(id){ fitBox(unionBox(AREAS.find(a => a.id === id).codes)); }
 
-/* 全国の挑戦のピンチの案内：最初の大きさから1.6倍より拡大したら消し、1.1倍以内に戻したらまた出す（あいだは今のまま） */
+/* 問題中のピンチの案内：そのステージの最初の大きさから1.6倍より拡大したら消し、1.1倍以内に戻したらまた出す（あいだは今のまま） */
 const pinchEl = document.getElementById("pinchg");
 // 動きを減らす設定では、指を開いた形で止める
 if (matchMedia("(prefers-reduced-motion: reduce)").matches) { const g = pinchEl.querySelector("svg"); g.pauseAnimations(); g.setCurrentTime(0.9); }
 let pinchOn = false;
 function pinchGuide(force) {
-  const wide = mode === "quiz" && quiz && quiz.area && quiz.area.wide;
-  if (!wide) { pinchOn = false; pinchEl.hidden = true; return; }
-  const zoom = fitTarget(FULL).w / view.w;
+  // 問題中はどのステージでも出す（全国の挑戦も、九州などの地方ステージも）。基準はアプリが問題ごとに合わせた表示（fitBaseW）
+  const on = mode === "quiz" && quiz && quiz.area;
+  if (!on) { pinchOn = false; pinchEl.hidden = true; return; }
+  const zoom = (fitBaseW || fitTarget(homeBox).w) / view.w;
   if (force || zoom <= 1.1) pinchOn = true; else if (zoom > 1.6) pinchOn = false;
   pinchEl.hidden = !pinchOn;
 }
