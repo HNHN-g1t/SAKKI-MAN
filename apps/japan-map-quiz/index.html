@@ -17,7 +17,7 @@
    色はこの3か所（:root／ダーク2か所）の変数でだけ定義する。ほかの場所に色コードを書かない。
    --brand と --on-brand はダークでも変えない（黄色の上の文字は常に墨。白やクリームの上に黄色の文字は置かない） */
 :root{
-  --brand:#FED003; --on-brand:#282727; --pin:#FF4FA3;
+  --brand:#FED003; --on-brand:#282727; --pin:#FF4FA3; --mount:#2FA35A;   /* 山地・山脈の線の緑 */
   --tri-edge:#4A4745; --tri-shine:#FFF47E; --zero-shine:#FFF47E;   /* つぎへの三角：グレーのふちと文字（地は --brand。ダークでも同じ） */
   --ink:#282727; --paper:#EEEDEA; --cream:#F4EBDF; --sea:#D3DDE2; --bg:#E2E1DD;   /* ライトは真っ白をやめ、目にやさしいライトグレー */
   --muted:#5A5654; --line-soft:#C7C4C0; --off:#DAD9D5;
@@ -212,8 +212,8 @@ svg:not(.explore) .region-line{display:none}
 /* 地形（山・河川・平野）：問題の対象の図形だけを出す。山地・山脈＝黄の太線、川＝青い線、平野＝黄の面、山＝黄の三角 */
 .feat{display:none;pointer-events:none;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
 .feat.show{display:inline}
-.feat.case{fill:none;stroke:var(--ink);stroke-width:12px}
-.feat.range{fill:none;stroke:var(--brand);stroke-width:7px}
+/* 山地・山脈は、緑の太い線で縁をぼかす（海岸線と同じ作り。ふちどりの線なし） */
+.feat.range{fill:none;stroke:var(--mount);stroke-width:16px;stroke-opacity:.9}
 .feat.river.case{stroke:var(--paper);stroke-width:8px}
 .feat.river{fill:none;stroke:var(--river);stroke-width:4px}
 .feat.peak{fill:var(--brand);stroke:var(--ink);stroke-width:2.5px}
@@ -1521,9 +1521,9 @@ const gTerrain = document.getElementById("terrain"), featEls = {};
 TERRAIN.forEach(f => {
   const els = [];
   // 線の図形は、地図の上で見えるよう下に縁取りの線を敷く
-  if (f.kind === "range" || f.kind === "river") els.push(f.kind === "river" ? "feat river case" : "feat case");
+  if (f.kind === "river") els.push("feat river case");
   els.push(`feat ${f.kind}`);
-  featEls[f.id] = els.map(cls => { const p = document.createElementNS(NS, "path"); p.setAttribute("d", f.d); p.setAttribute("class", cls); if (f.kind === "plain" || f.kind === "coastline") p.setAttribute("filter", "url(#featSoft)"); gTerrain.appendChild(p); return p; });
+  featEls[f.id] = els.map(cls => { const p = document.createElementNS(NS, "path"); p.setAttribute("d", f.d); p.setAttribute("class", cls); if (f.kind === "plain" || f.kind === "coastline" || f.kind === "range") p.setAttribute("filter", "url(#featSoft)"); gTerrain.appendChild(p); return p; });
 });
 const chartEl = document.getElementById("chart");
 // withNote：答えたあとは雨温図に印と説明をつける
