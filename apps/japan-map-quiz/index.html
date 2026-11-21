@@ -1604,6 +1604,13 @@ function fitBox(bb, animate=true) {
 }
 const unionBox = codes => codes.reduce((a,c) => { const b = boxOf[c]; return [Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[2],b[2]),Math.max(a[3],b[3])]; }, [1e9,1e9,-1e9,-1e9]);
 let homeBox = FULL;
+// 光る印を中心にした正方形の範囲。県の形（いちばん大きな島）がまるごと入る大きさで、小さな県でも寄りすぎないよう半径は130以上
+// （地図の座標で約2.7度。九州なら九州と中国・四国の西が見えるくらい）。遠くの島の印（小笠原など）は、県の本体も入るよう自然に広がる
+function pinBox(ll, code) {
+  const [x, y] = toXY(...ll), b = boxOf[code];
+  const h = Math.max(130, x - b[0], b[2] - x, y - b[1], b[3] - y) + 12;
+  return [x - h, y - h, x + h, y + h];
+}
 // 範囲にピンの場所が入っていなければ、ピンまで広げる（小笠原諸島・奄美大島など、地方の外の島のピン）
 const withPin = (bb, ll) => { const [x, y] = toXY(...ll), m = 24; return [Math.min(bb[0], x - m), Math.min(bb[1], y - m), Math.max(bb[2], x + m), Math.max(bb[3], y + m)]; };
 function zoomArea(id){ fitBox(unionBox(AREAS.find(a => a.id === id).codes)); }
@@ -2120,8 +2127,10 @@ function nextQ() {
     } else {
       pathEl[q.focus].classList.add("sel");
       // 県庁所在地は県庁、歴史の場所はその場所を、ピンクの光で示す
-      if (q.pinLL) { showPinAt(q.pinLL, q.focus); fitLater(withPin(unionBox(areaOfPref(q.focus).codes), q.pinLL)); } else showPin(q.pin);
-      if (quiz.area.wide) fitLater(q.pinLL ? withPin(unionBox(areaOfPref(q.focus).codes), q.pinLL) : unionBox(areaOfPref(q.focus).codes));
+      if (q.pinLL) showPinAt(q.pinLL, q.focus); else showPin(q.pin);
+      // 問題の場所（光る印）を画面のまん中にして、その県がまるごと入るほどよい大きさで見せる
+      const ll = q.pinLL || (q.pin && CAPITAL_LL[q.pin]);
+      if (ll) fitLater(pinBox(ll, q.focus)); else if (quiz.area.wide) fitLater(unionBox(areaOfPref(q.focus).codes));
     }
     q.order = shuffle(q.choices);
     sheet.innerHTML = `${askBlock()}<div class="qslot" id="qslot"><div class="choices">${q.order.map(([n, k], j) =>
