@@ -128,7 +128,27 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 /* DBG：地図の上のまん中にうすく（押すとき・ON のときは少し濃く） */
 /* 地図の左上（海の上）：サッ記マンの7つの表情を1秒ごとにランダムに切りかえる（フェードなし）。問題を解いている間は出さない。
    7枚はヘルメットの形で位置と大きさをそろえて書き出してあるので、切りかえても顔が動かない */
-.rotface{position:absolute;left:calc(var(--s16) + env(safe-area-inset-left,0px));top:44px;width:calc(84px * 189 / 216);height:84px;z-index:1;pointer-events:none}
+.rotface{position:absolute;left:calc(104px - 84px * 189 / 432 + env(safe-area-inset-left,0px));top:58px;width:calc(84px * 189 / 216);height:84px;z-index:1;pointer-events:none}
+/* 顔・星メーターをまとめて入れる箱。地図の高さが足りない（背の低いスマホ）ときは、地図にかぶらないよう全体を小さくする（--smk） */
+.smwrap{position:absolute;left:0;top:0;width:0;height:0;z-index:1;pointer-events:none;transform-origin:0 0;transform:scale(var(--smk,1))}
+/* 星メーター（ホーム・コース画面）：顔のまわりに星12個。1つの星を菱形5つに分け、全体の進み具合で黄色く点灯。下に7セグの3桁％ */
+.smeter{position:absolute;left:calc(11px + env(safe-area-inset-left,0px));top:7px;width:186px;height:186px;z-index:2;pointer-events:none;transform-origin:50% 50%;will-change:transform}
+.smeter[hidden],.sseg[hidden]{display:none}
+.smeter .st{position:absolute;width:42px;height:42px}
+.smeter .st svg,.smfx svg{display:block;overflow:visible}
+.smeter .st.full svg{filter:drop-shadow(0 0 3px #FFE600) drop-shadow(0 0 7px rgba(255,230,0,.7))}
+.smeter .glint{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;animation:smGlint .9s ease-out forwards}
+@keyframes smGlint{0%{opacity:0;transform:scale(.2) rotate(0)}35%{opacity:1;transform:scale(1.15) rotate(45deg)}100%{opacity:0;transform:scale(.3) rotate(90deg)}}
+.sseg{position:absolute;left:calc(104px + env(safe-area-inset-left,0px));top:189px;transform:translateX(-50%);z-index:2;pointer-events:none;background:#2A2826;border:2px solid #282727;border-radius:9px;padding:4px 7px 4px 8px;display:flex;align-items:flex-end;gap:2px;box-shadow:inset 0 2px 5px rgba(0,0,0,.6)}
+.sseg svg{display:block}
+.sseg .on{fill:#FFE24A;filter:drop-shadow(0 0 1.5px #FFD000) drop-shadow(0 0 4px rgba(255,200,0,.8))}
+.sseg .off{fill:#45403A}
+.smfx{position:fixed;inset:0;z-index:60;pointer-events:none;overflow:hidden}
+.smfx .flash{position:absolute;inset:0;opacity:0}
+.smfx .rays{position:absolute;width:520px;height:520px;margin:-260px 0 0 -260px;opacity:0}
+.smfx .big{position:absolute;left:0;top:0;transform-origin:50% 50%;will-change:transform;filter:drop-shadow(0 0 6px #FFE600) drop-shadow(0 0 18px rgba(255,220,0,.8))}
+.smfx .ptc{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px}
+.smfx .shock{position:absolute;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;border:4px solid #FFF27A;box-shadow:0 0 12px #FFE24A}
 .rotface[hidden]{display:none}
 .rotface img{display:block;width:100%;height:100%}
 /* 全国の挑戦：ピンチで拡大できることを教える。指を広げる手の絵＋「かくだい」（点滅は、ぼかさず・透けさせず、パッと消えてパッと出る）。
@@ -530,7 +550,11 @@ svg:not(.explore) .region-line{display:none}
     <div class="combo" id="combo" hidden></div>
     <div class="clearmsg" id="clearmsg" hidden><span></span></div>
     <div class="toast" id="toast" role="status" hidden></div>
+    <div class="smwrap" id="smwrap">
     <div class="rotface" id="rotface" aria-hidden="true"><img alt=""></div>
+      <div class="smeter" id="smeter" aria-hidden="true" hidden></div>
+      <div class="sseg" id="sseg" role="img" hidden></div>
+    </div>
     <div class="pinchg" id="pinchg" aria-hidden="true" hidden>
       <svg viewBox="0 0 100 96" aria-hidden="true">
         <defs>
@@ -1916,6 +1940,180 @@ function rotFace(on, happy = false) {
   rotEl.hidden = !on; rotSet = set; rotNow = "";
   if (on) { rotStep(); rotTimer = setInterval(rotStep, 1000); }
 }
+/* ---------- 星メーター（ホーム・コース画面の進み具合） ----------
+   進み具合＝総合問題をのぞく全コースの問題のうち、ヒントなしで正解したことがある問題の割合（マスター済みのコースは全問）。
+   総合問題でヒントなし正解した問題は、元のコースの問題として数える。星12個×菱形5つ＝60段階で点灯、％は7セグの3桁。
+   増えた分は、ホーム・コース画面に来たとき1段ずつ点灯し、星が満タンになった瞬間に「チャキーン」演出（輪が3回転して元の場所に収まる）。
+   見せ終わった段階は store.meter（DBG 中はメモリだけ）に覚えて、同じ演出をくり返さない */
+const SM = {N: 12, R: 72, S: 42, BOX: 186, ARMS: 60};
+const smEl = document.getElementById("smeter"), segEl = document.getElementById("sseg");
+let smKeys = null, dbgMeter = null;
+function smAllKeys() {
+  if (smKeys) return smKeys;
+  smKeys = {};
+  COURSES.filter(c => c.ready && c.id !== "general" && QUIZ_TYPES[c.id]).forEach(c => { smKeys[c.id] = new Set(QUIZ_TYPES[c.id].make(range(1, 47)).map(q => String(q.key))); });
+  return smKeys;
+}
+function meterProgress() {
+  const all = smAllKeys(), extra = {};
+  recsOf("general").forEach(r => Object.keys(r.clean || {}).forEach(k => { const [c, kk] = weakRef("general", k); (extra[c] = extra[c] || new Set()).add(String(kk)); }));
+  let got = 0, tot = 0;
+  Object.entries(all).forEach(([id, keys]) => {
+    tot += keys.size;
+    if (masterOf(id)) { got += keys.size; return; }
+    const cl = new Set(extra[id] || []); recsOf(id).forEach(r => Object.keys(r.clean || {}).forEach(k => cl.add(k)));
+    let n = 0; keys.forEach(k => { if (cl.has(k)) n++; }); got += n;
+  });
+  return {arms: tot ? Math.floor(got * SM.ARMS / tot) : 0, pct: tot ? Math.floor(got * 100 / tot) : 0};
+}
+const smSeen = () => debug ? dbgMeter : store.meter;
+const smSetSeen = v => { if (debug) dbgMeter = v; else { store.meter = v; save(); } };
+// ふっくらした星（角を丸めた五芒星）
+function smStarPath() {
+  const R = 48, k = 0.53, V = [];
+  for (let i = 0; i < 10; i++) { const a = -Math.PI/2 + i*Math.PI/5, rr = i % 2 ? R*k : R; V.push([rr*Math.cos(a), rr*Math.sin(a)]); }
+  const u = (a, b, s) => { const dx = b[0]-a[0], dy = b[1]-a[1], L = Math.hypot(dx, dy); return [a[0]+dx*s/L, a[1]+dy*s/L]; };
+  let d = "";
+  for (let i = 0; i < 10; i++) { const c = V[i], t = i % 2 ? 5 : 15, p1 = u(c, V[(i+9)%10], t), p2 = u(c, V[(i+1)%10], t); d += (i ? "L" : "M") + p1.map(v => v.toFixed(2)) + "Q" + c.map(v => v.toFixed(2)) + " " + p2.map(v => v.toFixed(2)); }
+  return d + "Z";
+}
+const SM_PATH = smStarPath(); let smUid = 0;
+// n＝点灯した菱形の数（0〜5）。灰色の星を先に描き、その上に黄色を菱形ごとに重ねる（中の線は描かない）
+function smStar(n, size) {
+  const id = "sm" + (smUid++), full = n >= 5; let clip = "";
+  for (let i = 0; i < n; i++) { const a = -Math.PI/2 + i*2*Math.PI/5, L = 200, a1 = a - Math.PI/5, a2 = a + Math.PI/5; clip += `<path d="M0,0L${[L*Math.cos(a1), L*Math.sin(a1)]}L${[L*Math.cos(a), L*Math.sin(a)]}L${[L*Math.cos(a2), L*Math.sin(a2)]}Z"/>`; }
+  return `<svg viewBox="-56 -56 112 112" width="${size}" height="${size}"><defs><radialGradient id="g${id}" cx="35%" cy="32%" r="80%"><stop offset="0" stop-color="#FFFB45"/><stop offset=".55" stop-color="#FFF23A"/><stop offset="1" stop-color="#F2C92E"/></radialGradient><clipPath id="c${id}">${clip}</clipPath></defs>`
+    + `<path d="${SM_PATH}" fill="#D9D5CD" stroke="#BDB7AC" stroke-width="4" stroke-linejoin="round"/>`
+    + (n ? `<g clip-path="url(#c${id})"><path d="${SM_PATH}" fill="url(#g${id})" stroke="#E0B000" stroke-width="4" stroke-linejoin="round"/>${full ? `<path d="M-34,-12 L-12,-17 L-1,-38" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".85"/>` : ""}</g>` : "") + `</svg>`;
+}
+const SM_SPARK = `<svg viewBox="-10 -10 20 20" width="16" height="16"><path d="M0,-10 L2.2,-2.2 10,0 2.2,2.2 0,10 -2.2,2.2 -10,0 -2.2,-2.2Z" fill="#fff" style="filter:drop-shadow(0 0 2px #FFF6A0)"/></svg>`;
+// 7セグ
+const SEG7 = {a:"M3,1 L17,1 L14.5,3.5 L5.5,3.5Z", b:"M18,2 L18,15 L15.5,13.5 L15.5,4.5Z", c:"M18,17 L18,30 L15.5,27.5 L15.5,18.5Z", d:"M3,31 L17,31 L14.5,28.5 L5.5,28.5Z", e:"M2,17 L2,30 L4.5,27.5 L4.5,18.5Z", f:"M2,2 L2,15 L4.5,13.5 L4.5,4.5Z", g:"M3,16 L5.5,14.6 L14.5,14.6 L17,16 L14.5,17.4 L5.5,17.4Z"};
+const DIG7 = ["abcdef","bc","abged","abgcd","fgbc","afgcd","afgedc","abc","abcdefg","abcdfg"];
+function smPct(v) {
+  v = Math.max(0, Math.min(100, Math.round(v)));
+  segEl.setAttribute("aria-label", `進み具合 ${v}%`);
+  segEl.innerHTML = [...String(v).padStart(3, "0")].map(ch => `<svg viewBox="0 0 20 32" width="19" height="30" style="transform:skewX(-6deg)">${Object.entries(SEG7).map(([k, d]) => `<path d="${d}" class="${DIG7[+ch].includes(k) ? "on" : "off"}"/>`).join("")}</svg>`).join("")
+    + `<svg viewBox="0 0 16 32" width="15" height="25"><g class="on"><circle cx="4" cy="16" r="2.6"/><circle cx="12" cy="28" r="2.6"/><path d="M12,13 L14,14 L4,31 L2,30Z"/></g></svg>`;
+}
+const smLocal = i => { const a = -Math.PI/2 + i*2*Math.PI/SM.N; return [SM.BOX/2 + SM.R*Math.cos(a), SM.BOX/2 + SM.R*Math.sin(a)]; };
+const smStars = [...Array(SM.N)].map((_, i) => { const d = document.createElement("div"); d.className = "st"; const [x, y] = smLocal(i); d.style.left = (x - SM.S/2) + "px"; d.style.top = (y - SM.S/2) + "px"; smEl.appendChild(d); return d; });
+let smShown = {arms: 0, pct: 0}, smDrawn = Array(SM.N).fill(-1), smRun = null, smGlintT = 0;
+function smDraw(arms, hide = -1) {
+  smStars.forEach((d, i) => { const n = Math.max(0, Math.min(5, arms - i*5)); d.style.visibility = i === hide ? "hidden" : "";
+    if (smDrawn[i] !== n) { d.innerHTML = smStar(n, SM.S); smDrawn[i] = n; d.classList.toggle("full", n >= 5); } });
+}
+// 満タンの星が、ときどきキラッと光る
+function smGlint() {
+  if (smEl.hidden) return;
+  const full = smStars.map((d, i) => smDrawn[i] >= 5 && d.style.visibility !== "hidden" ? i : -1).filter(i => i >= 0); if (!full.length) return;
+  const i = full[Math.floor(Math.random() * full.length)], [x, y] = smLocal(i), g = document.createElement("div");
+  g.className = "glint"; g.innerHTML = SM_SPARK; g.style.left = (x + (Math.random()*2-1)*12) + "px"; g.style.top = (y + (Math.random()*2-1)*12) + "px";
+  smEl.appendChild(g); setTimeout(() => g.remove(), 950);
+}
+// 音：点灯の「ピッ」、飛び出す「シュイーン」、回転中の「チッ」、真ん中の「キラーン」、収まる「チャキーン」
+function smSnd(f) { const a = audio(); if (!a) return; try { f(a, a.currentTime); } catch(e){} }
+const smOsc = (a, type, freq, t, peak, len, dest = out) => { const o = a.createOscillator(), g = a.createGain(); o.type = type; o.frequency.value = freq; g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + len); o.connect(g); g.connect(dest); o.start(t); o.stop(t + len + 0.02); return o; };
+const smTick = step => smSnd((a, t) => smOsc(a, "sine", 1568 + (step % 5) * 196, t, 0.16, 0.15));
+const smClick = k => smSnd((a, t) => smOsc(a, "triangle", 2093 + (k % 12) * 55, t, 0.09, 0.05));
+const smKiran = () => smSnd((a, t) => [1568, 2093, 2637, 3136].forEach((f, i) => { const o = smOsc(a, "triangle", f, t + i*0.06, 0.12, 0.5); }));
+function smWhoosh() { smSnd((a, t) => { const o = a.createOscillator(), g = a.createGain(), f = a.createBiquadFilter(); o.type = "sawtooth";
+  o.frequency.setValueAtTime(330, t); o.frequency.exponentialRampToValueAtTime(1320, t + 0.38); f.type = "bandpass"; f.frequency.setValueAtTime(900, t); f.frequency.exponentialRampToValueAtTime(4200, t + 0.38); f.Q.value = 3;
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.18, t + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5); o.connect(f); f.connect(g); g.connect(out); o.start(t); o.stop(t + 0.52); }); }
+function smChakiin() { smSnd((a, t) => {
+  const len = Math.floor(a.sampleRate * 0.08), nb = a.createBuffer(1, len, a.sampleRate), d = nb.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 3);
+  const ns = a.createBufferSource(), hp = a.createBiquadFilter(), ng = a.createGain(); ns.buffer = nb; hp.type = "highpass"; hp.frequency.value = 3000; ng.gain.value = 0.6; ns.connect(hp); hp.connect(ng); ng.connect(out); ns.start(t);
+  [[2637, .56, 1.6], [3951, .32, 1.3], [5274, .2, 1.0], [7040, .12, .7], [1318, .24, 1.2]].forEach(([f, v, l]) => { const o = a.createOscillator(), g = a.createGain(), s = t + 0.03;
+    o.type = "sine"; o.frequency.setValueAtTime(f * 1.02, s); o.frequency.exponentialRampToValueAtTime(f, s + 0.09); g.gain.setValueAtTime(0.0001, s); g.gain.linearRampToValueAtTime(v, s + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, s + l);
+    o.connect(g); g.connect(out); g.connect(rev); o.start(s); o.stop(s + l + 0.02); });
+  [3136, 3520, 3951, 4186, 4699, 5274].forEach((f, i) => smOsc(a, "triangle", f, t + 0.25 + i*0.07, 0.1, 0.35, rev));
+}); }
+function smBez(x1, y1, x2, y2) { const cx = 3*x1, bx = 3*(x2-x1) - cx, ax = 1 - cx - bx, cy = 3*y1, by = 3*(y2-y1) - cy, ay = 1 - cy - by;
+  const X = t => ((ax*t + bx)*t + cx)*t, Y = t => ((ay*t + by)*t + cy)*t, DX = t => (3*ax*t + 2*bx)*t + cx;
+  return x => { if (x <= 0) return 0; if (x >= 1) return 1; let t = x; for (let i = 0; i < 8; i++) { const e = X(t) - x; if (Math.abs(e) < 1e-6) break; t -= e / (DX(t) || 1e-6); } return Y(Math.min(1, Math.max(0, t))); }; }
+const smSpinE = smBez(.42, 0, .12, 1);   // 立ち上がりなめらか、終盤しっかりイーズアウト
+const SM_OUT = 400, SM_HOLD = 2000, SM_BACK = 520, SM_END = SM_OUT + SM_HOLD + SM_BACK, SM_BIG = 5.4;
+// 星 i が満タンになった演出。done() は収まったあとに呼ぶ。run.stop() で途中でもすぐ片づける
+function smCelebrate(i, run, done) {
+  const fx = document.createElement("div"); fx.className = "smfx";
+  fx.innerHTML = `<div class="flash" style="background:radial-gradient(circle at 50% 46%,rgba(255,250,200,.95),rgba(255,236,120,.55) 35%,rgba(255,255,255,0) 70%)"></div><svg class="rays" viewBox="-100 -100 200 200">${[...Array(16)].map((_, k) => { const r = d => d*Math.PI/180; return `<path d="M0,0 L${100*Math.cos(r(k*22.5-3))},${100*Math.sin(r(k*22.5-3))} L${100*Math.cos(r(k*22.5+3))},${100*Math.sin(r(k*22.5+3))}Z" fill="rgba(255,236,100,.55)"/>`; }).join("")}</svg>`;
+  document.body.appendChild(fx);
+  const flash = fx.querySelector(".flash"), rays = fx.querySelector(".rays"), big = document.createElement("div");
+  big.className = "big"; big.innerHTML = smStar(5, SM.S * SM_BIG); fx.appendChild(big);
+  const mw = byId("mapwrap").getBoundingClientRect(), mx = mw.left + mw.width/2, my = mw.top + Math.min(mw.height, innerHeight - mw.top) * 0.46;
+  rays.style.left = mx + "px"; rays.style.top = my + "px";
+  const rb = smEl.getBoundingClientRect(), cx = rb.left + rb.width/2, cy = rb.top + rb.height/2, base = i*2*Math.PI/SM.N, k = rb.width / SM.BOX, S = SM.S * k, RR = SM.R * k;
+  const slot = ang => { const a = -Math.PI/2 + base + ang*Math.PI/180; return [cx + RR*Math.cos(a), cy + RR*Math.sin(a)]; };
+  const [x0, y0] = slot(0);
+  const put = (x, y, sc, rot) => { const m = k + (1 - k)*(sc - 1)/(SM_BIG - 1); big.style.transform = `translate(${x - SM.S*SM_BIG/2}px,${y - SM.S*SM_BIG/2}px) scale(${sc*m/SM_BIG}) rotate(${rot}deg)`; };
+  const back = u => { const c1 = 1.7, c3 = c1 + 1; return 1 + c3*Math.pow(u-1, 3) + c1*Math.pow(u-1, 2); };
+  const eIO = u => u < .5 ? 4*u*u*u : 1 - Math.pow(-2*u + 2, 3)/2;
+  const burst = (x, y, n, dist, size) => { for (let k = 0; k < n; k++) { const p = document.createElement("div"); p.className = "ptc"; p.innerHTML = SM_SPARK; p.style.left = x + "px"; p.style.top = y + "px"; fx.appendChild(p);
+    const ang = k/n*Math.PI*2 + Math.random()*.3, d = dist*(.6 + Math.random()*.6);
+    p.animate([{transform: "translate(0,0) scale(.3)", opacity: 1}, {transform: `translate(${Math.cos(ang)*d}px,${Math.sin(ang)*d}px) scale(${size*(0.7 + Math.random()*.6)}) rotate(120deg)`, opacity: 0}], {duration: 600 + Math.random()*350, easing: "cubic-bezier(.1,.8,.3,1)", fill: "forwards"}); } };
+  let t0 = null, last = 0, popped = false, raf = 0;
+  const finish = landed => {
+    cancelAnimationFrame(raf); smEl.style.transform = ""; smEl.style.filter = ""; big.remove();
+    smDraw(smShown.arms);
+    if (!landed) { fx.remove(); return; }
+    smChakiin();
+    flash.animate([{opacity: 0}, {opacity: .55, offset: .1}, {opacity: 0}], {duration: 450, easing: "ease-out"});
+    smStars[i].animate([{transform: "scale(1.7)"}, {transform: "scale(.9)", offset: .45}, {transform: "scale(1.08)", offset: .75}, {transform: "scale(1)"}], {duration: 480, easing: "ease-out"});
+    const sh = document.createElement("div"); sh.className = "shock"; sh.style.left = x0 + "px"; sh.style.top = y0 + "px"; fx.appendChild(sh);
+    sh.animate([{transform: "scale(.5)", opacity: 1}, {transform: "scale(5)", opacity: 0}], {duration: 520, easing: "cubic-bezier(.2,.8,.3,1)", fill: "forwards"});
+    burst(x0, y0, 12, 55, 1);
+    byId("app").animate([{transform: "translate(0,0)"}, {transform: "translate(-2px,2px)"}, {transform: "translate(2px,-1px)"}, {transform: "translate(0,0)"}], {duration: 180});
+    setTimeout(() => fx.remove(), 1100);
+    done();
+  };
+  run.stop = () => finish(false);
+  smWhoosh();
+  const frame = now => {
+    if (t0 === null) t0 = now;
+    const t = now - t0, ang = 3*360*smSpinE(Math.min(1, t/SM_END)), v = 3*360*(smSpinE(Math.min(1, (t + 16)/SM_END)) - smSpinE(Math.min(1, t/SM_END)));
+    if (t >= SM_END) { smShown.arms = Math.max(smShown.arms, (i + 1)*5); return finish(true); }
+    smEl.style.transform = `rotate(${ang}deg)`; smEl.style.filter = v > 2 ? `blur(${Math.min(1.6, (v - 2)*.12).toFixed(2)}px)` : "";
+    const step = Math.floor(ang/30); if (step > last) { last = step; smClick(step); }
+    if (t < SM_OUT) { const u = back(t/SM_OUT), [sx, sy] = slot(ang); put(sx + (mx - sx)*u, sy + (my - sy)*u, 1 + (SM_BIG - 1)*u, ang + 360*u); }
+    else if (t < SM_OUT + SM_HOLD) {
+      if (!popped) { popped = true; smKiran(); flash.animate([{opacity: 0}, {opacity: .8, offset: .12}, {opacity: 0}], {duration: 600, easing: "ease-out"}); burst(mx, my, 16, 150, 1.2); }
+      const h = (t - SM_OUT)/SM_HOLD; put(mx, my + Math.sin(h*Math.PI*2)*4, SM_BIG*(1 + .045*Math.sin(h*Math.PI*4)), Math.sin(h*Math.PI*2)*4);
+      rays.style.opacity = Math.min(1, h*6)*(1 - Math.max(0, (h - .8)/.2))*.9; rays.style.transform = `scale(${0.9 + h*.2}) rotate(${h*90}deg)`;
+    } else { rays.style.opacity = 0; const e = eIO((t - SM_OUT - SM_HOLD)/SM_BACK), [sx, sy] = slot(ang); put(mx + (sx - mx)*e, my + (sy - my)*e, SM_BIG + (1 - SM_BIG)*e, ang + 360*e); }
+    raf = requestAnimationFrame(frame);
+  };
+  raf = requestAnimationFrame(frame);
+}
+// 演出中のものを止めて、いまの値にそろえる
+function smStop() { if (smRun) { const r = smRun; smRun = null; r.dead = true; clearTimeout(r.timer); if (r.stop) r.stop(); } }
+// ホーム・コース画面で呼ぶ：見せ終わった段階から、いまの進み具合まで1段ずつ点灯（星が満タンになるたびチャキーン）
+function smFit() { const h = byId("mapwrap").clientHeight; if (h) byId("smwrap").style.setProperty("--smk", Math.min(1, h / 434).toFixed(3)); }
+addEventListener("resize", smFit);
+function meterShow(on) {
+  smEl.hidden = segEl.hidden = !on; smFit(); requestAnimationFrame(smFit); setTimeout(smFit, 300);
+  clearInterval(smGlintT); smGlintT = 0;
+  if (!on) { smStop(); return; }
+  smGlintT = setInterval(smGlint, 420);
+  if (smRun) return;   // 演出の続き（コース一覧⇔コースの行き来）
+  const p = meterProgress(), seen = smSeen();
+  if (!seen || p.arms < seen.arms || (seen.arms === p.arms && seen.pct === p.pct)) { smShown = {arms: p.arms, pct: p.pct}; smDrawn.fill(-1); smDraw(p.arms); smPct(p.pct); smSetSeen({arms: p.arms, pct: p.pct}); return; }
+  smShown = {arms: seen.arms, pct: seen.pct}; smDraw(seen.arms); smPct(seen.pct);
+  smSetSeen({arms: p.arms, pct: p.pct});   // 途中で画面を出ても、同じ演出はくり返さない
+  const run = smRun = {}, from = {...seen}, steps = p.arms - from.arms;
+  const pctAt = a => steps > 0 ? from.pct + (p.pct - from.pct) * (a - from.arms) / steps : p.pct;
+  const next = () => {
+    if (run.dead) return;
+    if (smShown.arms >= p.arms) { smPct(p.pct); smShown.pct = p.pct; smRun = null; return; }
+    const a = smShown.arms + 1;
+    if (a % 5 === 0) {   // 星が満タンに
+      smDraw(a - 1, a/5 - 1); smPct(pctAt(a));
+      smCelebrate(a/5 - 1, run, () => { if (!run.dead) run.timer = setTimeout(next, 500); });
+    } else { smShown.arms = a; smDraw(a); smPct(pctAt(a)); smTick(a); run.timer = setTimeout(next, 140); }
+  };
+  if (steps === 0) { const t0 = performance.now(), f0 = from.pct; const f = now => { if (run.dead) return; const k = Math.min(1, (now - t0)/500); smPct(f0 + (p.pct - f0)*k); if (k < 1) requestAnimationFrame(f); else smRun = null; }; requestAnimationFrame(f); }
+  else run.timer = setTimeout(next, 450);
+}
 const top_ = document.getElementById("top"), sheet = document.getElementById("sheet"), combo = document.getElementById("combo"), clearmsg = document.getElementById("clearmsg");
 let mode = "home", quiz = null, selected = null;
 
@@ -2097,7 +2295,7 @@ function toHomeScreen(box = FULL) {
   PREFS.forEach(p => pathEl[p.code].dataset.lv = lv[p.code]);
   okiCopy.dataset.lv = lv[47];
   homeBox = box; fitLater(box);
-  sheet.classList.remove("inquiz"); sheet.classList.add("home"); rotFace(true);
+  sheet.classList.remove("inquiz"); sheet.classList.add("home"); rotFace(true); meterShow(true);
   return lv;
 }
 
@@ -2212,7 +2410,7 @@ function openReset() {
   ov.querySelector("#rsNo").onclick = close;
   // 進捗の全初期化（記録・👑・地図の色、v4 の記録も消す）。音の設定は残す
   // DBG ON のときは、画面に出ているお試し記録（dbgRec）も消す（本当の記録といっしょに）
-  ov.querySelector("#rsYes").onclick = () => { store.rec = {}; store.best = {}; store.miss = {}; if (debug) dbgRec = {}; save(); close(); home(); };
+  ov.querySelector("#rsYes").onclick = () => { smStop(); store.rec = {}; store.best = {}; store.miss = {}; delete store.meter; dbgMeter = null; if (debug) dbgRec = {}; save(); close(); home(); };
   ov.querySelector("#rsReload").onclick = () => { bgmStop(); location.reload(); };
   ov.querySelector("#rsNo").focus();
 }
@@ -2258,7 +2456,7 @@ function shuffle(a){ a = a.slice(); for (let i=a.length-1;i>0;i--){ const j = Ma
 function startQuiz(course, area, codes, opts={}) {
   cancelQuizTimers(); eyeOff();
   const type = QUIZ_TYPES[course.id];
-  sheet.classList.remove("home"); sheet.classList.add("inquiz"); rotFace(false); freshShown = ""; qfNext = Math.floor(Math.random() * ROT_HAPPY.length); showFeature(null);
+  sheet.classList.remove("home"); sheet.classList.add("inquiz"); rotFace(false); meterShow(false); freshShown = ""; qfNext = Math.floor(Math.random() * ROT_HAPPY.length); showFeature(null);
   mode = "quiz"; selected = null; pinchOn = false; clearTag(); clearmsg.hidden = true; bgmStop(); bgmPick(); bgmStart(); JapanMap.resetColors(); svg.classList.remove("explore");
   const inArea = new Set(area.codes);
   PREFS.forEach(p => { pathEl[p.code].classList.toggle("off", !inArea.has(p.code)); labelEl[p.code].classList.toggle("off", !inArea.has(p.code)); });
@@ -2290,7 +2488,7 @@ function askText(q) {
 const askBlock = () => { const t = askText(quiz.q); return `<div class="ask"><span class="q${quiz.q.text.replace(/<[^>]+>/g, "").length > 18 ? " long" : ""}">${t.html}</span>${t.under ? `<span class="kana">${t.under}</span>` : ""}</div>`; };
 
 function nextQ() {
-  eyeOff(); clearTag(); clearNextTri(); rotFace(false);
+  eyeOff(); clearTag(); clearNextTri(); rotFace(false); meterShow(false);
   if (quiz.i >= quiz.qs.length) return result();
   const q = quiz.q = quiz.qs[quiz.i]; q.hint = false; quiz.answered = false;
   if (q.box) fitLater(q.box);   // 問題ごとに見せる範囲が決まっているもの（海なし県）
