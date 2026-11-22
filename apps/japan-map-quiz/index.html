@@ -403,6 +403,9 @@ svg:not(.explore) .region-line{display:none}
 /* 禁則・改行のための折り返さないまとまり（.nw）は、どこでも行の中にならべる（ブロックにしない） */
 .fb .txt span.nw,.fb .txt span span{display:inline;color:inherit;font-size:inherit;font-weight:inherit}
 .fb .txt .head em{font-style:normal;box-shadow:inset 0 calc(-1 * var(--marker)) 0 var(--brand)}
+/* 答えの名前（正解のとき・ざんねんのときの「正解は〇〇」）は、文字とふりがなを1.7倍にして、黄色の下線（2026-11-22） */
+.fb .txt em.ans{font-size:1.7em;line-height:1.35;font-style:normal;box-shadow:inset 0 calc(-1 * var(--marker)) 0 var(--brand)}
+.fb .txt .head em.ans{display:inline}
 .fb .txt .desc{margin-top:var(--s4)}
 .row{display:flex;gap:var(--s8);flex-wrap:wrap}
 .btn{flex:1 1 140px;font-size:var(--fs16);padding:0 var(--s12)}
@@ -672,7 +675,7 @@ const QUIZ_TYPES = {
       const p = byCode(c), [ans] = CITIES.capitals[c];
       return { key: c, prefs: [c], focus: c, pin: c, sub: c === 13 ? "とうきょうとちょう" : p.kana, choices: CITIES.capitals[c], correct: ans[0],
         text: c === 13 ? `<em>東京都庁</em>がある区は？` : `<em>${p.name}</em>の${p.office}所在地は？`,
-        explain: c === 13 ? `東京都庁は ${ans[0]}（${ans[1]}）にあります` : `${p.name}の${p.office}所在地は ${ans[0]}（${ans[1]}）` };
+        explain: c === 13 ? `東京都庁は${ans[0]}（${ans[1]}）にある。` : `${p.name}の${p.office}所在地は${ans[0]}（${ans[1]}）。` };
     })
   },
   terrain: {
@@ -2956,10 +2959,11 @@ function answerChoice(j) {
   // 解説が名前のくり返しだけでないとき（歴史の場所・地形・公害・工業都市なども）は、答えのあと選択肢をしまい、横いっぱいに名前と解説を出す（2026-11-22）
   // 解説の頭の「名前（よみ）：」「名前：」は見出しとかぶるので取る。雨温図（q.chart）は今までどおり
   const exText = q.chart || !q.explain ? "" : String(q.explain).replace(/^[^：]*?（[^）]*）：/, "").replace(new RegExp("^" + ans[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[：。]?"), "");
+  const exShow = /^[はがのをにでとも]/.test(exText) ? String(q.explain) : exText;
   const wide = quiz.course.id === "treasure" || exText.replace(/[（(][^）)]*[）)]/g, "").trim().length > 4;
   afterAnswer(ok, ok
-    ? `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！</b><span class="head">${rb(ans[0], ans[1])}${q.hint ? "（ヒントを見て正解）" : ""}</span>${wide ? `<span class="desc">${softBreak(exText || q.explain)}</span>` : ""}${noteHtml(q.focus)}</div></div>`
-    : `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　<span class="nw">正解は</span> <span class="nw"><em>${rb(ans[0], ans[1])}</em>。</span><wbr><span class="nw">キミが選んだのは</span> <span class="nw">${rb(pick[0], pick[1])}。</span></span>${wide ? `<span class="desc">${softBreak(exText || q.explain)}</span>` : ""}${noteHtml(q.focus)}</div></div>`,
+    ? `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！</b><span class="head"><em class="ans">${rb(ans[0], ans[1])}</em>${q.hint ? "（ヒントを見て正解）" : ""}</span>${wide ? `<span class="desc">${softBreak(exShow || q.explain)}</span>` : ""}${noteHtml(q.focus)}</div></div>`
+    : `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　<span class="nw">正解は</span> <span class="nw"><em class="ans">${rb(ans[0], ans[1])}</em>。</span><wbr><span class="nw">キミが選んだのは</span> <span class="nw">${rb(pick[0], pick[1])}。</span></span>${wide ? `<span class="desc">${softBreak(exShow || q.explain)}</span>` : ""}${noteHtml(q.focus)}</div></div>`,
     {kind: wide ? "wide" : "choice", burst: () => { const el = sheet.querySelector(".choice.right") || sheet.querySelector(".fb .face"); if (!el) return null; const r = el.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; }});
 }
 
@@ -2977,13 +2981,13 @@ function handleTap(code) {
   if (ok) {
     pathEl[code].classList.add("flash-ok");
     quizTimeout(() => { pathEl[code].classList.remove("flash-ok"); pathEl[code].classList.add("ok"); }, 450);
-    afterAnswer(true, `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans.name}${rankYear(q.top3)}</b>${q.top3 ? `${q.hint ? `<span class="desc">（ヒントを見て正解）</span>` : ""}${rankTable(q.top3, ans.code)}` : `<span class="desc">${q.hint ? "（ヒントを見て正解）" : ""}${softBreak(trimLead(q.explain, ans.name))}</span>${noteHtml(ans.code)}`}</div></div>`,
+    afterAnswer(true, `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！</b><span class="head"><em class="ans">${rb(ans.name, ans.kana)}</em>${rankYear(q.top3)}</span>${q.top3 ? `${q.hint ? `<span class="desc">（ヒントを見て正解）</span>` : ""}${rankTable(q.top3, ans.code)}` : `<span class="desc">${q.hint ? "（ヒントを見て正解）" : ""}${softBreak(trimLead(q.explain, ans.name))}</span>${noteHtml(ans.code)}`}</div></div>`,
       {kind: "tap", burst: () => { const r = pathEl[code].getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; }});
   } else {
     pathEl[code].classList.add("flash-ng"); showTag(code, p.short);
     pathEl[ans.code].classList.add("miss");
     JapanMap.highlightPrefecture(ans.code);
-    afterAnswer(false, `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　正解は <em>${ans.name}</em>。<span class="nw">キミが指したのは</span> <span class="nw">${p.name}。</span>${rankYear(q.top3)}</span>${q.top3 ? rankTable(q.top3, ans.code) : `<span class="desc">${softBreak(trimLead(q.explain, ans.name))}</span>${noteHtml(ans.code)}`}</div></div>`, {kind: "tap"});
+    afterAnswer(false, `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　<span class="nw">正解は</span> <span class="nw"><em class="ans">${rb(ans.name, ans.kana)}</em>。</span><span class="nw">キミが指したのは</span> <span class="nw">${p.name}。</span>${rankYear(q.top3)}</span>${q.top3 ? rankTable(q.top3, ans.code) : `<span class="desc">${softBreak(trimLead(q.explain, ans.name))}</span>${noteHtml(ans.code)}`}</div></div>`, {kind: "tap"});
   }
 }
 

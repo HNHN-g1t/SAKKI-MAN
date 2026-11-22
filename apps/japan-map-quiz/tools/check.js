@@ -5,6 +5,7 @@
 // 3. 禁則と改行の位置：解説・問題文は折れ目（wbr）・句読点のあと・強調した言葉の前でしか改行しない、はみ出さない。
 //    禁則：問題文・選択肢・正誤・解説で、行の終わりに「（『【、行の頭に、。」）』】！？が来ないか（幅 320px と 375px）
 // 4. ランダムのステージで「まちがえた問題だけもう一回」が同じ問題を出すか
+// 行がかわったかは、文字の上下が前の文字と重なるかで見る（大きさのちがう文字が同じ行にあってもよいように）
 // どれか1つでもだめなら、終了コード 1 で止まる
 const path = require("path");
 const { chromium } = require("playwright");
@@ -26,8 +27,8 @@ const URL = "file://" + path.resolve(__dirname, "..", "index.html");
         while ((n = w.nextNode())) { if (n.parentElement.closest("rt")) continue;
           for (let i = 0; i < n.data.length; i++) { const ch = n.data[i]; if (ch === "⁠") continue;
             const rg = document.createRange(); rg.setStart(n, i); rg.setEnd(n, i + 1); const rc = rg.getClientRects()[0];
-            if (rc && rc.width > 0) cs.push([ch, Math.round(rc.top)]); } }
-        for (let i = 1; i < cs.length; i++) if (cs[i][1] > cs[i - 1][1] + 3 && (open.includes(cs[i - 1][0]) || close.includes(cs[i][0])))
+            if (rc && rc.width > 0) cs.push([ch, Math.round(rc.top), 0, 0, 0, Math.round(rc.bottom)]); } }
+        for (let i = 1; i < cs.length; i++) if (cs[i][1] >= cs[i - 1][5] - 2 && (open.includes(cs[i - 1][0]) || close.includes(cs[i][0])))
           bad.push(`禁則 ${label}: ${cs.slice(Math.max(0, i - 6), i).map(c => c[0]).join("")}⏎${cs.slice(i, i + 6).map(c => c[0]).join("")}`);
       });
       // 解説と問題文は、折れ目（wbr）・句読点のあと・空白でしか改行しない（言葉の途中で折らない）。はみ出しもしない
@@ -44,14 +45,14 @@ const URL = "file://" + path.resolve(__dirname, "..", "index.html");
           if (n.parentElement.closest("rt, .qface")) continue;
           for (let i = 0; i < n.data.length; i++) { const ch = n.data[i]; if (ch === "\u2060") continue;
             const rg = document.createRange(); rg.setStart(n, i); rg.setEnd(n, i + 1); const rc = rg.getClientRects()[0];
-            if (rc && rc.width > 0) { cs.push([ch, Math.round(rc.top), wb, rc.right, rc.left]); wb = false; } }
+            if (rc && rc.width > 0) { cs.push([ch, Math.round(rc.top), wb, rc.right, rc.left, Math.round(rc.bottom)]); wb = false; } }
         }
         // 早すぎる改行：次の行の最初のまとまり（次の折れ目まで）がその行に入るのに、改行していないか
         if (el.classList.contains("desc")) { const L = el.getBoundingClientRect().left, W = el.clientWidth;
-          const chunkW = i => { let j = i + 1; while (j < cs.length && cs[j][1] === cs[i][1] && !cs[j][2] && !"、。）」』】！？・".includes(cs[j - 1][0])) j++; return cs[j - 1][3] - cs[i][4]; };
-          for (let i = 1; i < cs.length; i++) if (cs[i][1] > cs[i - 1][1] + 3 && cs[i - 1][3] + chunkW(i) < L + W - 2)
+          const chunkW = i => { let j = i + 1; while (j < cs.length && cs[j][1] < cs[i][5] - 2 && !cs[j][2] && !"、。）」』】！？・".includes(cs[j - 1][0])) j++; while (j < cs.length && "、。）」』】！？".includes(cs[j][0])) j++; return cs[j - 1][3] - cs[i][4] + (cs[j - 1][5] > cs[i][5] + 2 ? 999 : 0); };
+          for (let i = 1; i < cs.length; i++) if (cs[i][1] >= cs[i - 1][5] - 2 && cs[i - 1][3] + chunkW(i) < L + W - 2)
             bad.push(`早すぎる改行 ${label}: ${cs.slice(Math.max(0, i - 6), i).map(c => c[0]).join("")}⏎${cs.slice(i, i + 6).map(c => c[0]).join("")}`); }
-        for (let i = 1; i < cs.length; i++) if (cs[i][1] > cs[i - 1][1] + 3 && !cs[i][2] && !"、。）」』】！？ 　・".includes(cs[i - 1][0]) && !" 　（「".includes(cs[i][0]) && !(/[ぁ-ん]/.test(cs[i - 1][0]) && /[一-龥々ァ-ヶ]/.test(cs[i][0])))
+        for (let i = 1; i < cs.length; i++) if (cs[i][1] >= cs[i - 1][5] - 2 && !cs[i][2] && !"、。）」』】！？ 　・".includes(cs[i - 1][0]) && !" 　（「".includes(cs[i][0]) && !(/[ぁ-ん]/.test(cs[i - 1][0]) && /[一-龥々ァ-ヶ]/.test(cs[i][0])))
           bad.push(`言葉の途中で改行 ${label}: ${cs.slice(Math.max(0, i - 6), i).map(c => c[0]).join("")}⏎${cs.slice(i, i + 6).map(c => c[0]).join("")}`);
       });
       let answered = 0;
