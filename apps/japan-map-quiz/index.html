@@ -704,6 +704,11 @@ const QUIZ_TYPES = {
       return [...zones, ...charts];
     }
   },
+  no1: {
+    title: "No.1の県", kind: "choice",
+    // 県ごとのステージ（codes がその県）と「ぜんぶ」。ぜんぶでも、同じ県の問題は続けて出す（q.group）
+    make: (codes, area) => no1Qs(codes),
+  },
   general: {
     title: "総合問題", kind: "choice",
     // 2026-11-22：全国すべての問題からランダムに 10・20・30・47問（stageList の n）。県庁所在地3割・地形3割・産業4割の割合でまぜる
@@ -1141,6 +1146,70 @@ const HISTORY = [
 ].map(([id, era, kind, name, kana, pref, lat, lon, note]) => ({id, era, kind, name, kana, pref, ll: [lat, lon], note}));
 const historyOf = id => HISTORY.find(h => h.id === id);
 
+
+/* ---------- No.1の県（農作物・畜産で全国1位が多い県）：県に寄せたまま、その県が全国1位のものを4択で続けて聞く ----------
+   順位は国の統計で確かめたもの（野菜は農林水産省「野菜生産出荷統計」令和5・6年産の都道府県別表〔e-Stat〕、果樹・畜産は INDUSTRY と同じ出典）。
+   note の「注」は、2位との差が小さく年で入れかわりうるもの・よくある思いちがい（1位ではないもの）。
+   decoy：その県が2位・3位のもの（まちがえやすいので、まちがいの選択肢に1つまぜる） */
+const NO1_PREFS = [
+  {code: 1, why: "広い土地とすずしい気候を生かした大規模な畑作と酪農", decoy: [["だいこん", "", "2位（1位は千葉県）"], ["トマト", "", "2位（1位は熊本県）"]]},
+  {code: 8, why: "大消費地・東京に近い近郊農業と、平らな土地", decoy: [["レタス", "", "2位（1位は長野県）"]]},
+  {code: 12, why: "東京に近い近郊農業と、あたたかい気候", decoy: [["ねぎ", "", "3位（1位は茨城県）"], ["ほうれんそう", "", "3位（1位は群馬県）"]]},
+  {code: 20, why: "標高が高く夏もすずしい高冷地農業", decoy: [["はくさい", "", "2位（1位は茨城県）"]]},
+  {code: 30, why: "あたたかい気候と、水はけのよい山の斜面", decoy: []},
+  {code: 39, why: "あたたかい気候と長い日照時間を生かした、ビニールハウスの促成栽培", decoy: [["ピーマン", "", "3位（1位は茨城県）"]]},
+];
+const NO1 = [
+  // 北海道
+  ["n1_potato", 1, "じゃがいも", "", "北海道が全国1位（令和6年産で全国の82％）。2位は鹿児島県。"],
+  ["n1_onion", 1, "たまねぎ", "", "北海道が全国1位（令和6年産で全国の67％）。2位は佐賀県、3位は兵庫県。"],
+  ["n1_carrot", 1, "にんじん", "", "北海道が全国1位（令和6年産で全国の33％）。2位は千葉県。"],
+  ["n1_pumpkin", 1, "かぼちゃ", "", "北海道が全国1位（令和6年産で全国の51％）。"],
+  ["n1_corn", 1, "スイートコーン", "", "北海道が全国1位（令和6年産で全国の38％）。2位は千葉県。"],
+  ["n1_beet", 1, "てんさい", "", "さとうの原料になる作物。国内では北海道だけでつくられている。"],
+  ["n1_dairy", 1, "乳用牛", "にゅうようぎゅう", "北海道が全国1位（令和7年2月1日現在の飼育頭数で全国の63％）。根釧台地などで酪農がさかん。"],
+  ["n1_beef", 1, "肉用牛", "にくようぎゅう", "北海道が全国1位（令和7年2月1日現在の飼育頭数で全国の21％）。2位は鹿児島県、3位は宮崎県。"],
+  // 茨城県
+  ["n1_renkon", 8, "れんこん", "", "茨城県が全国1位（令和6年産で全国の51％）。霞ヶ浦のまわりの低い湿地を生かしてつくる。2位は佐賀県。"],
+  ["n1_hakusai", 8, "はくさい", "", "茨城県が全国1位（令和6年産で全国の30％）。注：2位の長野県（27％）との差が小さい。"],
+  ["n1_pepper", 8, "ピーマン", "", "茨城県が全国1位（令和6年産で全国の23％）。鹿島灘ぞいの砂地やあたたかい気候を生かす。注：冬春だけなら宮崎県が1位。"],
+  ["n1_melon", 8, "メロン", "", "茨城県が全国1位（令和6年産で全国の27％）。鹿島灘ぞいの砂地でつくる。2位は熊本県。"],
+  ["n1_mizuna", 8, "みずな", "", "茨城県が全国1位（令和6年産で全国の48％）。"],
+  ["n1_negi", 8, "ねぎ", "", "茨城県が全国1位（令和6年産で全国の13％）。注：2位の埼玉県（12％）・3位の千葉県（11％）との差が小さい。"],
+  // 千葉県
+  ["n1_peanut", 12, "落花生", "らっかせい", "千葉県が全国1位（令和6年産で全国の86％）。八街市などが主な産地。2位は茨城県。"],
+  ["n1_daikon", 12, "だいこん", "", "千葉県が全国1位（令和6年産で全国の13％）。注：2位の北海道（12％）との差が小さい。"],
+  ["n1_kabu", 12, "かぶ", "", "千葉県が全国1位（令和6年産で全国の27％）。2位は埼玉県。"],
+  ["n1_nashi", 12, "日本なし", "にほんなし", "千葉県が全国1位（令和7年産で全国の13％）。「幸水」「豊水」が多い。2位は茨城県。"],
+  // 長野県
+  ["n1_lettuce", 20, "レタス", "", "長野県が全国1位（令和6年産で全国の33％）。夏もすずしい高原でつくる高原野菜。2位は茨城県。"],
+  ["n1_celery", 20, "セロリ", "", "長野県が全国1位（令和6年産で全国の42％）。2位は静岡県。"],
+  ["n1_enoki", 20, "えのきたけ", "", "長野県が全国1位（全国の約6割）。きのこの人工栽培がさかん。"],
+  ["n1_shimeji", 20, "ぶなしめじ", "", "長野県が全国1位。人工栽培が始まった所でもある。"],
+  // 和歌山県
+  ["n1_mikan", 30, "みかん", "", "和歌山県が全国1位（令和7年産で全国の22％）。有田みかんが有名。2位は愛媛県。"],
+  ["n1_ume", 30, "うめ", "", "和歌山県が全国1位（令和7年産で全国の58％）。「南高梅」が有名。"],
+  ["n1_kaki", 30, "かき（果物）", "かき", "和歌山県が全国1位（令和6・7年産）。2位は奈良県。"],
+  ["n1_greenpea", 30, "グリーンピース", "", "和歌山県が全国1位（令和6年産で全国の41％）。"],
+  // 高知県
+  ["n1_nasu", 39, "なす", "", "高知県が全国1位（令和6年産で全国の14％）。冬から春にビニールハウスでつくる。注：夏秋なすは群馬県が1位。"],
+  ["n1_nira", 39, "にら", "", "高知県が全国1位（令和6年産で全国の29％）。2位は栃木県。"],
+  ["n1_ginger", 39, "しょうが", "", "高知県が全国1位（令和6年産で全国の44％）。2位は千葉県。"],
+  ["n1_shishito", 39, "ししとう", "", "高知県が全国1位（令和6年産で全国の34％）。注：ピーマンは高知県が3位で、1位は茨城県。"],
+].map(([id, pref, name, kana, note]) => ({id, pref, name, kana, note}));
+// 4択：答え1つ＋その県が1位ではないもの3つ（その県が2位・3位のもの〔decoy〕があれば1つまぜる）
+function no1Qs(codes) {
+  return NO1.filter(n => codes.includes(n.pref)).map(n => {
+    const P = NO1_PREFS.find(x => x.code === n.pref), mine = new Set(NO1.filter(m => m.pref === n.pref).map(m => m.name));
+    const d0 = shuffle(P.decoy).slice(0, 1), dec = d0.map(([nm, k]) => [nm, k]);
+    const pool = shuffle(NO1.filter(m => !mine.has(m.name) && !dec.some(d => d[0] === m.name))).slice(0, 3 - dec.length).map(m => [m.name, m.kana]);
+    const b = boxOf[n.pref], m = Math.max(b[2] - b[0], b[3] - b[1]) * 0.35 + 12;
+    return { key: n.id, kind: "choice", group: NO1_PREFS.indexOf(P), prefs: [n.pref], focus: n.pref, sub: "", box: [b[0] - m, b[1] - m, b[2] + m, b[3] + m],
+      choices: [[n.name, n.kana], ...dec, ...pool], correct: n.name,
+      text: `<em>${byCode(n.pref).name}</em>が全国1位なのは？`, explain: `${n.name}：${n.note}${d0.length ? `（${d0[0][0]}は${d0[0][2]}）` : ""}` };
+  });
+}
+
 /* ---------- 国宝・世界遺産（歴史の場所と同じく、光る場所が何かを4択） ----------
    [id, ステージ, 名前, よみ, 県コード, 緯度, 経度, 解説]。ステージごとに問い方が決まる（TREASURE_STAGES の ask）
    座標は本当の位置（2026-11-22 に Wikipedia などで照合）。軍艦島は地図に描いていない小さな島なので海の上に、犬山城は木曽川ぎわで県ざかいすれすれに光る */
@@ -1369,6 +1438,9 @@ const COURSES = [
    rules:[`5ステージ（全${industryLive().length}問）。収穫量などが全国一の都道府県や、工業地域・伝統工芸品の場所を地図でタップ`, "ステージ👑：そのステージをヒントなしで全問正解",
           "👑産業マスター：5ステージすべて👑", "完了：5ステージすべてを最後まで解く",
           "順位は国や県の統計で確認したもの。解説に統計の年を書いている"]},
+  {id:"no1", name:"No.1の県", master:"No.1の県マスター", from:"g5", ready:true, stages:true,
+   stageList:[...NO1_PREFS.map(p => ({id:"p" + p.code, name:byCode(p.code).name, codes:[p.code]})), {id:"all", name:"ぜんぶ", codes:NO1_PREFS.map(p => p.code)}],
+   rules:["農作物・畜産で全国1位が多い県。県に寄せた地図で、その県が全国1位のものを4択で続けて答える", "ステージ👑：そのステージをヒントなしで全問正解", "👑マスター：すべてのステージ👑"]},
   {id:"history", track:"history", name:"歴史の場所", master:"歴史の場所マスター", from:"g5", ready:true, stages:true,
    stageList:Object.entries(HISTORY_ERAS).map(([id, name]) => ({id, cat:id, name, codes:range(1,47)})),
    rules:[`時代ごとの${Object.keys(HISTORY_ERAS).length}ステージ（全${HISTORY.length}か所）。地図の光る場所が何かを4択で答える`, "ステージ👑：そのステージをヒントなしで全問正解",
@@ -1474,7 +1546,7 @@ const STAGES = AREAS.filter(a => !a.wide);
 const stagesOf = c => c.stageList || STAGES;
 const stageDone = (courseId, areaId, need) => recsOf(courseId).some(r => { const s = (r.stage || {})[areaId]; return s && (need === "master" ? !!s.master : s.complete); });
 const stageCrowns = courseId => stagesOf(courseOf(courseId)).filter(a => stageDone(courseId, a.id, "master")).length;
-const prefOfKey = (courseId, key) => courseId === "treasure" ? (treasureOf(key) || {}).pref : courseId === "history" ? (historyOf(key) || {}).pref : courseId === "general" ? prefOfKey({cap: "capital", ter: "terrain", ind: "industry"}[String(key).split(":")[0]], String(key).split(":")[1])
+const prefOfKey = (courseId, key) => courseId === "no1" ? (NO1.find(n => n.id === key) || {}).pref : courseId === "treasure" ? (treasureOf(key) || {}).pref : courseId === "history" ? (historyOf(key) || {}).pref : courseId === "general" ? prefOfKey({cap: "capital", ter: "terrain", ind: "industry"}[String(key).split(":")[0]], String(key).split(":")[1])
   : courseId === "climate" ? (String(key).startsWith("zone:") ? zoneOf(key.slice(5)).codes[0] : (CLIMATE_CITIES.find(c => "city:" + c.id === key) || {}).pref)
   : courseId === "designated" ? CITIES.designated[key][2] : courseId === "terrain" ? (TERRAIN.find(f => f.id === key) || {}).pref : courseId === "industry" ? (industryOf(key) || {}).pref : +key;
 const fullCount = courseId => QUIZ_TYPES[courseId].make(range(1,47)).length;
@@ -2465,6 +2537,8 @@ function showInfo(code) {
 function shuffle(a){ a = a.slice(); for (let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; }
 
 // opts.master：全国の挑戦（完了・マスター判定の対象）／opts.keys：まちがえた問題だけ（判定の対象外）
+// q.group のある問題（No.1の県）は、まぜたあと同じ県の問題を続けて並べる（県の順番は group の順）
+const groupKeep = qs => qs.some(q => q.group != null) ? qs.map((q, i) => [q, i]).sort((a, b) => (a[0].group ?? 0) - (b[0].group ?? 0) || a[1] - b[1]).map(x => x[0]) : qs;
 function startQuiz(course, area, codes, opts={}) {
   cancelQuizTimers(); eyeOff();
   const type = QUIZ_TYPES[course.id];
@@ -2483,7 +2557,7 @@ function startQuiz(course, area, codes, opts={}) {
   }
   const master = !!opts.master && !opts.keys && area.wide && qs.length === fullCount(course.id);
   const stage = !!opts.stage && !opts.keys && !!course.stages && !area.wide;
-  quiz = { course, type, area, opts, master, stage, modeId: curMode().id, qs: shuffle(qs), i: 0, combo: 0, maxCombo: 0, log: [], inArea };
+  quiz = { course, type, area, opts, master, stage, modeId: curMode().id, qs: groupKeep(shuffle(qs)), i: 0, combo: 0, maxCombo: 0, log: [], inArea };
   nextQ();
 }
 
@@ -2548,7 +2622,7 @@ function nextQ() {
       if (q.pinLL) showPinAt(q.pinLL, q.focus); else showPin(q.pin);
       // 問題の場所（光る印）を画面のまん中にして、その県がまるごと入るほどよい大きさで見せる
       const ll = q.pinLL || (q.pin && CAPITAL_LL[q.pin]);
-      if (ll) fitLater(pinBox(ll, q.focus)); else if (quiz.area.wide) fitLater(unionBox(areaOfPref(q.focus).codes));
+      if (ll) fitLater(pinBox(ll, q.focus)); else if (q.box) fitLater(q.box); else if (quiz.area.wide) fitLater(unionBox(areaOfPref(q.focus).codes));
     }
     q.order = shuffle(q.choices);
     sheet.innerHTML = `${askBlock()}<div class="qslot" id="qslot"><div class="choices">${q.order.map(([n, k], j) =>
@@ -2785,7 +2859,7 @@ function handleTap(code) {
 // 結果の「まちがえた問題」などに出す、問題の短い名前（コースID・問題の key・答えの県から）
 function keyLabel(courseId, key, pref) {
   const course = {id: courseId}, l = {key, pref};
-  return course.id === "treasure" ? treasureOf(l.key).name : course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? (String(l.key).startsWith("inland:") ? byCode(l.pref).name : TERRAIN.find(f => f.id === String(l.key).replace(/:t$/, "")).name) : course.id === "industry" ? (String(l.key).startsWith("kogai") ? KOGAI.find(k => k.id === l.key.split(":")[1]).name : String(l.key).startsWith("city:") ? CITY_IND.find(c => c.id === l.key.slice(5)).name : `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）`) : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
+  return course.id === "no1" ? `${(NO1.find(n => n.id === l.key) || {}).name}（${byCode(l.pref).name}）` : course.id === "treasure" ? treasureOf(l.key).name : course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? (String(l.key).startsWith("inland:") ? byCode(l.pref).name : TERRAIN.find(f => f.id === String(l.key).replace(/:t$/, "")).name) : course.id === "industry" ? (String(l.key).startsWith("kogai") ? KOGAI.find(k => k.id === l.key.split(":")[1]).name : String(l.key).startsWith("city:") ? CITY_IND.find(c => c.id === l.key.slice(5)).name : `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）`) : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
 }
 function generalRandom(n, pick) {
   const all = range(1, 47);
