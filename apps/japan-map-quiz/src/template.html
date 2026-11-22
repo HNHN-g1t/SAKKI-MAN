@@ -141,7 +141,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 @keyframes smGlint{0%{opacity:0;transform:scale(.2) rotate(0)}35%{opacity:1;transform:scale(1.15) rotate(45deg)}100%{opacity:0;transform:scale(.3) rotate(90deg)}}
 .sseg{position:absolute;left:calc(104px + env(safe-area-inset-left,0px));top:189px;transform:translateX(-50%);z-index:2;pointer-events:none;background:#2A2826;border:2px solid #282727;border-radius:9px;padding:4px 7px 4px 8px;display:flex;align-items:flex-end;gap:2px;box-shadow:inset 0 2px 5px rgba(0,0,0,.6)}
 .sseg svg{display:block}
-.sseg .on{fill:#FFE24A;filter:drop-shadow(0 0 1.5px #FFD000) drop-shadow(0 0 4px rgba(255,200,0,.8))}
+.sseg .on{fill:#FFE852;filter:drop-shadow(0 0 2px #FFD000) drop-shadow(0 0 5.2px rgba(255,200,0,1))}
 .sseg .off{fill:#45403A}
 .smfx{position:fixed;inset:0;z-index:60;pointer-events:none;overflow:hidden}
 .smfx .flash{position:absolute;inset:0;opacity:0}
@@ -454,6 +454,8 @@ svg:not(.explore) .region-line{display:none}
   mix-blend-mode:screen;mix-blend-mode:plus-lighter;transform:translateX(-100%);animation:chipShine .865s cubic-bezier(.25,.1,.4,1) infinite}
 /* 帯はチップの左の外から出て、すぐ右の外へ抜ける（左はしで止まって見えない）。抜けたあとは外で待つ。
    帯を描く疑似要素は角を丸めず、上下にはみ出させておく（帯の端がチップの中で切れないように）。切りぬくのはチップの角丸（overflow:hidden）だけ */
+/* コース一覧の帯は、ステージのチップの半分の速さ（2026-11-22） */
+.course.fresh::after{animation-duration:1.73s}
 @keyframes chipShine{0%{transform:translateX(-100%)}55%,100%{transform:translateX(100%)}}
 @media (prefers-reduced-motion:reduce){.chip.zero::after,.course.fresh::after{animation:none;display:none}}
 @media (prefers-reduced-motion:reduce){.course.fresh,.chip.fresh{animation:none;box-shadow:0 0 0 2px var(--brand),0 0 10px 2px var(--brand)}}
@@ -1988,13 +1990,13 @@ function smStar(n, size) {
 }
 const SM_SPARK = `<svg viewBox="-10 -10 20 20" width="16" height="16"><path d="M0,-10 L2.2,-2.2 10,0 2.2,2.2 0,10 -2.2,2.2 -10,0 -2.2,-2.2Z" fill="#fff" style="filter:drop-shadow(0 0 2px #FFF6A0)"/></svg>`;
 // 7セグ
-const SEG7 = {a:"M3,1 L17,1 L14.5,3.5 L5.5,3.5Z", b:"M18,2 L18,15 L15.5,13.5 L15.5,4.5Z", c:"M18,17 L18,30 L15.5,27.5 L15.5,18.5Z", d:"M3,31 L17,31 L14.5,28.5 L5.5,28.5Z", e:"M2,17 L2,30 L4.5,27.5 L4.5,18.5Z", f:"M2,2 L2,15 L4.5,13.5 L4.5,4.5Z", g:"M3,16 L5.5,14.6 L14.5,14.6 L17,16 L14.5,17.4 L5.5,17.4Z"};
+const SEG7 = {a:"M3.4,1 L16.6,1 L13.2,4.8 L6.8,4.8Z", b:"M18.2,2.4 L18.2,15 L16.3,16 L14.4,14.4 L14.4,6.2Z", c:"M18.2,17 L18.2,29.6 L14.4,25.8 L14.4,17.6 L16.3,16Z", d:"M3.4,31 L16.6,31 L13.2,27.2 L6.8,27.2Z", e:"M1.8,17 L1.8,29.6 L5.6,25.8 L5.6,17.6 L3.7,16Z", f:"M1.8,2.4 L1.8,15 L3.7,16 L5.6,14.4 L5.6,6.2Z", g:"M4.6,16 L6.6,14.1 L13.4,14.1 L15.4,16 L13.4,17.9 L6.6,17.9Z"};
 const DIG7 = ["abcdef","bc","abged","abgcd","fgbc","afgcd","afgedc","abc","abcdefg","abcdfg"];
 function smPct(v) {
   v = Math.max(0, Math.min(100, Math.round(v)));
   segEl.setAttribute("aria-label", `進み具合 ${v}%`);
   segEl.innerHTML = [...String(v).padStart(3, "0")].map(ch => `<svg viewBox="0 0 20 32" width="19" height="30" style="transform:skewX(-6deg)">${Object.entries(SEG7).map(([k, d]) => `<path d="${d}" class="${DIG7[+ch].includes(k) ? "on" : "off"}"/>`).join("")}</svg>`).join("")
-    + `<svg viewBox="0 0 16 32" width="15" height="25"><g class="on"><circle cx="4" cy="16" r="2.6"/><circle cx="12" cy="28" r="2.6"/><path d="M12,13 L14,14 L4,31 L2,30Z"/></g></svg>`;
+    + `<svg viewBox="0 0 16 32" width="15" height="25"><g class="on"><circle cx="4" cy="16" r="3.2"/><circle cx="12" cy="28" r="3.2"/><path d="M11.6,12.6 L14.6,14 L4.4,31.4 L1.4,30Z"/></g></svg>`;
 }
 const smLocal = i => { const a = -Math.PI/2 + i*2*Math.PI/SM.N; return [SM.BOX/2 + SM.R*Math.cos(a), SM.BOX/2 + SM.R*Math.sin(a)]; };
 const smStars = [...Array(SM.N)].map((_, i) => { const d = document.createElement("div"); d.className = "st"; const [x, y] = smLocal(i); d.style.left = (x - SM.S/2) + "px"; d.style.top = (y - SM.S/2) + "px"; smEl.appendChild(d); return d; });
