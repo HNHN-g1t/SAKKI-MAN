@@ -2465,7 +2465,12 @@ function startQuiz(course, area, codes, opts={}) {
   homeBox = area.wide ? FULL : unionBox(area.codes); fitLater(homeBox); pinchGuide();
   svg.classList.toggle("region-quiz", !area.wide);
   let qs = type.make(codes, area);
-  if (opts.keys) qs = qs.filter(q => opts.keys.includes(q.key));
+  if (opts.keys) {
+    // ランダムに作るコース（総合問題・県のシルエットなど）は作り直すと問題が変わるので、さっき出た問題（opts.prev）をそのまま使う
+    const want = new Set(opts.keys.map(String));
+    qs = qs.filter(q => want.has(String(q.key)));
+    if (qs.length < want.size && opts.prev) qs = opts.prev.filter(q => want.has(String(q.key))).map(q => Object.assign({}, q));
+  }
   const master = !!opts.master && !opts.keys && area.wide && qs.length === fullCount(course.id);
   const stage = !!opts.stage && !opts.keys && !!course.stages && !area.wide;
   quiz = { course, type, area, opts, master, stage, modeId: curMode().id, qs: shuffle(qs), i: 0, combo: 0, maxCombo: 0, log: [], inArea };
@@ -2839,9 +2844,9 @@ function result() {
       ${next ? `<button class="btn nextbtn" id="nextStage" type="button"><span>${next.label}</span><span class="nx">${NEXT2}${brkDot(next.name)}</span></button>` : ""}
       <button class="btn" id="back" type="button">${course.id === "weak" ? "コース一覧にもどる" : "コースにもどる"}</button>
     </div>`;
-  const area = quiz.area, opts = quiz.opts, missKeys = missed.map(l => l.key);
+  const area = quiz.area, opts = quiz.opts, missKeys = missed.map(l => l.key), prevQs = quiz.qs;
   if (next) byId("nextStage").onclick = next.go;
-  if (missed.length) byId("retryMiss").onclick = () => startQuiz(course, area, area.codes, {keys: missKeys});
+  if (missed.length) byId("retryMiss").onclick = () => startQuiz(course, area, area.codes, {keys: missKeys, prev: prevQs});
   if (byId("retry")) byId("retry").onclick = () => course.id === "weak" ? startWeak() : startQuiz(course, area, area.codes, opts);
   byId("back").onclick = () => course.id === "weak" ? home() : coursePage(course);
   // 👑マスターを初めて取ったときだけ、称号をたたえる画面と花火を出す（cheered を記録して二度は出さない）
