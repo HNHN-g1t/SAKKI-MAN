@@ -1,0 +1,23 @@
+# main に push されたら、日本地図タップドリルの確認テスト（全問題・禁則・やり直し）を走らせる
+name: check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Playwright を入れる
+        run: |
+          npm install --no-save playwright@1.63.0
+          npx playwright install --with-deps chromium
+      - name: 確認テスト
+        run: node apps/japan-map-quiz/tools/check.js

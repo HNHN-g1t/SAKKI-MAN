@@ -33,6 +33,7 @@ main に push すると、Vercel（`vercel.json`）と GitHub Actions（`.github
 
 - ビルドした `index.html` も必ずコミットする。忘れると Actions の「ビルド忘れチェック」で公開が止まる
 - 検証: ビルド → ブラウザで index.html を開き、HANDOFF.md「動作確認」の観点（県48要素・375px幅・沖縄の切り替え・目ボタン・コンソールエラーなし）を見る
+- 確認テスト: `node apps/japan-map-quiz/tools/check.js`（全問題を正解・不正解で答える・4択の選択肢・禁則・やり直し。320/375px）。push すると GitHub Actions（`.github/workflows/check.yml`）でも走る
 
 ## ファビコン
 
