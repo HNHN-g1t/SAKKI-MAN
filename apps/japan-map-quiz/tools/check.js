@@ -2,7 +2,8 @@
 //   node apps/japan-map-quiz/tools/check.js     （Playwright の Chromium が必要）
 // 1. 全コース・全ステージの全問題を、正解・不正解の両方で答えてみて、ページのエラーが出ないか
 // 2. 4択の問題：選択肢が4つ・重ならない・正解がふくまれる
-// 3. 禁則：問題文・選択肢・正誤・解説で、行の終わりに「（『【、行の頭に、。」）』】！？が来ないか（幅 320px と 375px）
+// 3. 禁則と改行の位置：解説・問題文は折れ目（wbr）・句読点のあと・強調した言葉の前でしか改行しない、はみ出さない。
+//    禁則：問題文・選択肢・正誤・解説で、行の終わりに「（『【、行の頭に、。」）』】！？が来ないか（幅 320px と 375px）
 // 4. ランダムのステージで「まちがえた問題だけもう一回」が同じ問題を出すか
 // どれか1つでもだめなら、終了コード 1 で止まる
 const path = require("path");
@@ -29,6 +30,30 @@ const URL = "file://" + path.resolve(__dirname, "..", "index.html");
         for (let i = 1; i < cs.length; i++) if (cs[i][1] > cs[i - 1][1] + 3 && (open.includes(cs[i - 1][0]) || close.includes(cs[i][0])))
           bad.push(`禁則 ${label}: ${cs.slice(Math.max(0, i - 6), i).map(c => c[0]).join("")}⏎${cs.slice(i, i + 6).map(c => c[0]).join("")}`);
       });
+      // 解説と問題文は、折れ目（wbr）・句読点のあと・空白でしか改行しない（言葉の途中で折らない）。はみ出しもしない
+      const mid = label => document.querySelectorAll(".fb .desc, .ask .q").forEach(el => {
+        if (el.scrollWidth > el.clientWidth + 2) bad.push(`はみ出し ${label}`);
+        const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT), cs = []; let n, wb = false;
+        let lastEm = null;
+        while ((n = w.nextNode())) {
+          if (n.nodeType === 1) { if (n.tagName === "WBR" || n.tagName === "BR" || n.tagName === "EM") wb = true; continue; }
+          // 長い強調語（8文字以上）のすぐあとは、助詞とくっつけるとはみ出すので改行してよい
+          const em = n.parentElement.closest("em");
+          if (lastEm && !em && lastEm.textContent.replace(/\s/g, "").length >= 8) wb = true;
+          lastEm = em && !n.parentElement.closest("rt") ? em : (em ? lastEm : null);
+          if (n.parentElement.closest("rt, .qface")) continue;
+          for (let i = 0; i < n.data.length; i++) { const ch = n.data[i]; if (ch === "\u2060") continue;
+            const rg = document.createRange(); rg.setStart(n, i); rg.setEnd(n, i + 1); const rc = rg.getClientRects()[0];
+            if (rc && rc.width > 0) { cs.push([ch, Math.round(rc.top), wb, rc.right, rc.left]); wb = false; } }
+        }
+        // 早すぎる改行：次の行の最初のまとまり（次の折れ目まで）がその行に入るのに、改行していないか
+        if (el.classList.contains("desc")) { const L = el.getBoundingClientRect().left, W = el.clientWidth;
+          const chunkW = i => { let j = i + 1; while (j < cs.length && cs[j][1] === cs[i][1] && !cs[j][2] && !"、。）」』】！？・".includes(cs[j - 1][0])) j++; return cs[j - 1][3] - cs[i][4]; };
+          for (let i = 1; i < cs.length; i++) if (cs[i][1] > cs[i - 1][1] + 3 && cs[i - 1][3] + chunkW(i) < L + W - 2)
+            bad.push(`早すぎる改行 ${label}: ${cs.slice(Math.max(0, i - 6), i).map(c => c[0]).join("")}⏎${cs.slice(i, i + 6).map(c => c[0]).join("")}`); }
+        for (let i = 1; i < cs.length; i++) if (cs[i][1] > cs[i - 1][1] + 3 && !cs[i][2] && !"、。）」』】！？ 　・".includes(cs[i - 1][0]) && !" 　（「".includes(cs[i][0]) && !(/[ぁ-ん]/.test(cs[i - 1][0]) && /[一-龥々ァ-ヶ]/.test(cs[i][0])))
+          bad.push(`言葉の途中で改行 ${label}: ${cs.slice(Math.max(0, i - 6), i).map(c => c[0]).join("")}⏎${cs.slice(i, i + 6).map(c => c[0]).join("")}`);
+      });
       let answered = 0;
       for (const c of COURSES) for (const st of stagesOf(c)) {
         startQuiz(c, st, st.codes, {stage: true});
@@ -42,7 +67,7 @@ const URL = "file://" + path.resolve(__dirname, "..", "index.html");
             const wrong = PREFS.find(x => !q.answers.includes(x.code) && quiz.inArea.has(x.code));
             handleTap(ok || !wrong ? q.answers[0] : wrong.code);
           }
-          scan(`${c.id}:${q.key}:${ok ? "正解" : "不正解"}`); answered++;
+          scan(`${c.id}:${q.key}:${ok ? "正解" : "不正解"}`); mid(`${c.id}:${q.key}:${ok ? "正解" : "不正解"}`); answered++;
         }
       }
       // ランダムのステージのやり直し

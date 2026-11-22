@@ -400,6 +400,8 @@ svg:not(.explore) .region-line{display:none}
 .fb .rank3 em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums}
 .fb .rank3 li.hit span{box-shadow:inset 0 -.45em 0 var(--brand)}
 .fb .txt .head span{display:inline;color:var(--ink);font-size:inherit}
+/* 禁則・改行のための折り返さないまとまり（.nw）は、どこでも行の中にならべる（ブロックにしない） */
+.fb .txt span.nw,.fb .txt span span{display:inline;color:inherit;font-size:inherit;font-weight:inherit}
 .fb .txt .head em{font-style:normal;box-shadow:inset 0 calc(-1 * var(--marker)) 0 var(--brand)}
 .fb .txt .desc{margin-top:var(--s4)}
 .row{display:flex;gap:var(--s8);flex-wrap:wrap}
@@ -710,6 +712,11 @@ const QUIZ_TYPES = {
     // 県ごとのステージ（codes がその県）と「ぜんぶ」。ぜんぶでも、同じ県の問題は続けて出す（q.group）
     make: (codes, area) => no1Qs(codes),
   },
+  feature: {
+    title: "県の特色", kind: "choice",
+    // 地方ごとのステージ。同じ県の問題は続けて出す（q.group）
+    make: (codes, area) => featQs(codes),
+  },
   general: {
     title: "総合問題", kind: "choice",
     // 2026-11-22：全国すべての問題からランダムに 10・20・30・47問（stageList の n）。県庁所在地3割・地形3割・産業4割の割合でまぜる
@@ -1005,7 +1012,8 @@ const INDUSTRY = [
 // 長い問題文を言葉の途中で折らない：文字のあいだでは折らず（keep-all）、「の」「を」「が」「、」「がある」のあとと「（」「都道府県」の前でだけ折る。ふりがなつきの言葉（em）は1つのまとまり
 // 禁則の仕上げ：kinsoku() で U+2060 でつないだ文字のまとまりを、折り返さない span にする。
 // iPhone の Safari は U+2060（ワードジョイナー）を守らず「「」のあとで改行することがあるため（2026-11-22）
-const wjSpan = t => t.replace(/[^\s<>\u2060]\u2060(?:[^\s<>\u2060]\u2060)*[^\s<>\u2060]/g, m => `<span class="nw">${m.replace(/\u2060/g, "")}</span>`);
+// つないだ文字をふくむ「折れ目（wbr）から次の折れ目まで」のひとまとまりを span にする（2文字だけを span にすると、span のふちが新しい折れ目になってしまうため）
+const wjSpan = t => t.split("<wbr>").map(seg => seg.includes("\u2060") ? `<span class="nw">${seg.replace(/\u2060/g, "")}</span>` : seg).join("<wbr>");
 const phraseBreak = html => `<span class="kb">${html.split(/(<[^>]+>)/).map(t => t.startsWith("<") ? t : kinsoku(t).replace(/がある/g, "\u0001").replace(/([のをが、])(?=.)/g, "$1<wbr>").replace(/\u0001/g, "がある<wbr>").replace(/（/g, "<wbr>（").replace(/([^>])(都道府県)/g, "$1<wbr>$2")).map(t => t.startsWith("<") ? t : wjSpan(t)).join("")}</span>`;
 // 農業・くだもの・ふえた野菜・畜産：1〜3位と全国にしめる割合（％、小数1けた）。答えのあとは解説文のかわりにこの表を出す
 //   y＝統計の年（表の上に小さく出す）、r＝[県コード, ％]（同じ割合で同じ順位の県は [[県コード, 県コード], ％] で1行に）
@@ -1253,6 +1261,32 @@ function no1Qs(codes) {
   });
 }
 
+
+/* ---------- 県の特色（逆向き：県 → その県にあるもの）：県に寄せた地図で、その県の伝統工芸品・工業都市・世界遺産や国宝・地形を4択で続けて聞く（2026-11-22） ----------
+   まちがいの選択肢は同じ種類のほかの県のもの。2つ以上の県にまたがるもの（富士山・白神山地・浅間山・紀伊半島・十和田湖など）は、答えにもまちがいにも使わない */
+const FEAT_MULTI = new Set(["fujisan", "shirakami", "amami", "kumano", "k_towada", "v_asama", "v_ontake", "h_kii", "p_nobi", "p_tsukushi", "p_kanto"]);
+const FEAT_TERRAIN = {island: "島", hanto: "半島", lake: "湖", basin: "盆地", volcano: "火山", plain: "平野"};
+function featItems() {
+  const L = [];
+  industryLive().filter(f => f.cat === "craft").forEach(f => L.push({id: "c:" + f.id, kind: "craft", ask: "伝統工芸品", name: f.word.replace(/<[^>]+>/g, ""), kana: f.kana || "", pref: f.pref, note: f.note}));
+  CITY_IND.forEach(c => L.push({id: "i:" + c.id, kind: "city", ask: "工業都市", name: c.name, kana: c.kana, pref: c.pref, note: c.note}));
+  TREASURE.forEach(t => { const w = ["heritage", "heritage_e", "nature", "meiji"].includes(t.stage); L.push({id: "h:" + t.id, kind: w ? "wh" : "kokuho", ask: w ? "世界遺産" : "国宝", name: t.name, kana: t.kana, pref: t.pref, note: t.note}); });
+  TERRAIN.filter(f => FEAT_TERRAIN[f.cat]).forEach(f => L.push({id: "t:" + f.id, kind: f.cat, ask: FEAT_TERRAIN[f.cat], name: f.name, kana: f.kana, pref: f.pref, note: f.note || ""}));
+  return L.filter(x => !FEAT_MULTI.has(x.id.slice(2)));
+}
+function featQs(codes) {
+  const all = featItems(), order = PREFS.map(p => p.code);
+  return all.filter(x => codes.includes(x.pref)).map(x => {
+    const pool = shuffle(all.filter(o => o.kind === x.kind && o.pref !== x.pref && o.name !== x.name));
+    const seen = new Set([x.name]), wrong = [];
+    pool.forEach(o => { if (wrong.length < 3 && !seen.has(o.name)) { seen.add(o.name); wrong.push([o.name, o.kana]); } });
+    const b = boxOf[x.pref], m = Math.max(b[2] - b[0], b[3] - b[1]) * 0.35 + 12;
+    return { key: x.id, kind: "choice", group: order.indexOf(x.pref), prefs: [x.pref], focus: x.pref, sub: "", box: [b[0] - m, b[1] - m, b[2] + m, b[3] + m],
+      choices: [[x.name, x.kana], ...wrong], correct: x.name,
+      text: `<em>${byCode(x.pref).name}</em>にある${x.ask}は？`, explain: `${x.name}：${x.note}` };
+  }).filter(q => q.choices.length === 4);
+}
+
 /* ---------- 国宝・世界遺産（歴史の場所と同じく、光る場所が何かを4択） ----------
    [id, ステージ, 名前, よみ, 県コード, 緯度, 経度, 解説]。ステージごとに問い方が決まる（TREASURE_STAGES の ask）
    座標は本当の位置（2026-11-22 に Wikipedia などで照合）。軍艦島は地図に描いていない小さな島なので海の上に、犬山城は木曽川ぎわで県ざかいすれすれに光る */
@@ -1484,6 +1518,8 @@ const COURSES = [
   {id:"no1", name:"No.1の県", master:"No.1の県マスター", from:"g5", ready:true, stages:true,
    stageList:[...NO1_PREFS.map(p => ({id:"p" + p.code, name:byCode(p.code).name, codes:[p.code]})), {id:"all", name:"ぜんぶ", codes:NO1_PREFS.map(p => p.code)}],
    rules:["農作物・畜産で全国1位が多い県。県に寄せた地図で、その県が全国1位のものを4択で続けて答える", "ステージ👑：そのステージをヒントなしで全問正解", "👑マスター：すべてのステージ👑"]},
+  {id:"feature", name:"県の特色", master:"県の特色マスター", from:"g5", ready:true, stages:true,
+   rules:["県に寄せた地図で、その県にある伝統工芸品・工業都市・世界遺産・国宝・地形（島・半島・湖・盆地・火山・平野）を4択で続けて答える。地方ごとのステージ", "ステージ👑：そのステージをヒントなしで全問正解", "👑マスター：すべてのステージ👑"]},
   {id:"history", track:"history", name:"歴史の場所", master:"歴史の場所マスター", from:"g5", ready:true, stages:true,
    stageList:Object.entries(HISTORY_ERAS).map(([id, name]) => ({id, cat:id, name, codes:range(1,47)})),
    rules:[`時代ごとの${Object.keys(HISTORY_ERAS).length}ステージ（全${HISTORY.length}か所）。地図の光る場所が何かを4択で答える`, "ステージ👑：そのステージをヒントなしで全問正解",
@@ -1589,7 +1625,7 @@ const STAGES = AREAS.filter(a => !a.wide);
 const stagesOf = c => c.stageList || STAGES;
 const stageDone = (courseId, areaId, need) => recsOf(courseId).some(r => { const s = (r.stage || {})[areaId]; return s && (need === "master" ? !!s.master : s.complete); });
 const stageCrowns = courseId => stagesOf(courseOf(courseId)).filter(a => stageDone(courseId, a.id, "master")).length;
-const prefOfKey = (courseId, key) => courseId === "no1" ? (NO1.find(n => n.id === key) || {}).pref : courseId === "treasure" ? (treasureOf(key) || {}).pref : courseId === "history" ? (historyOf(key) || {}).pref : courseId === "general" ? prefOfKey({cap: "capital", ter: "terrain", ind: "industry"}[String(key).split(":")[0]], String(key).split(":")[1])
+const prefOfKey = (courseId, key) => courseId === "feature" ? (featItems().find(x => x.id === key) || {}).pref : courseId === "no1" ? (NO1.find(n => n.id === key) || {}).pref : courseId === "treasure" ? (treasureOf(key) || {}).pref : courseId === "history" ? (historyOf(key) || {}).pref : courseId === "general" ? prefOfKey({cap: "capital", ter: "terrain", ind: "industry"}[String(key).split(":")[0]], String(key).split(":")[1])
   : courseId === "climate" ? (String(key).startsWith("zone:") ? zoneOf(key.slice(5)).codes[0] : (CLIMATE_CITIES.find(c => "city:" + c.id === key) || {}).pref)
   : courseId === "designated" ? CITIES.designated[key][2] : courseId === "terrain" ? (TERRAIN.find(f => f.id === key) || {}).pref : courseId === "industry" ? (industryOf(key) || {}).pref : +key;
 const fullCount = courseId => QUIZ_TYPES[courseId].make(range(1,47)).length;
@@ -2668,7 +2704,9 @@ function askText(q) {
   if (!q.sub || !/<em>/.test(q.text)) return {html: q.text, under: q.sub || ""};
   return {html: q.text.replace(/<em>(.*?)<\/em>/, (m, w) => `<em>${rb(w, q.sub)}</em>`), under: ""};
 }
-const askBlock = () => { const t = askText(quiz.q); return `<div class="ask"><span class="q${quiz.q.text.replace(/<[^>]+>/g, "").length > 18 ? " long" : ""}">${t.html}</span>${t.under ? `<span class="kana">${t.under}</span>` : ""}</div>`; };
+// 問題文の改行：強調した言葉（<em>）と、すぐあとのひらがな・？（「がある」「は？」「にある」など）は離さない。文の終わりの「〇〇は？」も離さない（2026-11-22）
+const qBreak = h => h.replace(/(<em>.*?<\/em>)(<span class="nw">[^<]*<\/span>|[ぁ-ん]{1,3}[？！]?)/g, (m, e, p) => e.replace(/<rt>.*?<\/rt>|<[^>]+>/g, "").length <= 7 ? `<span class="nw">${e}${p}</span>` : m).replace(/([一-龥々ァ-ヶー0-9]{1,6}[ぁ-ん]{0,2}[？！])$/, '<span class="nw">$1</span>');
+const askBlock = () => { const t = askText(quiz.q); return `<div class="ask"><span class="q${quiz.q.text.replace(/<[^>]+>/g, "").length > 18 ? " long" : ""}">${qBreak(t.html)}</span>${t.under ? `<span class="kana">${t.under}</span>` : ""}</div>`; };
 
 function nextQ() {
   eyeOff(); clearTag(); clearNextTri(); rotFace(false); meterShow(false);
@@ -2742,9 +2780,11 @@ const brkDot = t => t.replace(/・/g, "・<wbr>");
 // 解説などの長い文を、言葉の途中で折らないための折れ目：句読点・かっこのあとと、漢字・カタカナに続く助詞（の・を・が・は・に・で・と・も）のあと。
 // 使う所は CSS で word-break:keep-all（文字のあいだでは折らない）にしておく
 // 日本語の行頭・行末のきまり（禁則）も守る：「（ は行の終わりに置かず次の文字とくっつける。」）、。 は行の頭に置かず前の文字とくっつける（U+2060）
-const kinsoku = t => t.replace(/([「（『【])/g, "$1\u2060").replace(/(.)(?=[」）』】、。！？])/g, "$1\u2060");
+// 開きかっこ（「（『【）と「：」は、次の文字とつなぐ（行の終わりに残さない。Safari でも守られるよう wjSpan で span にする）。
+// 閉じかっこ・句読点を行の頭に置かないのは、ブラウザの行分割（UAX#14＋line-break:strict）が Chrome・Safari とも守るのでまかせる（つなぐと、まとまりが長くなって早すぎる改行になるため）
+const kinsoku = t => t.replace(/([「（『【：])/g, "$1\u2060");
 const softBreak = html => String(html).split(/(<[^>]+>)/).map(t => t.startsWith("<") ? t :
-  kinsoku(t).replace(/([、。）」])(?=[^、。）」\u2060])/g, "$1<wbr>").replace(/([一-龥々ァ-ヶー）])([のをがはにでとも])(?=[^、。）」<のをがはにでとも\u2060])/g, "$1$2<wbr>")).map(t => t.startsWith("<") ? t : wjSpan(t)).join("");
+  kinsoku(t).replace(/([^\s（「])（/g, "$1<wbr>（").replace(/・(?=[^、。）」・\u2060])/g, "・<wbr>").replace(/([ぁ-ん][のにをでがはとやも])(?=[一-龥々ァ-ヶ])/g, "$1<wbr>").replace(/を(?=[ぁ-ん])/g, "を<wbr>").replace(/([ぁ-ん])(?=[ァ-ヶ][ァ-ヶー]{2,})/g, "$1<wbr>").replace(/([、。）」])(?=[^、。）」\u2060])/g, "$1<wbr>").replace(/([一-龥々ァ-ヶー）])([のをがはにでとも])(?=[^、。）」<のをがはにでともし\u2060])/g, "$1$2<wbr>")).map(t => t.startsWith("<") ? t : wjSpan(t)).join("");
 // ステージのボタンの名前：意味の区切りで2行にできるようにする（マニアな／国宝、世界／自然遺産、東の／世界遺産）
 const chipName = t => brkDot(t).replace(/^世界(?=自然)/, "世界<wbr>").replace(/^産業革命(?=遺産)/, "産業革命<wbr>").replace(/([のな])(?=..)/g, "$1<wbr>");
 // ふりがな（よみ）を漢字の上に付ける
@@ -2951,7 +2991,7 @@ function handleTap(code) {
 // 結果の「まちがえた問題」などに出す、問題の短い名前（コースID・問題の key・答えの県から）
 function keyLabel(courseId, key, pref) {
   const course = {id: courseId}, l = {key, pref};
-  return course.id === "no1" ? `${(NO1.find(n => n.id === l.key) || {}).name}（${byCode(l.pref).name}）` : course.id === "treasure" ? treasureOf(l.key).name : course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? (String(l.key).startsWith("inland:") ? byCode(l.pref).name : TERRAIN.find(f => f.id === String(l.key).replace(/:t$/, "")).name) : course.id === "industry" ? (String(l.key).startsWith("kogai") ? KOGAI.find(k => k.id === l.key.split(":")[1]).name : String(l.key).startsWith("city:") ? CITY_IND.find(c => c.id === l.key.slice(5)).name : `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）`) : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
+  return course.id === "feature" ? `${(featItems().find(x => x.id === l.key) || {}).name}（${byCode(l.pref).name}）` : course.id === "no1" ? `${(NO1.find(n => n.id === l.key) || {}).name}（${byCode(l.pref).name}）` : course.id === "treasure" ? treasureOf(l.key).name : course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? (String(l.key).startsWith("inland:") ? byCode(l.pref).name : TERRAIN.find(f => f.id === String(l.key).replace(/:t$/, "")).name) : course.id === "industry" ? (String(l.key).startsWith("kogai") ? KOGAI.find(k => k.id === l.key.split(":")[1]).name : String(l.key).startsWith("city:") ? CITY_IND.find(c => c.id === l.key.slice(5)).name : `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）`) : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
 }
 function generalRandom(n, pick) {
   const all = range(1, 47);
