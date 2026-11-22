@@ -423,6 +423,8 @@ svg:not(.explore) .region-line{display:none}
 .course .no{flex:none;width:32px;height:32px;border-radius:50%;background:var(--cream);color:var(--ink);display:grid;place-items:center;font-family:var(--display);font-weight:400;font-size:var(--fs14)}
 .course>span{flex:1;min-width:0}
 .course small{display:block;color:var(--muted);font-weight:700;font-size:var(--fs12)}
+/* コース名のよこに、マスター！と同じように1行で「クリアしたステージ数 / 全部」（正解した問題数 / 全部）。文字の大きさはコース名と同じ（2026-11-22） */
+.course small.cfrac{display:inline;font-size:inherit;margin-left:var(--s8);white-space:nowrap;font-variant-numeric:tabular-nums}
 /* 👑マスター済みのコース名の横：キーカラーの黄色。白地でも読めるよう墨の細いふちどりをつける */
 /* 👑マスター済みのコース：名前の先頭に王冠（黄色・ふわっと発光）、名前の横に「マスター！」（黄色・グレーの影） */
 .course .crown{display:inline-block;width:1.15em;height:1.15em;margin-right:var(--s4);vertical-align:-.18em;overflow:visible;
@@ -2480,9 +2482,9 @@ function courseStatus(c) {
   }
   const m = masterOf(c.id);
   if (m) return {text: crown(c), done: true};
-  if (c.stages) { const n = stageCrowns(c.id); return {text: `ステージ ${n} / ${stagesOf(c).length}`, fresh: n === 0}; }   // コース一覧では王冠を付けない（ヒントなし全問正解したステージの数）
+  if (c.stages) { const n = stageCrowns(c.id); return {text: `${n} / ${stagesOf(c).length}`, fresh: n === 0}; }   // コース一覧では王冠を付けない（ヒントなし全問正解したステージの数）
   const got = new Set(); recsOf(c.id).forEach(r => Object.keys(r.got).forEach(k => got.add(k)));
-  return {text: `正解した問題 ${got.size} / ${fullCount(c.id)}`, fresh: got.size === 0};
+  return {text: `${got.size} / ${fullCount(c.id)}`, fresh: got.size === 0};
 }
 
 /* ---------- 苦手だけドリル ----------
@@ -2544,12 +2546,12 @@ function home() {
     <h2>${TRACKS[0].name}</h2>
     <div class="courses">${COURSES.filter(c => c.track !== "history").map((c, i) => {
       const s = courseStatus(c);
-      return `<button class="course${s.done ? " done" : ""}${s.fresh ? " fresh" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${s.done ? CROWN_SVG : ""}${c.name}${s.done ? `<em class="mastered">マスター！</em>` : `<small>${s.text}</small>`}</span>${s.done ? `<img class="mface" src="img/fx-super.webp?v=2" alt="">` : ""}</button>`;
+      return `<button class="course${s.done ? " done" : ""}${s.fresh ? " fresh" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${s.done ? CROWN_SVG : ""}${c.name}${s.done ? `<em class="mastered">マスター！</em>` : `<small class="cfrac">${s.text}</small>`}</span>${s.done ? `<img class="mface" src="img/fx-super.webp?v=2" alt="">` : ""}</button>`;
     }).join("")}</div>
     <h2>${TRACKS[1].name}</h2>
     <div class="courses">${COURSES.filter(c => c.track === "history").map((c, i) => {
       const s = courseStatus(c);
-      return `<button class="course${s.done ? " done" : ""}${s.fresh ? " fresh" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${s.done ? CROWN_SVG : ""}${c.name}${s.done ? `<em class="mastered">マスター！</em>` : `<small>${s.text}</small>`}</span>${s.done ? `<img class="mface" src="img/fx-super.webp?v=2" alt="">` : ""}</button>`;
+      return `<button class="course${s.done ? " done" : ""}${s.fresh ? " fresh" : ""}" type="button" data-course="${c.id}"${s.off ? " disabled" : ""}><b class="no">${i+1}</b><span>${s.done ? CROWN_SVG : ""}${c.name}${s.done ? `<em class="mastered">マスター！</em>` : `<small class="cfrac">${s.text}</small>`}</span>${s.done ? `<img class="mface" src="img/fx-super.webp?v=2" alt="">` : ""}</button>`;
     }).join("")}</div>
     <button class="btn resetbtn" id="reset" type="button">${ic("refresh")}リセット</button>`;
   byId("reset").onclick = openReset;
