@@ -1002,7 +1002,10 @@ const INDUSTRY = [
   {id:"oshima", cat:"craft", word:"本場大島紬", kana:"ほんばおおしまつむぎ", pref:46, note:"鹿児島県（奄美大島など）。泥染めで仕上げる絹織物。国の伝統的工芸品。", basis:"伝統的工芸品の指定", year:"―", ...SRC.meti, status:"ok"},
 ].map(f => Object.assign({checked: IND_CHECKED}, f));
 // 長い問題文を言葉の途中で折らない：文字のあいだでは折らず（keep-all）、「の」「を」「が」「、」「がある」のあとと「（」「都道府県」の前でだけ折る。ふりがなつきの言葉（em）は1つのまとまり
-const phraseBreak = html => `<span class="kb">${html.split(/(<[^>]+>)/).map(t => t.startsWith("<") ? t : kinsoku(t).replace(/がある/g, "\u0001").replace(/([のをが、])(?=.)/g, "$1<wbr>").replace(/\u0001/g, "がある<wbr>").replace(/（/g, "<wbr>（").replace(/([^>])(都道府県)/g, "$1<wbr>$2")).join("")}</span>`;
+// 禁則の仕上げ：kinsoku() で U+2060 でつないだ文字のまとまりを、折り返さない span にする。
+// iPhone の Safari は U+2060（ワードジョイナー）を守らず「「」のあとで改行することがあるため（2026-11-22）
+const wjSpan = t => t.replace(/[^\s<>\u2060]\u2060(?:[^\s<>\u2060]\u2060)*[^\s<>\u2060]/g, m => `<span class="nw">${m.replace(/\u2060/g, "")}</span>`);
+const phraseBreak = html => `<span class="kb">${html.split(/(<[^>]+>)/).map(t => t.startsWith("<") ? t : kinsoku(t).replace(/がある/g, "\u0001").replace(/([のをが、])(?=.)/g, "$1<wbr>").replace(/\u0001/g, "がある<wbr>").replace(/（/g, "<wbr>（").replace(/([^>])(都道府県)/g, "$1<wbr>$2")).map(t => t.startsWith("<") ? t : wjSpan(t)).join("")}</span>`;
 // 農業・くだもの・ふえた野菜・畜産：1〜3位と全国にしめる割合（％、小数1けた）。答えのあとは解説文のかわりにこの表を出す
 //   y＝統計の年（表の上に小さく出す）、r＝[県コード, ％]（同じ割合で同じ順位の県は [[県コード, 県コード], ％] で1行に）
 //   出どころ：野菜は e-Stat 野菜生産出荷統計の都道府県別の値、果物（令和7年産）は農林水産省 作物統計の都道府県別収穫量の図、
@@ -2689,9 +2692,9 @@ const brkDot = t => t.replace(/・/g, "・<wbr>");
 // 解説などの長い文を、言葉の途中で折らないための折れ目：句読点・かっこのあとと、漢字・カタカナに続く助詞（の・を・が・は・に・で・と・も）のあと。
 // 使う所は CSS で word-break:keep-all（文字のあいだでは折らない）にしておく
 // 日本語の行頭・行末のきまり（禁則）も守る：「（ は行の終わりに置かず次の文字とくっつける。」）、。 は行の頭に置かず前の文字とくっつける（U+2060）
-const kinsoku = t => t.replace(/([「（『])/g, "$1\u2060").replace(/(.)(?=[」）』、。！？])/g, "$1\u2060");
+const kinsoku = t => t.replace(/([「（『【])/g, "$1\u2060").replace(/(.)(?=[」）』】、。！？])/g, "$1\u2060");
 const softBreak = html => String(html).split(/(<[^>]+>)/).map(t => t.startsWith("<") ? t :
-  kinsoku(t).replace(/([、。）」])(?=[^、。）」\u2060])/g, "$1<wbr>").replace(/([一-龥々ァ-ヶー）])([のをがはにでとも])(?=[^、。）」<のをがはにでとも\u2060])/g, "$1$2<wbr>")).join("");
+  kinsoku(t).replace(/([、。）」])(?=[^、。）」\u2060])/g, "$1<wbr>").replace(/([一-龥々ァ-ヶー）])([のをがはにでとも])(?=[^、。）」<のをがはにでとも\u2060])/g, "$1$2<wbr>")).map(t => t.startsWith("<") ? t : wjSpan(t)).join("");
 // ステージのボタンの名前：意味の区切りで2行にできるようにする（マニアな／国宝、世界／自然遺産、東の／世界遺産）
 const chipName = t => brkDot(t).replace(/^世界(?=自然)/, "世界<wbr>").replace(/^産業革命(?=遺産)/, "産業革命<wbr>").replace(/([のな])(?=..)/g, "$1<wbr>");
 // ふりがな（よみ）を漢字の上に付ける
@@ -2741,7 +2744,7 @@ const face = state => `<div class="face" aria-hidden="true">${ic(state === "ok" 
 
 function noteHtml(code) {
   const ns = GEO_NOTES[code] || [];
-  return ns.map(n => `<span>【${GEO_THEMES[n.theme] || ""}】${n.text}</span>`).join("");
+  return ns.map(n => `<span>${softBreak(`【${GEO_THEMES[n.theme] || ""}】${n.text}`)}</span>`).join("");
 }
 
 // 答えたあと：音・れんぞく・花火を出し、問題の下の枠（qslot）の中に正誤と「つぎへ」を入れる（枠の高さは変えない）
