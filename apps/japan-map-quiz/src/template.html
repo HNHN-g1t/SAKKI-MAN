@@ -761,7 +761,7 @@ const QUIZ_TYPES = {
       const p = byCode(c), same = areaOfPref(c).codes.filter(o => o !== c);   // 選択肢は同じ地方の県から（まぎらわしく）
       const pool = shuffle(same.length >= 3 ? same : range(1, 47).filter(o => o !== c)).slice(0, 3).map(o => [byCode(o).name, byCode(o).kana]);
       return { key: c, prefs: [c], focus: c, silo: true, sub: "", choices: [[p.name, p.kana], ...pool], correct: p.name,
-        text: "この形の<em>都道府県</em>は？", explain: `${p.name}（${p.kana}）は${p.region}地方` };
+        text: "この形の<em>都道府県</em>は？", explain: `${p.name}は${p.region}の${p.name.slice(-1)}。` };
     })
   },
   weak: {
@@ -772,7 +772,7 @@ const QUIZ_TYPES = {
     title: "政令指定都市", kind: "tap",
     make: codes => CITIES.designated.map((d, i) => [d, i]).filter(([d]) => codes.includes(d[2])).map(([[name, kana, c], i]) => (
       { key: i, prefs: [c], pinLL: DESIGNATED_LL[name], text: `<em>${name}</em>がある都道府県は？`, sub: kana, answers: [c],
-        explain: `${name}（${kana}）は ${byCode(c).name}の政令指定都市` }))
+        explain: `${name}（${kana}）は${byCode(c).name}の政令指定都市。` }))
   }
 };
 
