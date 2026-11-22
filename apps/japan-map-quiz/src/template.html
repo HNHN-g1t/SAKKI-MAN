@@ -1623,14 +1623,14 @@ PATHS.forEach(o => {
   gLabels.appendChild(t); labelEl[o.c] = t;
 });
 
-/* 湖（tools/build_lakes.py が data/lakes.json に書き出す）。県名ラベルは湖の上に乗らないよう陸へ移す */
-const LAKES = __LAKES__;
+/* 湖（tools/build_lakes.py が data/lakes.json に書き出す。地球地図日本の内水面）。面積ベスト10＋北浦・十和田湖。
+   県名ラベルが湖にかかる県（滋賀・茨城・福島）は、湖を除いた陸の広い所へ移す（labels） */
+const LAKE_DATA = __LAKES__, LAKES = LAKE_DATA.lakes;
 LAKES.forEach(o => {
   const p = document.createElementNS(NS, "path"); p.setAttribute("d", o.d); p.setAttribute("class", "lake");
   document.getElementById("lakes").appendChild(p);
-  if (o.l && labelEl[o.c]) { labelEl[o.c].setAttribute("x", o.l[0]); labelEl[o.c].setAttribute("y", o.l[1]); }
 });
-
+Object.entries(LAKE_DATA.labels).forEach(([c, xy]) => { if (labelEl[c]) { labelEl[c].setAttribute("x", xy[0]); labelEl[c].setAttribute("y", xy[1]); } });
 /* ---------- 沖縄：全国表示では左下の枠に、九州へ寄ると本当の位置に ---------- */
 const OKI = PATHS[46], insetG = document.getElementById("insetg");
 const okiCopy = document.createElementNS(NS, "path");
@@ -1653,6 +1653,10 @@ const OKI_TOP = OKI.b[1];
 
 /* 地形の図形（tools/build_terrain.py が data/terrain.json に書き出す。教材の略地図程度のおおまかな形） */
 const TERRAIN = __TERRAIN__;
+// 地形クイズの湖（k_〇〇）は、光らせる形を本当の湖の輪郭にする
+TERRAIN.forEach(f => { const o = f.cat === "lake" && LAKES.find(l => "k_" + l.id === f.id); if (!o) return;
+  const n = o.d.match(/-?[\d.]+,-?[\d.]+/g).map(s => s.split(",").map(Number)), xs = n.map(v => v[0]), ys = n.map(v => v[1]);
+  f.d = o.d; f.b = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; });
 // 山地・山脈・川・平野の解説（入試で問われる1点を1行で）。地形データ（data/terrain.json）に note がないものに足す
 const TERRAIN_NOTES = {"hidaka": "北海道の中南部を南北に走る山脈。東側に十勝平野が広がる。","ou": "東北地方のまん中を南北に走る、日本でいちばん長い山脈（約500km）。太平洋側と日本海側の気候を分ける。","echigo": "新潟県と群馬県・福島県の県ざかいの山脈。冬の北西の季節風がぶつかり、日本海側に大雪を降らせる。","hida": "富山県・岐阜県・長野県の県ざかいの山脈。「北アルプス」とよばれ、3000m級の山がならぶ。","kiso": "長野県の天竜川と木曽川の間の山脈。「中央アルプス」とよばれる。","akaishi": "長野県・山梨県・静岡県の県ざかいの山脈。「南アルプス」とよばれる。飛驒・木曽・赤石の3つで「日本アルプス」。","kii": "紀伊半島の山地。雨がとても多く、すぎやひのきの林業がさかん（吉野すぎ・尾鷲ひのき）。","chugoku": "中国地方を東西に走る、なだらかな山地。北の山陰と南の山陽を分ける。","shikoku": "四国を東西に走る、けわしい山地。北の瀬戸内と南の太平洋側を分ける。","kyushu": "九州の中南部を、北東から南西へ走る山地。","fuji": "日本でいちばん高い山（3776m）。静岡県と山梨県にまたがる火山で、2013年に世界文化遺産に登録。","ishikari": "北海道でいちばん長い川（約268km）。石狩平野を流れて日本海に注ぐ。","kitakami": "東北地方でいちばん長い川。岩手県から宮城県へ、南に流れる。","mogami": "山形県だけを流れる川。日本三大急流の一つで、庄内平野をへて日本海に注ぐ。","abukuma": "福島県から宮城県へ、北に流れる川。","shinano": "日本でいちばん長い川（367km）。長野県では千曲川とよばれ、越後平野をへて日本海に注ぐ。","tone": "流域面積が日本一の川。「坂東太郎」とよばれ、関東平野を流れて太平洋に注ぐ。","tenryu": "長野県の諏訪湖から静岡県へ流れる川。日本三大急流の一つ。","kisogawa": "長野県から岐阜県・愛知県へ流れる川。長良川・揖斐川と合わせて木曽三川とよばれ、下流の濃尾平野には輪中がある。","yoshino": "四国でいちばん長い川。「四国三郎」とよばれ、徳島平野を流れて紀伊水道に注ぐ。","yodo": "琵琶湖から流れ出るただ一つの川。大阪平野を流れて大阪湾に注ぐ。","shimanto": "高知県を流れる川。「日本最後の清流」とよばれ、大水のときに水にしずむ沈下橋がある。","nagara": "岐阜県を流れる川。鵜飼いで知られる。木曽三川の一つ。","fujikawa": "山梨県から静岡県へ流れる川。日本三大急流の一つ。","kuma": "熊本県を流れる川。日本三大急流の一つで、八代平野をへて八代海に注ぐ。","chikugo": "九州でいちばん長い川。「筑紫次郎」とよばれ、筑紫平野を流れて有明海に注ぐ。","p_ishikari": "北海道の平野。泥炭地にほかの土を入れる客土で土地を改良し、米どころになった。","p_tokachi": "北海道の平野。じゃがいも・てんさい・小麦・豆などの畑作と、酪農がさかん。","p_shonai": "山形県の平野。最上川の下流にある米どころ。","p_sendai": "宮城県の平野。米づくりがさかん。","p_echigo": "新潟県の平野。信濃川・阿賀野川の下流にある、日本有数の米どころ。","p_kanto": "日本でいちばん広い平野。利根川が流れ、まわりで近郊農業がさかん。","p_nobi": "愛知県・岐阜県の平野。木曽三川の下流に、堤防で囲んだ輪中がある。","p_osaka": "大阪府の平野。淀川が流れる。","p_sanuki": "香川県の平野。雨が少ないため、ため池や香川用水で水を確保してきた。","p_tsukushi": "福岡県・佐賀県の平野。筑後川の下流で、米と麦の二毛作がさかん。有明海ぞいに干拓地がある。"};
 TERRAIN.forEach(f => { if (!f.note && TERRAIN_NOTES[f.id]) f.note = TERRAIN_NOTES[f.id]; });
