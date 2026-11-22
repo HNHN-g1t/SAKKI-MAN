@@ -106,6 +106,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:4
 .btn:active,.iconbtn:active,.chip:active,.course:active,.choice:active{transform:translateY(2px)}
 .btn.primary,.chip.wide{background:var(--brand);color:var(--on-brand);box-shadow:0 4px 0 var(--ink)}
 .btn.primary:active,.chip.wide:active{transform:translateY(4px);box-shadow:none}
+.pin-box .hint.bk{word-break:keep-all;overflow-wrap:anywhere;line-break:strict}
 .linkbtn{border:0;background:none;color:var(--ink);font:700 var(--fs14) var(--body);text-decoration:underline;cursor:pointer;min-height:var(--tap);padding:0 var(--s4)}
 #toTitle{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:0;padding:0 var(--s8);line-height:1}
 #toTitle svg{width:20px;height:20px}
@@ -2525,9 +2526,10 @@ function openReset() {
   ov.className = "pin";
   ov.innerHTML = `<div class="pin-box" role="dialog" aria-modal="true" aria-labelledby="rsTitle">
     <b id="rsTitle">リセット</b>
-    <p class="hint" style="text-align:center">すべての記録・マスター・地図の色が消えて、最初の状態にもどります。</p>
+    <p class="hint bk" style="text-align:center">${softBreak("すべての記録・マスター・地図の色が消えて、最初の状態にもどります。")}</p>
     <div class="row" style="width:100%"><button class="btn primary" type="button" id="rsYes" style="flex:1 1 0">消す</button><button class="btn" type="button" id="rsNo" style="flex:1 1 0">やめる</button></div>
-    <button class="linkbtn" type="button" id="rsReload">${ic("refresh")}消さずにアプリを再起動する</button></div>`;
+    <button class="linkbtn" type="button" id="rsReload">${ic("refresh")}消さずにアプリを再起動する</button>
+    <div class="row" style="width:100%;justify-content:center"><button class="linkbtn" type="button" id="rsOut">記録をバックアップ</button><button class="linkbtn" type="button" id="rsIn">バックアップから戻す</button></div></div>`;
   document.body.appendChild(ov);
   const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); };
   const onKey = e => { if (e.key === "Escape") close(); };
@@ -2538,7 +2540,55 @@ function openReset() {
   // DBG ON のときは、画面に出ているお試し記録（dbgRec）も消す（本当の記録といっしょに）
   ov.querySelector("#rsYes").onclick = () => { smStop(); store.rec = {}; store.best = {}; store.miss = {}; delete store.meter; dbgMeter = null; if (debug) dbgRec = {}; save(); close(); home(); };
   ov.querySelector("#rsReload").onclick = () => { bgmStop(); location.reload(); };
+  ov.querySelector("#rsOut").onclick = () => { close(); openBackup("out"); };
+  ov.querySelector("#rsIn").onclick = () => { close(); openBackup("in"); };
   ov.querySelector("#rsNo").focus();
+}
+
+/* 記録のバックアップ（2026-11-22）：記録を1行の文字（SAKKI1:…）にしてコピーし、メモなどに保存しておく。
+   機種変更・アプリの入れなおしのあと、その文字を貼りつけて戻す。音・テーマの設定もいっしょに戻る。DBG のお試し記録はふくめない */
+const BACKUP_HEAD = "SAKKI1:";
+const backupCode = () => BACKUP_HEAD + btoa(unescape(encodeURIComponent(JSON.stringify(store))));
+function readBackup(code) {
+  const t = String(code || "").trim().replace(/\s+/g, "");
+  if (!t.startsWith(BACKUP_HEAD)) return null;
+  try { const o = JSON.parse(decodeURIComponent(escape(atob(t.slice(BACKUP_HEAD.length))))); return o && typeof o === "object" && o.rec ? o : null; } catch(e){ return null; }
+}
+function openBackup(kind) {
+  if (document.querySelector(".pin")) return;
+  const out = kind === "out", ov = document.createElement("div");
+  ov.className = "pin";
+  ov.innerHTML = `<div class="pin-box" role="dialog" aria-modal="true" aria-labelledby="bkTitle">
+    <b id="bkTitle">${out ? "記録をバックアップ" : "バックアップから戻す"}</b>
+    <p class="hint bk" style="text-align:center">${softBreak(out ? "この文字をコピーして、メモなどに保存しておいてね。" : "保存しておいた文字を貼りつけてね。いまの記録は、その記録に入れかわります。")}</p>
+    <textarea id="bkText" rows="4" style="width:100%;box-sizing:border-box;font:var(--fs14)/1.4 monospace;border:var(--bw) solid var(--ink);border-radius:var(--r-btn);padding:var(--s8);background:var(--bg);color:var(--ink);word-break:break-all" ${out ? "readonly" : ""} spellcheck="false" autocapitalize="off"></textarea>
+    <p class="hint bk" id="bkMsg" style="text-align:center;min-height:1.4em;margin:0"></p>
+    <div class="row" style="width:100%"><button class="btn primary" type="button" id="bkGo" style="flex:1 1 0">${out ? "コピー" : "戻す"}</button><button class="btn" type="button" id="bkNo" style="flex:1 1 0">とじる</button></div></div>`;
+  document.body.appendChild(ov);
+  const ta = ov.querySelector("#bkText"), msg = ov.querySelector("#bkMsg");
+  const close = () => { ov.remove(); document.removeEventListener("keydown", onKey); };
+  const onKey = e => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  ov.onclick = e => { if (e.target === ov) close(); };
+  ov.querySelector("#bkNo").onclick = close;
+  if (out) {
+    ta.value = backupCode();
+    ov.querySelector("#bkGo").onclick = async () => {
+      ta.focus(); ta.select(); ta.setSelectionRange(0, ta.value.length);
+      let ok = false;
+      try { await navigator.clipboard.writeText(ta.value); ok = true; } catch(e){ try { ok = document.execCommand("copy"); } catch(e2){} }
+      msg.innerHTML = softBreak(ok ? "コピーしたよ！" : "文字を長押ししてコピーしてね");
+    };
+  } else {
+    ov.querySelector("#bkGo").onclick = () => {
+      const o = readBackup(ta.value);
+      if (!o) { msg.innerHTML = softBreak("読みこめない文字だよ。もう一度たしかめてね"); return; }
+      smStop(); store = Object.assign({ best:{}, miss:{}, mode:null, rec:{} }, o); store.mode = "exam";
+      if (store.theme) document.documentElement.dataset.theme = store.theme;
+      save(); close(); toast("記録を戻したよ"); home();
+    };
+    ta.focus();
+  }
 }
 
 /* コース：全国の挑戦（マスター判定あり）と、地方ごとの練習 */
