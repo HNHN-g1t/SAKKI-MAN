@@ -2935,6 +2935,19 @@ function result() {
     s.complete = true;
     r.best[area.id] = Math.max(r.best[area.id] ?? 0, clean);
     if (clean === total && !stageDone(course.id, area.id, "master")) { s.master = {at: Date.now()}; newStage = true; }
+    // 大きいステージをパーフェクトにしたら、その中にふくまれる小さいステージにも👑（2026-11-22）
+    //  ・No.1の県の「ぜんぶ」のように、ほかのステージの問題をぜんぶふくむとき（そのステージの問題がすべてヒントなし正解）
+    //  ・総合問題・県のシルエットのランダム10/20/30/47は、問題数が多いステージのパーフェクトで、それより少ないステージにも
+    if (clean === total) {
+      const got = new Set(quiz.log.filter(l => l.ok && !l.hint).map(l => String(l.key)));
+      stagesOf(course).forEach(a => {
+        if (a.id === area.id || stageDone(course.id, a.id, "master")) return;
+        const covered = a.n && area.n ? a.n <= area.n : !a.n && !area.n && (() => { const ks = quiz.type.make(a.codes, a).map(q => String(q.key)); return ks.length > 0 && ks.every(k => got.has(k)); })();
+        if (!covered) return;
+        const t = r.stage[a.id] = Object.assign({complete: false, master: null}, r.stage[a.id]);
+        t.complete = true; t.master = {at: Date.now(), by: area.id}; r.best[a.id] = Math.max(r.best[a.id] ?? 0, a.n || quiz.type.make(a.codes, a).length);
+      });
+    }
     if (stagesOf(course).every(a => stageDone(course.id, a.id, "complete"))) r.complete = true;
     if (stagesOf(course).every(a => stageDone(course.id, a.id, "master")) && !masterOf(course.id)) { newMaster = {at: Date.now(), clean: true}; r.master = newMaster; }
   } else if (quiz.master) {
