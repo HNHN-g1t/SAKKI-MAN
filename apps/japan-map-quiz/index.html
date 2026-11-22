@@ -366,6 +366,7 @@ svg:not(.explore) .region-line{display:none}
 .fb .txt{flex:1;min-width:0;line-height:1.45}
 .fb .txt b{display:block;font-weight:700;font-size:var(--fs20)}
 .fb .txt span{display:block;color:var(--muted);font-size:var(--fs14);font-weight:700}
+.fb .txt .desc,.chart .cpts .kb{word-break:keep-all;overflow-wrap:anywhere}   /* softBreak の折れ目でだけ折る */
 .fb .txt .head{display:block;color:var(--ink);font-size:var(--fs16);font-weight:700;line-height:1.5}
 .fb .txt .head b{display:inline;font-size:var(--fs20)}
 /* ふえた野菜の1〜3位の表（解説のかわり）。答えの県の行に黄色のマーカー */
@@ -495,6 +496,7 @@ svg:not(.explore) .region-line{display:none}
 .choice{min-height:64px;font-size:var(--fs20);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:var(--s4) var(--s8);line-height:1.2}
 .nw{white-space:nowrap}
 .choice .cname{display:block;text-align:center}
+.choice .cname.long{font-size:.85em}   /* 「・」のない7文字以上の名前（四日市ぜんそく など）は少し小さくして1行に */
 .choice .paren{display:block;font-size:.7em;line-height:1.2}
 /* 4択の名前は言葉の途中で折らない（・のあとだけ）。答えたあとの小さいボタンでは字を小さくして収める */
 .choice{word-break:keep-all;overflow-wrap:anywhere}
@@ -651,7 +653,7 @@ const QUIZ_TYPES = {
       const pool = shuffle(TERRAIN.filter(g => g.cat === f.cat && g.id !== f.id)).slice(0, 3);
       return { key: f.id, prefs: [f.pref], focus: f.pref, feature: f.id, sub: "", choices: [[f.name, f.kana], ...pool.map(g => [g.name, g.kana])], correct: f.name,
         // 地形の用語は「何という？」。解説（note）があれば出す
-        text: f.cat === "land" ? "色をつけた所の<em>地形</em>を何という？" : `この<em>${TERRAIN_CATS[f.cat]}</em>の名前は？`,
+        text: phraseBreak(f.cat === "land" ? "色をつけた所の<em>地形</em>を何という？" : `この<em>${TERRAIN_CATS[f.cat]}</em>の名前は？`),
         explain: f.note ? `${f.name}（${f.kana}）：${f.note}` : `${f.name}（${f.kana}）` };
     })
   },
@@ -678,10 +680,12 @@ const QUIZ_TYPES = {
   },
   general: {
     title: "総合問題", kind: "choice",
+    // 2026-11-22：全国すべての問題からランダムに 10・20・30・47問（stageList の n）。県庁所在地3割・地形3割・産業4割の割合でまぜる
     // 地方ごとに、県庁所在地（4択）・河川など地形（4択）・農林水産業（タップ）・工業と伝統工芸（タップ）をまぜて出す。
     // 毎回その地方の中からえらび直す。key は "cap:県コード" "ter:地形id" "ind:産業id"
     make: (codes, area) => {
       const pick = (arr, k) => shuffle(arr).slice(0, k);
+      if (area && area.n) return generalRandom(area.n, pick);
       const cap = pick(codes, 3).flatMap(c => QUIZ_TYPES.capital.make([c])).map(q => Object.assign(q, {key: "cap:" + q.key, kind: "choice"}));
       const ters = QUIZ_TYPES.terrain.make(codes, null).filter(q => codes.includes(q.prefs[0]));
       const ter = [...pick(ters.filter(q => TERRAIN.find(f => f.id === q.key).cat === "river"), 2), ...pick(ters.filter(q => TERRAIN.find(f => f.id === q.key).cat !== "river"), 2)].slice(0, 2)
@@ -1288,7 +1292,7 @@ function climateChart(c, note) {
   });
   const defs = `<defs><marker id="cArrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="carrow"/></marker></defs>`;
   const rainYear = `年降水量 ${Math.round(c.year[0])}<span class="cur">mm</span>`;
-  const list = note ? `<ol class="cpts">${note.points(c).map((p, i) => `<li><b>${"①②③"[i]}</b>${p}</li>`).join("")}</ol>` : "";
+  const list = note ? `<ol class="cpts">${note.points(c).map((p, i) => `<li><b>${"①②③"[i]}</b><span class="kb">${softBreak(p)}</span></li>`).join("")}</ol>` : "";
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="雨温図">${defs}<text x="${L - 4}" y="12" class="cl cut" text-anchor="end">℃</text><text x="${L + w + 4}" y="12" class="cl cur">mm</text>
     ${grid}${right}${back}${bars}<polyline points="${pts}" class="ct"/>${c.temp.map((v, i) => `<circle cx="${xm(i + 1)}" cy="${yT(v)}" r="2.6" class="cd"/>`).join("")}${months}${front}</svg>
     <p>年平均気温 ${c.year[1]}<span class="cut">℃</span>・${under ? `<span class="cunder">${rainYear}</span><span class="cnum">${"①②③"[under - 1]}</span>` : rainYear}</p>${list}`;
@@ -1310,7 +1314,7 @@ const COURSES = [
   {id:"silhouette", name:"県のシルエット", master:"シルエットマスター", from:"g4", ready:true, stages:true, unlock:{course:"prefName", need:"master"},
    // 地方ごとだと地方の形でわかってしまうので、全国47都道府県からランダムに 10・20・30・47問 を選んで出す
    stageList:[{id:"r10", n:10, name:"ランダム10", codes:range(1,47)}, {id:"r20", n:20, name:"ランダム20", codes:range(1,47)},
-              {id:"r30", n:30, name:"ランダム30", codes:range(1,47)}, {id:"r47", n:47, name:"47都道府県", codes:range(1,47)}]},
+              {id:"r30", n:30, name:"ランダム30", codes:range(1,47)}, {id:"r47", n:47, name:"オール47", codes:range(1,47)}]},
   {id:"capital", name:"県庁所在地", master:"県庁所在地マスター", from:"g4", ready:true, stages:true, unlock:{course:"prefName", need:"master"},
    // 地方ごとの7ステージのあとに、県名と県庁所在地名がちがう18都道県だけのステージ（入試の定番）
    stageList:[...AREAS.filter(a => !a.wide), {id:"diff", cat:"diff", name:"名前ちがい", codes:[1, 3, 4, 8, 9, 10, 11, 14, 17, 19, 23, 24, 25, 28, 32, 37, 38, 47]}],
@@ -1348,6 +1352,9 @@ const COURSES = [
    rules:[`${Object.keys(TREASURE_STAGES).length}ステージ（全${TREASURE.length}か所）。地図の光る場所が何かを4択で答える`, "ステージ👑：そのステージをヒントなしで全問正解",
           "👑マスター：すべてのステージ👑", "完了：すべてのステージを最後まで解く"]},
   {id:"general", name:"総合問題", master:"総合マスター", from:"g5", ready:true, stages:true, unlock:{course:"industry", need:"complete"},
+   // 全国すべての問題からランダムに出す4ステージ（地方ごとはやめた）
+   stageList:[{id:"g10", n:10, name:"ランダム10", codes:range(1,47)}, {id:"g20", n:20, name:"ランダム20", codes:range(1,47)},
+              {id:"g30", n:30, name:"ランダム30", codes:range(1,47)}, {id:"g47", n:47, name:"オール47", codes:range(1,47)}],
    rules:["地方ごとの7ステージ。県庁所在地・河川など地形・農林水産業・工業と伝統工芸を、その地方の中からまぜて出す（毎回えらび直す）",
           "ステージ👑：そのステージをヒントなしで全問正解", "👑総合マスター：7ステージすべて👑", "完了：7ステージすべてを最後まで解く",
           "問題は県庁所在地・山・河川・平野・農林水産業・工業の各コースと同じもの"]}
@@ -2228,7 +2235,7 @@ function coursePage(c) {
       const cr = c.stages && stageDone(c.id, a.id, "master") ? ic("crown") : "";
       // 光らせる：ステージは👑がまだ（挑戦済みでも）、地方ごとの練習はパーフェクトがまだ。一度も挑戦していない（ベストなし）ものは、キラッの帯も横切らせる
       const fresh = c.stages ? !cr : b < n;
-      return `<button class="chip${fresh ? " fresh" : ""}${fresh && b < 0 ? " zero" : ""}" type="button" data-area="${a.id}"><span class="cnm${!a.name.includes("・") && a.name.length >= 5 ? " tight" : ""}">${brkDot(a.name)}</span><small${b >= n ? ` class="perfect"` : ""}>${cr}${b >= 0 ? `ベスト ${b}/${n}` : `${n}問`}</small></button>`;   // パーフェクト（ベストが全問）は黄色
+      return `<button class="chip${fresh ? " fresh" : ""}${fresh && b < 0 ? " zero" : ""}" type="button" data-area="${a.id}"><span class="cnm${!chipName(a.name).includes("<wbr>") && a.name.length >= 5 ? " tight" : ""}">${chipName(a.name)}</span><small${b >= n ? ` class="perfect"` : ""}>${cr}${b >= 0 ? `ベスト ${b}/${n}` : `${n}問`}</small></button>`;   // パーフェクト（ベストが全問）は黄色
     }).join("")}</div>
     <p class="motto">県名なしの日本地図でノーミスクリアをめざそう！</p>`;   // くわしい条件は COURSES[].rules（画面には出さない）
   byId("back").onclick = home;
@@ -2330,7 +2337,7 @@ function nextQ() {
     }
     q.order = shuffle(q.choices);
     sheet.innerHTML = `${askBlock()}<div class="qslot" id="qslot"><div class="choices">${q.order.map(([n, k], j) =>
-      `<button class="choice" type="button" data-j="${j}"><span class="cname">${rb(n, k, true)}</span></button>`).join("")}</div></div>`;
+      `<button class="choice" type="button" data-j="${j}"><span class="cname${!n.includes("・") && n.replace(/（.*$/, "").length >= 7 ? " long" : ""}">${rb(n, k, true)}</span></button>`).join("")}</div></div>`;
     const owner = quiz;
     sheet.querySelectorAll("[data-j]").forEach(b => b.onclick = () => { if (quiz === owner && mode === "quiz") answerChoice(+b.dataset.j); });
   } else {
@@ -2351,6 +2358,12 @@ function logAnswer(ok) {
 
 // 「・」のうしろでだけ改行する（言葉の途中では切らない。・は行の頭に置かない）
 const brkDot = t => t.replace(/・/g, "・<wbr>");
+// 解説などの長い文を、言葉の途中で折らないための折れ目：句読点・かっこのあとと、漢字・カタカナに続く助詞（の・を・が・は・に・で・と・も）のあと。
+// 使う所は CSS で word-break:keep-all（文字のあいだでは折らない）にしておく
+const softBreak = html => String(html).split(/(<[^>]+>)/).map(t => t.startsWith("<") ? t :
+  t.replace(/([、。）」])(?=[^、。）」])/g, "$1<wbr>").replace(/([一-龥々ァ-ヶー）])([のをがはにでとも])(?=[^、。）」<のをがはにでとも])/g, "$1$2<wbr>")).join("");
+// ステージのボタンの名前：意味の区切りで2行にできるようにする（マニアな／国宝、世界／自然遺産、東の／世界遺産）
+const chipName = t => brkDot(t).replace(/^世界(?=自然)/, "世界<wbr>").replace(/^産業革命(?=遺産)/, "産業革命<wbr>").replace(/([のな])(?=..)/g, "$1<wbr>");
 // ふりがな（よみ）を漢字の上に付ける
 // 「元寇（博多湾）」のようにかっこの補足がある名前は、ふりがなを本体（元寇）だけに付け、補足はそのあとに出す。
 // br:true（4択のボタン）では補足を次の行に小さく出す
@@ -2519,8 +2532,8 @@ function answerChoice(j) {
   // 国宝・世界遺産は、答えのあと選択肢をしまい、横いっぱいに名前と解説（3文まで）を出す
   const wide = quiz.course.id === "treasure";
   afterAnswer(ok, ok
-    ? `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！</b><span class="head">${rb(ans[0], ans[1])}${q.hint ? "（ヒントを見て正解）" : ""}</span>${wide ? `<span class="desc">${q.explain}</span>` : ""}${noteHtml(q.focus)}</div></div>`
-    : `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　正解は <em>${rb(ans[0], ans[1])}</em>。キミが選んだのは ${rb(pick[0], pick[1])}。</span>${wide ? `<span class="desc">${q.explain}</span>` : ""}${noteHtml(q.focus)}</div></div>`,
+    ? `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！</b><span class="head">${rb(ans[0], ans[1])}${q.hint ? "（ヒントを見て正解）" : ""}</span>${wide ? `<span class="desc">${softBreak(q.explain)}</span>` : ""}${noteHtml(q.focus)}</div></div>`
+    : `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　<span class="nw">正解は</span> <span class="nw"><em>${rb(ans[0], ans[1])}</em>。</span><wbr><span class="nw">キミが選んだのは</span> <span class="nw">${rb(pick[0], pick[1])}。</span></span>${wide ? `<span class="desc">${softBreak(q.explain)}</span>` : ""}${noteHtml(q.focus)}</div></div>`,
     {kind: wide ? "wide" : "choice", burst: () => { const el = sheet.querySelector(".choice.right") || sheet.querySelector(".fb .face"); if (!el) return null; const r = el.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; }});
 }
 
@@ -2538,13 +2551,13 @@ function handleTap(code) {
   if (ok) {
     pathEl[code].classList.add("flash-ok");
     quizTimeout(() => { pathEl[code].classList.remove("flash-ok"); pathEl[code].classList.add("ok"); }, 450);
-    afterAnswer(true, `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans.name}${rankYear(q.top3)}</b>${q.top3 ? `${q.hint ? `<span class="desc">（ヒントを見て正解）</span>` : ""}${rankTable(q.top3, ans.code)}` : `<span class="desc">${q.hint ? "（ヒントを見て正解）" : ""}${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}`}</div></div>`,
+    afterAnswer(true, `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！ ${ans.name}${rankYear(q.top3)}</b>${q.top3 ? `${q.hint ? `<span class="desc">（ヒントを見て正解）</span>` : ""}${rankTable(q.top3, ans.code)}` : `<span class="desc">${q.hint ? "（ヒントを見て正解）" : ""}${softBreak(trimLead(q.explain, ans.name))}</span>${noteHtml(ans.code)}`}</div></div>`,
       {kind: "tap", burst: () => { const r = pathEl[code].getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; }});
   } else {
     pathEl[code].classList.add("flash-ng"); showTag(code, p.short);
     pathEl[ans.code].classList.add("miss");
     JapanMap.highlightPrefecture(ans.code);
-    afterAnswer(false, `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　正解は <em>${ans.name}</em>。<span class="nw">キミが指したのは</span> <span class="nw">${p.name}。</span>${rankYear(q.top3)}</span>${q.top3 ? rankTable(q.top3, ans.code) : `<span class="desc">${trimLead(q.explain, ans.name)}</span>${noteHtml(ans.code)}`}</div></div>`, {kind: "tap"});
+    afterAnswer(false, `<div class="fb ng">${face("ng")}<div class="txt"><span class="head"><b>ざんねん</b>　正解は <em>${ans.name}</em>。<span class="nw">キミが指したのは</span> <span class="nw">${p.name}。</span>${rankYear(q.top3)}</span>${q.top3 ? rankTable(q.top3, ans.code) : `<span class="desc">${softBreak(trimLead(q.explain, ans.name))}</span>${noteHtml(ans.code)}`}</div></div>`, {kind: "tap"});
   }
 }
 
@@ -2553,6 +2566,14 @@ function handleTap(code) {
 function keyLabel(courseId, key, pref) {
   const course = {id: courseId}, l = {key, pref};
   return course.id === "treasure" ? treasureOf(l.key).name : course.id === "history" ? historyOf(l.key).name : course.id === "general" ? generalLabel(l) : course.id === "climate" ? (String(l.key).startsWith("zone:") ? zoneOf(l.key.slice(5)).name : CLIMATE_CITIES.find(c => "city:" + c.id === l.key).name) : course.id === "terrain" ? (String(l.key).startsWith("inland:") ? byCode(l.pref).name : TERRAIN.find(f => f.id === String(l.key).replace(/:t$/, "")).name) : course.id === "industry" ? (String(l.key).startsWith("kogai") ? KOGAI.find(k => k.id === l.key.split(":")[1]).name : String(l.key).startsWith("city:") ? CITY_IND.find(c => c.id === l.key.slice(5)).name : `${industryName(industryOf(l.key))}（${byCode(l.pref).name}）`) : course.id === "designated" ? CITIES.designated[l.key][0] : course.id === "capital" ? `${byCode(l.pref).name}（${CITIES.capitals[l.pref][0][0]}）` : byCode(l.pref).name;
+}
+function generalRandom(n, pick) {
+  const all = range(1, 47);
+  const cap = QUIZ_TYPES.capital.make(all).map(q => Object.assign(q, {key: "cap:" + q.key, kind: "choice"}));
+  const ter = QUIZ_TYPES.terrain.make(all, null).map(q => Object.assign(q, {key: "ter:" + q.key, kind: "choice"}));
+  const ind = QUIZ_TYPES.industry.make(all, null).map(q => Object.assign(q, {cat: industryOf(q.key).cat, key: "ind:" + q.key, kind: "tap"}));
+  const nc = Math.round(n * 0.3), nt = Math.round(n * 0.3);
+  return [...pick(cap, nc), ...pick(ter, nt), ...pick(ind, n - nc - nt)];
 }
 function generalLabel(l) {
   const [k, id] = String(l.key).split(":");
@@ -2598,7 +2619,7 @@ function result() {
   const opened = COURSES.filter(c => before.includes(c.id) && unlocked(c));
   // まちがえた問題だけのやり直し（opts.keys）は、全部正解しても「パーフェクト」ではなく「クリア」
   const retry = !!quiz.opts.keys;
-  const msg = newMaster ? `${ic("crown")}<span class="mt">${masterHtml(course.master, "！")}</span>` : newStage ? `${ic("crown")}${quiz.area.name}ステージ パーフェクト！` : retry && correct === total ? "クリア！" : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしでマスターを目指そう！" : missed.length <= 2 ? "あと少し！ まちがえた問題をもう一回" : "まちがえた問題だけ、くりかえそう";
+  const msg = newMaster ? `${ic("crown")}<span class="mt">${masterHtml(course.master, "！")}</span>` : newStage ? `${ic("crown")}${quiz.area.name}ステージ パーフェクト！` : retry && correct === total ? "クリア！" : clean === total ? "パーフェクト！" : correct === total ? "全問正解！ ヒントなしで\nマスターを目指そう！" : missed.length <= 2 ? "あと少し！ まちがえた問題を\nもう一回" : "まちがえた問題だけ、\nくりかえそう";   // 意味の区切りで改行（最初のすきまも改行になる）
   const next = course.id === "weak" ? null : nextUnit(course, quiz.area, !!quiz.stage, retry);
   const label = l => l.label || keyLabel(course.id, l.key, l.pref);
   top_.innerHTML = `${titleBtn()}<div class="ask"><span class="meta"><span class="nm">${course.name}・${quiz.master ? "全国の挑戦" : quiz.stage ? `${quiz.area.name}ステージ` : quiz.area.name}</span><span class="num">けっか</span></span></div>${themeBtn()}${muteBtn()}`;
