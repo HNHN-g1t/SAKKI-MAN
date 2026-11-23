@@ -1,0 +1,12 @@
+{
+  "appId": "jp.sakkiman.mapdrill",
+  "appName": "サッ記マン",
+  "webDir": "www",
+  "backgroundColor": "#E2E1DD",
+  "ios": {
+    "contentInset": "never",
+    "scrollEnabled": false,
+    "allowsLinkPreview": false,
+    "preferredContentMode": "mobile"
+  }
+}

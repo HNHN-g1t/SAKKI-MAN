@@ -35,6 +35,14 @@ main に push すると、Vercel（`vercel.json`）と GitHub Actions（`.github
 - 検証: ビルド → ブラウザで index.html を開き、HANDOFF.md「動作確認」の観点（県48要素・375px幅・沖縄の切り替え・目ボタン・コンソールエラーなし）を見る
 - 確認テスト: `node apps/japan-map-quiz/tools/check.js`（全問題を正解・不正解で答える・4択の選択肢・禁則・やり直し。320/375px）。push すると GitHub Actions（`.github/workflows/check.yml`）でも走る
 
+## iOS アプリ（mobile/）
+
+Capacitor で Web 版（タイトル画面＋日本地図ドリル）を包んだ iOS アプリ。手順は [mobile/README.md](mobile/README.md)。
+
+- 中身は `python3 mobile/build_www.py`（_site を www にうつし、フォントをアプリ内のものに差しかえる）→ `cd mobile && npx cap sync ios`
+- Web 版を直したら、アプリにも入れるには Mac で `npm run sync` してビルドしなおす
+- iPhone 専用・縦向き・iOS 16 以上。バンドルID は `jp.sakkiman.mapdrill`（`capacitor.config.json` と Xcode の両方）
+
 ## ファビコン
 
 元画像は `site/favicon-source.webp`。差し替えたら `py -3 tools/build_icons.py`（Pillow が必要）で `site/` に各サイズを作り直す。`site/` のファイルは公開サイトの直下に置かれる（元画像は除く）。アプリのページからは `../favicon.ico` などで参照する。

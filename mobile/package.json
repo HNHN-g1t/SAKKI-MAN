@@ -1,0 +1,18 @@
+{
+  "name": "sakkiman-ios",
+  "private": true,
+  "version": "1.0.0",
+  "description": "サッ記マン 日本地図タップドリルの iOS アプリ（Capacitor）",
+  "scripts": {
+    "build": "python3 build_www.py",
+    "sync": "python3 build_www.py && npx cap sync ios",
+    "open": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "8.6.2",
+    "@capacitor/ios": "8.6.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.6.2"
+  }
+}
