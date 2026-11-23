@@ -391,9 +391,10 @@ svg:not(.explore) .region-line{display:none}
 .fb .txt .head{display:block;color:var(--ink);font-size:var(--fs16);font-weight:700;line-height:1.5}
 .fb .txt .head b{display:inline;font-size:var(--fs20)}
 /* ふえた野菜の1〜3位の表（解説のかわり）。答えの県の行に黄色のマーカー */
-.fb .rank3{list-style:none;margin:var(--s4) 0 0;padding:0;display:grid;grid-template-columns:auto auto auto;justify-content:start;gap:2px var(--s12);font-size:calc(var(--fs14) * 1.5);line-height:1.2;font-weight:700;color:var(--ink)}
+.fb .rank3{list-style:none;margin:var(--s4) 0 0;padding:0;display:grid;grid-template-columns:auto auto auto;justify-content:start;gap:1px var(--s12);font-size:calc(var(--fs14) * 1.3);line-height:1.15;font-weight:700;color:var(--ink)}   /* 正解の名前を大きくした分、3位まで1画面に入るよう少し小さく（2026-11-23） */
 .fb .rank3 li{display:contents}
-@media (max-height:720px){.fb .rank3{font-size:calc(var(--fs14) * 1.25)}}   /* 背の低い画面では、ざんねんの2行の文と表が画面に収まるよう少し小さく */
+@media (max-height:720px){.fb .rank3{font-size:calc(var(--fs14) * 1.1)}}
+@media (max-height:600px){.fb .rank3{font-size:var(--fs14);line-height:1.1}.fb .txt em.ans{font-size:1.45em}}   /* とても背の低い画面（iPhone SE 第1世代など） */   /* 背の低い画面では、ざんねんの2行の文と表が画面に収まるよう少し小さく */
 .fb .txt .rank3y{display:inline;margin-left:var(--s4);white-space:nowrap;font-size:var(--fs12);color:var(--muted);font-weight:700}
 .fb .rank3 b{display:grid;place-items:center;width:1.4em;height:1.4em;border-radius:50%;background:var(--cream);color:var(--ink);font-family:var(--display);font-weight:400;font-size:.85em}
 .fb .rank3 span{display:block;justify-self:start;color:var(--ink);font-size:inherit}
@@ -2983,7 +2984,7 @@ function handleTap(code) {
   if (ok) {
     pathEl[code].classList.add("flash-ok");
     quizTimeout(() => { pathEl[code].classList.remove("flash-ok"); pathEl[code].classList.add("ok"); }, 450);
-    afterAnswer(true, `<div class="fb ok">${face("ok")}<div class="txt"><b>せいかい！</b><span class="head"><em class="ans">${rb(ans.name, ans.kana)}</em>${rankYear(q.top3)}</span>${q.top3 ? `${q.hint ? `<span class="desc">（ヒントを見て正解）</span>` : ""}${rankTable(q.top3, ans.code)}` : `<span class="desc">${q.hint ? "（ヒントを見て正解）" : ""}${softBreak(trimLead(q.explain, ans.name))}</span>${noteHtml(ans.code)}`}</div></div>`,
+    afterAnswer(true, `<div class="fb ok">${face("ok")}<div class="txt">${q.top3 ? `<span class="head"><b>せいかい！</b> <em class="ans">${rb(ans.name, ans.kana)}</em>${rankYear(q.top3)}</span>` : `<b>せいかい！</b><span class="head"><em class="ans">${rb(ans.name, ans.kana)}</em></span>`}${q.top3 ? `${q.hint ? `<span class="desc">（ヒントを見て正解）</span>` : ""}${rankTable(q.top3, ans.code)}` : `<span class="desc">${q.hint ? "（ヒントを見て正解）" : ""}${softBreak(trimLead(q.explain, ans.name))}</span>${noteHtml(ans.code)}`}</div></div>`,
       {kind: "tap", burst: () => { const r = pathEl[code].getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; }});
   } else {
     pathEl[code].classList.add("flash-ng"); showTag(code, p.short);
