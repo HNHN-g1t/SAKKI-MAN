@@ -41,7 +41,8 @@ Capacitor で Web 版（タイトル画面＋日本地図ドリル）を包ん�
 
 - 中身は `python3 mobile/build_www.py`（_site を www にうつし、フォントをアプリ内のものに差しかえる）→ `cd mobile && npx cap sync ios`
 - Web 版を直したら、アプリにも入れるには Mac で `npm run sync` してビルドしなおす
-- iPhone 専用・縦向き・iOS 16 以上。バンドルID は `jp.sakkiman.mapdrill`（`capacitor.config.json` と Xcode の両方）
+- iPhone 専用・縦向き・iOS 16 以上。バンドルID は `com.hnhn.Sakkiman`（`capacitor.config.json` と Xcode の両方）。Team は NQCJ6W3845
+- App Store の説明文・審査メモ・スクリーンショットは `docs/appstore/`。プライバシーポリシーとサポートのページは `site/privacy/`・`site/support/`（App Store に URL を載せているので消さない）
 
 ## ファビコン
 

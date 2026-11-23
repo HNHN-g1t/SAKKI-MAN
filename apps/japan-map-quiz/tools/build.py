@@ -12,5 +12,5 @@ for key, file in (("__PATHS__", "paths.json"), ("__REGIONS__", "regions.json"), 
     template = template.replace(key, (ROOT / "data" / file).read_text(encoding="utf-8"))
 out = ROOT / "index.html"
 # Windows でも改行を LF にそろえる（どの端末でビルドしても同じ出力になるように）
-out.write_text(template, encoding="utf-8", newline="\n")
+out.write_bytes(template.encode("utf-8"))  # Python 3.9 でも動くように（write_text の newline は 3.10 から）
 print(f"wrote {out} ({out.stat().st_size:,} bytes)")

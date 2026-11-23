@@ -20,5 +20,5 @@ for page, up in ((WWW / "index.html", ""), (WWW / "japan-map-quiz" / "index.html
     assert n >= 1, f"{page}: Google Fonts のリンクが見つからない"
     h = h.replace("</title>", f'</title>\n<link rel="stylesheet" href="{up}fonts/fonts.css">', 1)
     h = h.replace('href="japan-map-quiz/"', 'href="japan-map-quiz/index.html"')
-    page.write_text(h, encoding="utf-8", newline="\n")
+    page.write_bytes(h.encode("utf-8"))  # Python 3.9 でも動くように
 print(f"wrote {WWW}")

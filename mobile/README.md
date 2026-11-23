@@ -3,7 +3,7 @@
 Web 版（タイトル画面＋日本地図タップドリル）を、そのままアプリの中に入れて iOS アプリにしたもの。
 画像・音・フォントもアプリの中に入るので、電波がなくても動く。
 
-- アプリ名：サッ記マン　／　バンドルID：`jp.sakkiman.mapdrill`（変えるときは下の「1回目だけ」）
+- アプリ名：サッ記マン　／　バンドルID：`com.hnhn.Sakkiman`（変えるときは下の「1回目だけ」）
 - iPhone 専用・縦向きだけ・iOS 16 以上（iPhone SE 第1世代など iOS 15 までの機種は対象外）
 - 中身は `mobile/www/`（`build_www.py` が作る。リポジトリには入れない）→ `npx cap sync ios` で `ios/App/App/public/` にうつる
 
