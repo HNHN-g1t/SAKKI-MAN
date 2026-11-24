@@ -6,7 +6,7 @@
 ```
 1. Screen recording
 A screen recording on a physical iPhone, from launch through typical use:
-[VIDEO URL]
+https://www.youtube.com/shorts/hkTk2Y0tFIE
 The app has no account registration, login, account deletion, user-generated content shared with other users, or in-app purchases, so none of these appear in the recording.
 
 2. Purpose, audience and value
