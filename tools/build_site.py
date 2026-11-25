@@ -14,7 +14,6 @@ OUT = ROOT / "_site"
 # 公開パス: (index.html のある apps/ 配下のフォルダ, いっしょに公開する素材フォルダ)
 APPS = {
     "japan-map-quiz": ("apps/japan-map-quiz", ("bgm", "img")),   # BGM と画像（キャラクターの顔など）
-    "japan-3d": ("apps/japan-3d", ("lib", "data")),              # 3D日本地図：three.js と標高データ（ビルドなし。index.html を直接編集）
 }
 
 subprocess.run([sys.executable, str(ROOT / "apps/japan-map-quiz/tools/build.py")], check=True)

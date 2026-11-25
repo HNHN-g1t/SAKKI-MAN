@@ -21,8 +21,3 @@ jobs:
           npx playwright install --with-deps chromium
       - name: 確認テスト
         run: node apps/japan-map-quiz/tools/check.js
-      - name: 3D日本地図の確認テスト
-        run: |
-          python3 -m http.server 8765 &
-          sleep 2
-          node apps/japan-3d/tools/check3d.js

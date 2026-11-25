@@ -11,7 +11,7 @@ ROOT = HERE.parent
 WWW = HERE / "www"
 subprocess.run([sys.executable, str(ROOT / "tools/build_site.py")], check=True)
 shutil.rmtree(WWW, ignore_errors=True)
-shutil.copytree(ROOT / "_site", WWW, ignore=shutil.ignore_patterns("japan-3d"))   # 3D日本地図は試作中なのでアプリには入れない
+shutil.copytree(ROOT / "_site", WWW)
 shutil.copytree(HERE / "fonts", WWW / "fonts")
 FONT_LINKS = re.compile(r'\s*<link rel="preconnect" href="https://fonts\.(googleapis|gstatic)\.com"[^>]*>|\s*<link rel="stylesheet" href="https://fonts\.googleapis\.com/[^"]*">')
 for page, up in ((WWW / "index.html", ""), (WWW / "japan-map-quiz" / "index.html", "../")):

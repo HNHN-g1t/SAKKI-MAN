@@ -35,13 +35,9 @@ main に push すると、Vercel（`vercel.json`）と GitHub Actions（`.github
 - 検証: ビルド → ブラウザで index.html を開き、HANDOFF.md「動作確認」の観点（県48要素・375px幅・沖縄の切り替え・目ボタン・コンソールエラーなし）を見る
 - 確認テスト: `node apps/japan-map-quiz/tools/check.js`（全問題を正解・不正解で答える・4択の選択肢・禁則・やり直し。320/375px）。push すると GitHub Actions（`.github/workflows/check.yml`）でも走る
 
-## 3D日本地図（apps/japan-3d、試作）
+## 3D日本地図
 
-詳しくは [apps/japan-3d/HANDOFF.md](apps/japan-3d/HANDOFF.md)。公開 https://sakki-man.vercel.app/japan-3d/ （入口からは未リンク・iOS アプリには入れていない）
-
-- `index.html` を直接編集（ビルドなし）。three.js は `lib/` に同梱
-- 標高データ `data/heightmap.webp` は `python3 apps/japan-3d/tools/build_heightmap.py` で作る（ドリルの paths.json と同じ座標系）
-- 確認テスト: リポジトリ直下で `python3 -m http.server 8765` → `node apps/japan-3d/tools/check3d.js`
+別のリポジトリ https://github.com/HNHN-g1t/nippon-map に移した（2026-11-25）。こちらには置かない。ドリルの県の形（`apps/japan-map-quiz/data/` の paths.json・hoppo.json・lakes.json）を直したら、nippon-map の `tools/source/` にも写して標高データを作り直す。
 
 ## iOS アプリ（mobile/）
 
