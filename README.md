@@ -5,7 +5,7 @@
 ## アプリ（スマホで開く）
 
 - [サッ記マン 日本地図タップドリル](https://sakki-man.vercel.app/japan-map-quiz/) … 地図で覚える地理・歴史（[仕様](apps/japan-map-quiz/HANDOFF.md)）
-- [サッ記マン 3D日本地図（試作）](https://japan-map.vercel.app/) … 別のリポジトリ [japan-map](https://github.com/HNHN-g1t/japan-map) に移した
+- [サッ記マン 3D日本地図（試作）](https://nipppon-map.vercel.app/) … 別のリポジトリ [japan-map](https://github.com/HNHN-g1t/japan-map) に移した
 
 ## ドキュメント
 
@@ -24,7 +24,8 @@
 
 ## 設計思想とデザインの趣向（日本地図タップドリル）
 
-- 2026-11-25 Claude：3D日本地図のリポジトリ名が japan-map（公開 https://japan-map.vercel.app/）になったので、リンクと CLAUDE.md を直した
+- 2026-11-25 Claude：3D日本地図の公開URLを https://nipppon-map.vercel.app/ に直した（japan-map.vercel.app は別の人のサイトだった）
+- 2026-11-25 Claude：3D日本地図のリポジトリ名が japan-map になったので、リンクと CLAUDE.md を直した
 - 2026-11-25 Claude：3D日本地図を別のリポジトリ nippon-map（いまの japan-map）に移し、こちらの apps/japan-3d・/japan-3d/ の公開・確認テストを削除
 - 2026-11-25 Claude：3D日本地図の試作（apps/japan-3d、/japan-3d/）。ドリルの県の形と座標系を土台に標高で起伏（高さの強調スライダー）、慣性つきの鳥瞰カメラ、タップでサッ記マンが地形に沿って移動、富士山・槍ヶ岳・六甲山など山頂21か所で「絶景を見る」（360度・ほかの山や湾の名前と距離）。入口からはまだリンクしていない
 - 2026-11-23 Claude：正解の音を作り直し。緊急警報に似ていた高い音域のベルをやめ、中音域（約260〜1000Hz）の木琴のような軽い「ポロロン」に。れんぞくで調が上がる4種類はそのまま
