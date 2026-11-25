@@ -1,3 +1,4 @@
 _site/
 .vercel/
 node_modules/
+apps/japan-3d/.tiles/

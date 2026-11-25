@@ -11,9 +11,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "_site"
 
-# 公開パス: ビルド済み index.html のある apps/ 配下のフォルダ
+# 公開パス: (index.html のある apps/ 配下のフォルダ, いっしょに公開する素材フォルダ)
 APPS = {
-    "japan-map-quiz": "apps/japan-map-quiz",
+    "japan-map-quiz": ("apps/japan-map-quiz", ("bgm", "img")),   # BGM と画像（キャラクターの顔など）
+    "japan-3d": ("apps/japan-3d", ("lib", "data")),              # 3D日本地図：three.js と標高データ（ビルドなし。index.html を直接編集）
 }
 
 subprocess.run([sys.executable, str(ROOT / "apps/japan-map-quiz/tools/build.py")], check=True)
@@ -26,11 +27,11 @@ for f in (ROOT / "site").iterdir():
         shutil.copy(f, OUT / f.name)
     elif f.is_dir():   # privacy/・support/（App Store に載せるプライバシーポリシーとサポートのページ）
         shutil.copytree(f, OUT / f.name)
-for name, src in APPS.items():
+for name, (src, subs) in APPS.items():
     (OUT / name).mkdir(exist_ok=True)
     shutil.copy(ROOT / src / "index.html", OUT / name / "index.html")
     # アプリが読みこむ素材フォルダ（BGM の mp3 など）もいっしょに公開する
-    for sub in ("bgm", "img"):   # BGM と画像（キャラクターの顔など）
+    for sub in subs:
         if (ROOT / src / sub).is_dir():
             shutil.copytree(ROOT / src / sub, OUT / name / sub, dirs_exist_ok=True)
 print(f"wrote {OUT}")
