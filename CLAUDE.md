@@ -37,7 +37,7 @@ main に push すると、Vercel（`vercel.json`）と GitHub Actions（`.github
 
 ## 3D日本地図
 
-別のリポジトリ https://github.com/HNHN-g1t/nippon-map に移した（2026-11-25）。こちらには置かない。ドリルの県の形（`apps/japan-map-quiz/data/` の paths.json・hoppo.json・lakes.json）を直したら、nippon-map の `tools/source/` にも写して標高データを作り直す。
+別のリポジトリ https://github.com/HNHN-g1t/japan-map に移した（2026-11-25。公開は https://japan-map.vercel.app/ ）。こちらには置かない。ドリルの県の形（`apps/japan-map-quiz/data/` の paths.json・hoppo.json・lakes.json）を直したら、japan-map の `tools/source/` にも写して標高データを作り直す。
 
 ## iOS アプリ（mobile/）
 
